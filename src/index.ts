@@ -8,6 +8,7 @@ import config from 'config';
 import { logger } from './services/logger.service';
 import { checkConfig } from '@utils/server/checkConfig.util';
 import buildSchema from '@utils/schema/buildSchema';
+import { CronJob } from 'cron';
 
 // Needed for survey.model, as xmlhttprequest is not defined in servers
 global.XMLHttpRequest = require('xhr2');
@@ -52,5 +53,14 @@ const launchServer = async () => {
     });
   });
 };
+
+// cron job to run every week
+new CronJob(
+  '0 * * * * *', // Runs every minute
+  () => {
+    // logger.info('Running cron job', new Date());
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+).start();
 
 launchServer();
