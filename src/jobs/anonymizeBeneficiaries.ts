@@ -5,7 +5,7 @@ import { Types } from 'mongoose';
 const AID_RESOURCE_ID = new Types.ObjectId('64e6e0933c7bf3962bf4f04c');
 
 /** Anonymizes the beneficiary data, if didn't log in for more than 18 months */
-export const anonymizeStaff = async () => {
+export const anonymizeBeneficiaries = async () => {
   // Find all the records of Ais was given more than 18 months ago
   const allAids = await Record.find({
     resource: AID_RESOURCE_ID,

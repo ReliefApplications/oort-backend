@@ -42,7 +42,7 @@ export const startJobs = () => {
         try {
           await job.fn();
         } catch (error) {
-          console.error(error);
+          logger.error(error);
         }
       },
       null,
