@@ -159,7 +159,9 @@ const checkFieldPermission = (
           )
         );
       }
-      if (!get(field, 'permissions.canSee', []).find((p) => p === role)) {
+      if (
+        !get(field, 'permissions.canSee', []).find((p) => p.toString() === role)
+      ) {
         throw new GraphQLError(
           context.i18next.t('mutations.resource.edit.errors.field.notVisible')
         );
