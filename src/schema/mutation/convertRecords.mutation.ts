@@ -24,10 +24,21 @@ type ConvertRecordsArgs = {
   popArray: string;
 };
 
+/** Conversion of type string to array
+ *
+ * @param value - string to convert
+ * @returns - array of strings
+ */
 function stringToArray(value: string): string[] {
   return [value.toString()];
 }
 
+/** Conversion of type array to string
+ *
+ * @param value - array of strings to convert
+ * @param popArray - action to perform on the array
+ * @returns - string
+ */
 function arrayToString(value: string[], popArray: string): string {
   switch (popArray) {
     case 'first':
@@ -39,6 +50,11 @@ function arrayToString(value: string[], popArray: string): string {
   }
 }
 
+/** Conversion of any type to boolean
+ *
+ * @param value - value to convert
+ * @returns - boolean
+ */
 function toBoolean(value: string): boolean {
   if (Array.isArray(value)) {
     return value.length > 0;
@@ -47,26 +63,28 @@ function toBoolean(value: string): boolean {
   }
 }
 
-async function textToId(value: string, args): Promise<string[]> {
-  switch (args.newType) {
-    case 'users':
-    case 'owner':
-      const id: string = await User.findOne({ name: value });
-      if (!id) {
-        throw new GraphQLError(`User with name ${value} does not exist.`);
-      } else {
-        return [id];
-      }
-    case 'resource':
-      const resource: string = await Resource.findOne({ name: value });
-      if (!resource) {
-        throw new GraphQLError(`Resource with name ${value} does not exist.`);
-      } else {
-        return [resource];
-      }
+/** Conversion of text to resource.
+ *
+ * @param value - text to convert
+ * @param newType - type of the new field
+ * @returns - array of a single id
+ */
+async function textToResource(value: string): Promise<string[]> {
+  const record: string = await Record.findOne({ name: value });
+  if (!record) {
+    //throw new GraphQLError(`Record with name ${value} does not exist.`);
+    console.log(`Record with name ${value} does not exist.`);
+  } else {
+    return [record];
   }
 }
 
+/** Conversion function
+ *
+ * @param value - value to convert
+ * @param args - conversionForm args
+ * @returns - converted value
+ */
 function convertFieldValue(value: any, args): any {
   switch (args.initialType) {
     case 'text':
@@ -78,10 +96,8 @@ function convertFieldValue(value: any, args): any {
           return stringToArray(value);
         case 'boolean':
           return toBoolean(value);
-        case 'users':
-        case 'owner':
         case 'resource':
-          return textToId(value, args);
+          return textToResource(value);
         case 'dropdown':
         case 'radiogroup':
         case 'text': {
@@ -148,11 +164,52 @@ function convertFieldValue(value: any, args): any {
       break;
     }
     default: {
-      throw new GraphQLError(
-        `Conversion from ${args.initialType} to ${args.newType} is not supported`
-      );
+      return null;
     }
   }
+}
+
+/** Validate that the answer is in the question choices
+ *
+ * @param questionChoices - choices of the question
+ * @param currentAnswer - answer to validate
+ * @returns - true if the answer is in the question choices, false otherwise
+ */
+function validateChoices(
+  questionChoices: string[],
+  currentAnswer: string
+): boolean {
+  if (Array.isArray(currentAnswer)) {
+    if (!currentAnswer.every((answer) => questionChoices.includes(answer))) {
+      return false;
+    }
+  } else {
+    if (!questionChoices.includes(currentAnswer)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/** Validate that the answer is a record from the specified resource
+ *
+ * @param selectedResource - resource to validate
+ * @param currentAnswer - answer to validate
+ * @returns - true if the answer is a record from the specified resource, false otherwise
+ */
+async function enforceResource(
+  selectedResource: string,
+  currentAnswer: string
+): Promise<boolean> {
+  if (selectedResource !== 'none') {
+    const record = await (
+      await Record.find({
+        resource: selectedResource,
+      })
+    ).map((record) => record.id);
+    return record.includes(currentAnswer) ? true : false;
+  }
+  return true;
 }
 
 /**
@@ -173,7 +230,6 @@ export default {
   async resolve(parent, args: ConvertRecordsArgs, context: Context) {
     graphQLAuthCheck(context);
     try {
-      const user = context.user;
       const oldRecords = await Record.find({ resource: args.id });
       const oldForm = await Promise.all(
         oldRecords.map((record) => Form.findById(record.form))
@@ -184,16 +240,36 @@ export default {
         .flat()
         .find((field) => field.name === args.field);
 
+      // Considering the user edited the form before converting the records, questionChoices refers to the new form
+      const questionChoices = formFieldStructure['choices']?.map(
+        (item) => item.value
+      );
+      if (questionChoices) {
+        questionChoices.push('other');
+        questionChoices.push('none');
+      }
       //console.log('BEFORE', JSON.stringify(oldRecords, null, 2));
 
       oldRecords.forEach((record) => {
         const data = record.data;
         const currentAnswer = data[args.field];
 
-        console.log(currentAnswer);
-        data[args.field] = convertFieldValue(currentAnswer, args);
+        if (questionChoices && currentAnswer) {
+          if (!validateChoices(questionChoices, currentAnswer)) {
+            console.log('Invalid choices');
+          }
+        }
+        if (args.selectedResource) {
+          if (!enforceResource(args.selectedResource, currentAnswer)) {
+            console.log('Invalid resource');
+          }
+        }
 
-        // deal with choices
+        if (convertFieldValue(currentAnswer, args)) {
+          data[args.field] = convertFieldValue(currentAnswer, args);
+        } else {
+          console.log('Invalid conversion');
+        }
       });
 
       //console.log('AFTER', JSON.stringify(oldRecords, null, 2));
