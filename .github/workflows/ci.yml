@@ -8,6 +8,7 @@ on:
       - next-major
       - beta
       - alpha
+      - hit-oort
   pull_request:
     branches:
       - main
@@ -16,6 +17,7 @@ on:
       - beta
       - alpha
       - "[0-9]*.[0-9x]*.x"
+      - hit-oort
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
