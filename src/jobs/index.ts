@@ -1,5 +1,6 @@
 import { CronJob } from 'cron';
 import { anonymizeStaff } from './anonymizeStaff';
+import { anonymizeBeneficiaries } from './anonymizeBeneficiaries';
 import { logger } from '@services/logger.service';
 import config from 'config';
 
@@ -19,6 +20,14 @@ const JOBS: {
     // Every week
     schedule: '0 0 * * 0',
     fn: anonymizeStaff,
+    envs: ['alimentaide'],
+  },
+  {
+    name: 'Anonymize beneficiaries',
+    description: '',
+    // Every week
+    schedule: '0 0 * * 0',
+    fn: anonymizeBeneficiaries,
     envs: ['alimentaide'],
   },
 ];

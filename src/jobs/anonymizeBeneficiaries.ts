@@ -3,63 +3,72 @@ import { Types } from 'mongoose';
 
 /** Staff resource ID */
 const AID_RESOURCE_ID = new Types.ObjectId('64e6e0933c7bf3962bf4f04c');
+const FAMILY_RESOURCE_ID = new Types.ObjectId('64de75fd3fb2a11c988dddb2');
 
 /** Anonymizes the beneficiary data, if didn't log in for more than 18 months */
 export const anonymizeBeneficiaries = async () => {
-  // Find all the records of Ais was given more than 18 months ago
-  const allAids = await Record.find({
-    resource: AID_RESOURCE_ID,
-    createdAt: {
-      $lt: new Date(Date.now() - 18 * 30 * 24 * 60 * 60 * 1000),
-    }, // 18 months ago
+  // For all family records, check if
+  // in the last 18 months they received aid
+
+  // Get all the family records
+  const allFamilies = await Record.find({
+    resource: FAMILY_RESOURCE_ID,
   });
 
-  // Anonymize all members of that family
-  for (let i = 0; i < allAids.length; i++) {
-    const aidRecord = allAids[i];
-
-    // Get Family record
-    const familyRecord = await Record.findOne({
-      _id: aidRecord?.data?.owner_resource,
+  // For each family record, check if exists
+  // an aid record in the last 18 months
+  for (const family of allFamilies) {
+    const aidGivenToFamily = await Record.exists({
+      resource: AID_RESOURCE_ID,
+      createdAt: {
+        $gt: new Date(Date.now() - 18 * 30 * 24 * 60 * 60 * 1000),
+      }, // 18 months ago
+      'data.owner_resource': family._id.toString(),
     });
 
-    // Find all members of the family
-    const members = await Record.find({
-      _id: { $in: familyRecord?.data?.members },
-    });
-
-    // Anonymize all members of that family
-    for (let j = 0; j < members.length; j++) {
-      const member = members[j];
-
-      // Anonymize the member
-      member._createdBy = new User({
-        name: 'ANONYMOUS',
-        username: `${Math.random()
-          .toString(36)
-          .substring(2, 15)}@anonymus-oort.com`,
+    // If no aid was given to the family in the last 18 months
+    if (!aidGivenToFamily) {
+      // Find all members of the family
+      const members = await Record.find({
+        _id: { $in: family?.data?.members },
       });
-      member.data.location = 'ANONYMOUS';
-      member.data.surname = 'ANONYMOUS';
-      member.data.firstname = 'ANONYMOUS';
-      member.data.phone = 'ANONYMOUS';
-      member.data.nom_employes = 'ANONYMOUS';
-      member.data.gender = 'ANONYMOUS';
-      member.data.birthdate = 'ANONYMOUS';
-      member.data.prenom_employes = 'ANONYMOUS';
-      member.data.nom_prenom_employes = 'ANONYMOUS';
-      member.data.tel_staff = 'ANONYMOUS';
-      member.data.email_staff = 'ANONYMOUS';
-      member.data.birthdate_employes = 'ANONYMOUS';
-      member._lastUpdatedBy = new User({
-        name: 'ANONYMOUS',
-        username: `${Math.random()
-          .toString(36)
-          .substring(2, 15)}@anonymus-oort.com`,
-      });
-      member.data.file_gdpr_staff = [];
 
-      await member.save();
+      // Anonymize all the members
+      members.forEach((member) => {
+        if (!member.data) {
+          return;
+        }
+        // Anonymize the member
+        member._createdBy = new User({
+          name: 'ANONYMOUS',
+          username: `${member._id.toString()}@oort-anonymous.com`,
+        });
+
+        member.data = {
+          ...member.data,
+          location: 'ANONYMOUS',
+          surname: 'ANONYMOUS',
+          firstname: 'ANONYMOUS',
+          phone: 'ANONYMOUS',
+          nom_employes: 'ANONYMOUS',
+          gender: 'ANONYMOUS',
+          birthdate: 'ANONYMOUS',
+          prenom_employes: 'ANONYMOUS',
+          nom_prenom_employes: 'ANONYMOUS',
+          tel_staff: 'ANONYMOUS',
+          email_staff: 'ANONYMOUS',
+          birthdate_employes: 'ANONYMOUS',
+          file_gdpr_staff: [],
+        };
+
+        member._lastUpdatedBy = new User({
+          name: 'ANONYMOUS',
+          username: `${member._id.toString()}@oort-anonymous.com`,
+        });
+      });
+
+      // Save all the records
+      await Record.bulkSave(members);
     }
   }
 };
