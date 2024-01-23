@@ -24,7 +24,8 @@ const JOBS: {
   },
   {
     name: 'Anonymize beneficiaries',
-    description: '',
+    description:
+      'Anonymizes all members of a family, if the family did not receive aid for the last 18 months',
     // Every week
     schedule: '0 0 * * 0',
     fn: anonymizeBeneficiaries,
