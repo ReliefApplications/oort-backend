@@ -1,4 +1,4 @@
-import { cloneDeep } from 'lodash';
+import { cloneDeep, uniq } from 'lodash';
 import {
   GraphQLNonNull,
   GraphQLID,
@@ -48,6 +48,9 @@ function stringToArray(value: string): any {
  * @returns - string
  */
 function arrayToString(value: string[], popArray: string): string {
+  if (!Array.isArray(value)) {
+    return 'error';
+  }
   try {
     switch (popArray) {
       case 'first':
@@ -75,8 +78,6 @@ function toBoolean(value: any): any {
       return !!value;
     }
   } catch (err) {
-    console.log(err);
-    console.log('a');
     return 'error';
   }
 }
@@ -104,8 +105,7 @@ async function convertFieldValue(value: any, args): Promise<any> {
           case 'dropdown':
           case 'radiogroup':
           case 'text': {
-            //do nothing
-            break;
+            return value;
           }
         }
         break;
@@ -123,8 +123,7 @@ async function convertFieldValue(value: any, args): Promise<any> {
           }
           case 'checkbox':
           case 'tagbox': {
-            //do nothing
-            break;
+            return value;
           }
         }
         break;
@@ -167,20 +166,12 @@ async function convertFieldValue(value: any, args): Promise<any> {
         break;
       }
       default: {
-        console.log('b');
         return 'error';
       }
     }
   } catch (err) {
-    console.log(err);
-    console.log('c');
     return 'error';
   }
-}
-
-function writeToFile(filename: string, data: string): void {
-  const filePath = path.join('C:\\Users\\bruno\\Documents', filename);
-  fs.writeFileSync(filePath, data, 'utf-8');
 }
 
 /** Validate that the answer is in the question choices
@@ -222,14 +213,19 @@ export default {
   async resolve(parent, args: ConvertRecordsArgs, context: Context) {
     graphQLAuthCheck(context); // TODO: deal with permissions
     try {
-      const oldRecords = await Record.find({ resource: args.id }).populate({
+      const oldRecords = await Record.find({
+        resource: args.id,
+        archived: { $ne: true },
+      }).populate({
         path: 'form',
         model: 'Form',
       });
-      const records: Record[] = [];
+      //const records: Record[] = [];
       const oldForm = await Promise.all(
         oldRecords.map((record) => Form.findById(record.form))
       );
+      const oldFormm = uniq(oldRecords.map((record) => record.form._id));
+      const versions: Version[] = [];
 
       const formFieldStructure = oldForm
         .map((form) => form.fields)
@@ -247,84 +243,89 @@ export default {
         questionChoices.push('none');
       }
 
-      const beforeData = JSON.stringify(oldRecords, null, 2);
-      writeToFile('before.txt', 'BEFORE\n' + beforeData);
-
+      let cancel = false;
       // Conversion loop
       for (const record of oldRecords) {
-        let action = 'continue';
-        const data = cloneDeep(record.data);
+        let action = null;
+        const data = record.data;
         const currentAnswer = data[args.field];
         const ability = await extendAbilityForRecords(user, record.form);
         if (
           ability.can('update', record) &&
-          !hasInaccessibleFields(record, data[args.field], ability) &&
-          currentAnswer
+          !hasInaccessibleFields(record, data[args.field], ability)
         ) {
           // Question choices validation
           if (
             (questionChoices &&
+              currentAnswer &&
               !validateChoices(questionChoices, currentAnswer)) ||
-            (await convertFieldValue(currentAnswer, args)) === 'error'
+            (await convertFieldValue(currentAnswer, args)) === 'error' ||
+            !currentAnswer
           ) {
             console.log('Error converting value');
             action = args.failedAction;
-          }
-          if (action === 'continue') {
-            data[args.field] = await convertFieldValue(currentAnswer, args);
-            console.log('Value converted successfully');
+            cancel = true;
           }
           if (action === 'delete') {
             data[args.field] = null;
             console.log('Value deleted successfully');
           }
-
-          if (action !== 'ignore') {
+          if (!action || action === 'delete') {
             const version = new Version({
               createdAt: record.modifiedAt
                 ? record.modifiedAt
                 : record.createdAt,
-              data: record.data,
+              data: cloneDeep(data),
               createdBy: user._id,
             });
-            const update: any = {
-              data: { ...record.data, ...data },
-              _lastUpdatedBy: {
-                user: {
-                  _id: user._id,
-                  name: user.name,
-                  username: user.username,
-                },
-              },
-              $push: { versions: version._id },
-            };
-            const ownership = getOwnership(
-              record.form.fields,
-              data[args.field]
-            ); // Update with template during merge
-            Object.assign(
-              update,
-              ownership && { createdBy: { ...record.createdBy, ...ownership } }
-            );
-            const newRecord = await Record.findByIdAndUpdate(
-              record.id,
-              update,
-              {
-                new: true,
-              }
-            );
-            await version.save();
-            records.push(newRecord);
+
+            console.log(currentAnswer);
+            data[args.field] = await convertFieldValue(currentAnswer, args);
+            console.log(data[args.field]);
+
+            //
+            // const update: any = {
+            //   data,
+            //   _lastUpdatedBy: {
+            //     user: {
+            //       _id: user._id,
+            //       name: user.name,
+            //       username: user.username,
+            //     },
+            //   },
+            //   $push: { versions: version._id },
+            // };
+            // const ownership = getOwnership(
+            //   record.form.fields,
+            //   data[args.field]
+            // ); // Update with template during merge
+            // Object.assign(
+            //   update,
+            //   ownership && { createdBy: { ...record.createdBy, ...ownership } }
+            // );
+            // const newRecord = await Record.findByIdAndUpdate(record.id, update);
+
+            record.versions.push(version._id);
+            versions.push(version);
+            record.markModified('data');
+            record.markModified('versions');
+            // await version.save(); //what does this do
+            // records.push(newRecord);
             console.log('Conversion completed');
             // to do: deal with cancel conversion
             // change the mutation response in conversion.component.ts
             // display success or failure message
+            // check if its better to throw graphql error or return 'error'
           }
         }
       }
-      const afterData = JSON.stringify(records, null, 2);
-      writeToFile('after.txt', 'AFTER\n' + afterData);
-      return records;
+      if (args.failedAction !== 'cancel' || !cancel) {
+        await Version.bulkSave(versions);
+        await Record.bulkSave(oldRecords);
+      } else {
+        console.log('Conversion canceled');
+      }
+      // return records; // where does this go
     } catch (err) {
       logger.error(err.message, { stack: err.stack });
       if (err instanceof GraphQLError) {
