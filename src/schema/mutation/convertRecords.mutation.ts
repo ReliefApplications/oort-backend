@@ -1,21 +1,17 @@
-import { cloneDeep, uniq } from 'lodash';
+import { cloneDeep } from 'lodash';
 import {
   GraphQLNonNull,
   GraphQLID,
   GraphQLError,
-  GraphQLBoolean,
   GraphQLString,
 } from 'graphql';
-import { getNextId, getOwnership } from '@utils/form';
-import { Form, Record, Resource, User, Version } from '@models';
+import { Form, Record, Version } from '@models';
 import extendAbilityForRecords from '@security/extendAbilityForRecords';
-import { RecordType, ResourceType } from '../types';
+import { RecordType } from '../types';
 import { logger } from '@services/logger.service';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
-import * as fs from 'fs';
-import * as path from 'path';
 import { hasInaccessibleFields } from './editRecord.mutation';
 
 /** Arguments for the convertRecord mutation */
@@ -28,7 +24,8 @@ type ConvertRecordsArgs = {
   failedAction: string;
 };
 
-/** Conversion of type string to array
+/**
+ * Conversion of type string to array
  *
  * @param value - string to convert
  * @returns - array of strings
@@ -41,7 +38,8 @@ function stringToArray(value: string): any {
   }
 }
 
-/** Conversion of type array to string
+/**
+ * Conversion of type array to string
  *
  * @param value - array of strings to convert
  * @param popArray - action to perform on the array
@@ -65,7 +63,8 @@ function arrayToString(value: string[], popArray: string): string {
   }
 }
 
-/** Conversion of any type to boolean
+/**
+ * Conversion of any type to boolean
  *
  * @param value - value to convert
  * @returns - boolean
@@ -82,7 +81,8 @@ function toBoolean(value: any): any {
   }
 }
 
-/** Conversion function
+/**
+ * Conversion function
  *
  * @param value - value to convert
  * @param args - conversionForm args
@@ -174,7 +174,8 @@ async function convertFieldValue(value: any, args): Promise<any> {
   }
 }
 
-/** Validate that the answer is in the question choices
+/**
+ * Validate that the answer is in the question choices
  *
  * @param questionChoices - choices of the question
  * @param currentAnswer - answer to validate
@@ -224,7 +225,6 @@ export default {
       const oldForm = await Promise.all(
         oldRecords.map((record) => Form.findById(record.form))
       );
-      const oldFormm = uniq(oldRecords.map((record) => record.form._id));
       const versions: Version[] = [];
 
       const formFieldStructure = oldForm
@@ -235,7 +235,7 @@ export default {
       const user = context.user;
 
       // Considering the user edited the form before converting the records, questionChoices refers to the new form
-      const questionChoices = formFieldStructure['choices']?.map(
+      const questionChoices = formFieldStructure.choices?.map(
         (item) => item.value
       );
       if (questionChoices) {
