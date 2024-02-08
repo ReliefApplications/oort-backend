@@ -4,6 +4,15 @@ import {
   GraphQLString,
   GraphQLError,
 } from 'graphql';
+import {
+  cloneDeep,
+  get,
+  isArray,
+  set,
+  unset,
+  isEqual,
+  unionWith,
+} from 'lodash';
 import GraphQLJSON from 'graphql-type-json';
 import {
   Form,
@@ -12,6 +21,7 @@ import {
   Channel,
   ReferenceData,
   DEFAULT_INCREMENTAL_ID_SHAPE,
+  Record,
 } from '@models';
 import {
   removeField,
@@ -26,16 +36,14 @@ import { validateGraphQLTypeName } from '@utils/validators';
 import mongoose from 'mongoose';
 import { AppAbility } from '@security/defineUserAbility';
 import { status, StatusEnumType, StatusType } from '@const/enumTypes';
-import isEqual from 'lodash/isEqual';
 import differenceWith from 'lodash/differenceWith';
-import unionWith from 'lodash/unionWith';
 import i18next from 'i18next';
-import { get, isArray } from 'lodash';
 import { logger } from '@services/logger.service';
 import checkDefaultFields from '@utils/form/checkDefaultFields';
 import { preserveChildProperties } from '@utils/form/preserveChildProperties';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Context } from '@server/apollo/context';
+import { getNewFieldValue } from '@utils/form/getNewFieldValue';
 
 /**
  * List of keys of the structure's object which we want to inherit to the children forms when they are modified on the core form
@@ -543,8 +551,130 @@ export default {
         });
         await version.save();
         update.$push = { versions: version._id };
-      }
 
+        // Update old records
+        const {
+          updateOldRecords,
+          onConversionFail: conFail,
+          strategyForArrays: arrStrategy,
+        } = structure as {
+          updateOldRecords?: boolean;
+          onConversionFail?: 'skip' | 'archive' | 'ignore';
+          strategyForArrays?: 'first' | 'last' | 'random';
+        };
+
+        const onConversionFail = conFail ?? 'skip';
+        const strategyForArrays = arrStrategy ?? 'first';
+
+        if (updateOldRecords) {
+          const now = new Date();
+          const oldFields = form.fields;
+          const newFields = fields;
+
+          // Update old records, 5000 records at a time
+          const RECORDS_PER_BATCH = 5000;
+          const numRecords = await Record.countDocuments({
+            form: form.id,
+            archived: {
+              $ne: true,
+            },
+          });
+
+          logger.info(
+            `Trying to update ${numRecords} records for form ${form.name}...`
+          );
+          for (let i = 0; i < numRecords; i += RECORDS_PER_BATCH) {
+            logger.info(
+              `Updating records from ${i + 1} to ${
+                i + RECORDS_PER_BATCH + 1
+              }...`
+            );
+            const versionsToCreate: Version[] = [];
+            const recordsToUpdate: Record[] = [];
+            const records = await Record.find({
+              form: form.id,
+              archived: {
+                $ne: true,
+              },
+            })
+              .limit(RECORDS_PER_BATCH)
+              .skip(i);
+
+            for (const record of records) {
+              const data = cloneDeep(record.data || {});
+
+              // We loop through the old fields and update the data
+              for (const oldField of oldFields) {
+                const newField = newFields.find(
+                  (field) => field.name === oldField.name
+                );
+
+                // The field has been removed
+                if (!newField) {
+                  unset(data, oldField.name);
+                  continue;
+                }
+
+                // The field has been modified
+                if (!isEqual(oldField, newField)) {
+                  const value = get(data, oldField.name);
+
+                  try {
+                    const newValue = await getNewFieldValue(
+                      value,
+                      newField,
+                      context.dataSources,
+                      {
+                        strategyForArrays,
+                        onConversionFail,
+                      }
+                    );
+                    // If no conversion error, we update the field
+                    set(data, newField.name, newValue);
+                  } catch (_) {
+                    // Conversion failed
+                    switch (onConversionFail) {
+                      case 'ignore':
+                        // We keep the old value
+                        continue;
+                      case 'skip':
+                        // We remove the field value
+                        unset(data, oldField.name);
+                        continue;
+                      case 'archive':
+                        // We archive the record
+                        record.archived = true;
+                        break;
+                    }
+                  }
+                }
+              }
+
+              // If record is being archived, we don't update anything
+              if (!record.archived) {
+                const newVersion = new Version({
+                  createdAt: now,
+                  data: cloneDeep(record.data),
+                  createdBy: user._id,
+                });
+                versionsToCreate.push(newVersion);
+                record.versions.push(newVersion._id);
+                record.data = data;
+              }
+
+              if (record.isModified()) {
+                record.modifiedAt = now;
+                recordsToUpdate.push(record);
+              }
+            }
+
+            // Save all the versions
+            await Version.bulkSave(versionsToCreate);
+            // Save the updated records
+            await Record.bulkSave(recordsToUpdate);
+          }
+        }
+      }
       const resForm = await Form.findByIdAndUpdate(args.id, update, {
         new: true,
       });

@@ -2,6 +2,7 @@ import { AccessibleRecordModel, accessibleRecordsPlugin } from '@casl/mongoose';
 import mongoose, { Schema, Document } from 'mongoose';
 import { getGraphQLTypeName } from '@utils/validators';
 import { referenceDataType } from '@const/enumTypes';
+import { ApiConfiguration } from './apiConfiguration.model';
 
 /** Reference data document interface. */
 interface ReferenceDataDocument extends Document {
@@ -10,7 +11,7 @@ interface ReferenceDataDocument extends Document {
   graphQLTypeName: string;
   modifiedAt: Date;
   type: string;
-  apiConfiguration: mongoose.Types.ObjectId;
+  apiConfiguration: mongoose.Types.ObjectId | ApiConfiguration;
   query: string;
   fields: { name: string; type: string; graphQLFieldName: string }[];
   valueField: string;

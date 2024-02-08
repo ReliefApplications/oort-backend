@@ -18,6 +18,7 @@ export const getFieldType = async (question: {
         case 'text':
           return 'text';
         case 'number':
+        case 'range':
           return 'numeric';
         case 'color':
           return 'color';
@@ -29,6 +30,10 @@ export const getFieldType = async (question: {
           return 'datetime';
         case 'time':
           return 'time';
+        case 'week':
+          return 'week';
+        case 'month':
+          return 'month';
         case 'url':
           return 'url';
         case 'tel':
