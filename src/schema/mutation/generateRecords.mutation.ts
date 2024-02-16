@@ -1,31 +1,23 @@
-import { GraphQLID, GraphQLNonNull, GraphQLError, GraphQLList } from 'graphql';
+import { GraphQLID, GraphQLError, GraphQLList } from 'graphql';
 import GraphQLJSON from 'graphql-type-json';
 import { RecordType } from '../types';
 import { Form, Record, Notification, Channel } from '@models';
-import {
-  transformRecord,
-  getOwnership,
-  getNextId,
-  generateData,
-} from '@utils/form';
+import { getOwnership, getNextId, generateData } from '@utils/form';
 import extendAbilityForRecords from '@security/extendAbilityForRecords';
 import pubsub from '../../server/pubsub';
-import { getFormPermissionFilter } from '@utils/filter';
 import { logger } from '@services/logger.service';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
 
-/** Arguments for the addRecord mutation */
+/** Arguments for the generateRecords mutation */
 type GenerateRecordArgs = {
   form: string | Types.ObjectId;
   data: any;
 };
 
 /**
- * Add a record to a form, if user authorized.
- * Throw a GraphQL error if not logged or authorized, or form not found.
- * TODO: we have to check form by form for that.
+ * Generate up to 50 records using user input or random data
  */
 export default {
   type: new GraphQLList(RecordType),
@@ -47,12 +39,19 @@ export default {
       if (!form)
         throw new GraphQLError(context.i18next.t('common.errors.dataNotFound'));
 
+      // Check the ability with permissions for this form
+      const ability = await extendAbilityForRecords(user, form);
+      if (ability.cannot('create', 'Record')) {
+        throw new GraphQLError(
+          context.i18next.t('common.errors.permissionNotGranted')
+        );
+      }
+
       for (let i = 0; i < recordsNumber; i++) {
         const { incrementalId, incID } = await getNextId(
           String(form.resource ? form.resource : args.form)
         );
-        const generatedData = await generateData(fields, form.fields);
-        console.log(JSON.stringify(generatedData, null, 2));
+        const generatedData = await generateData(fields, form);
         const record = new Record({
           incrementalId,
           incID,
@@ -87,9 +86,27 @@ export default {
           },
         });
         records.push(record);
+        // Update the createdBy property if we pass some owner data
+        const ownership = getOwnership(form.fields, args.data);
+        if (ownership) {
+          record.createdBy = { ...record.createdBy, ...ownership };
+        }
         await record.save();
       }
-      // send the notification to the channel
+
+      // send notifications to channel
+      const channel = await Channel.findOne({ form: form._id });
+      if (channel) {
+        const notification = new Notification({
+          action: `${recordsNumber} generated records - ${form.name}`,
+          content: records,
+          channel: channel.id,
+          seenBy: [],
+        });
+        await notification.save();
+        const publisher = await pubsub();
+        publisher.publish(channel.id, { notification });
+      }
       return records;
     } catch (err) {
       logger.error(err.message, { stack: err.stack });

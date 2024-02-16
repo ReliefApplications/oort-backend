@@ -1,9 +1,12 @@
 import { faker } from '@faker-js/faker';
-import { Record, Application, Role, User } from '@models';
+import { Record, Role, User } from '@models';
+import { getMatrixFieldStructure } from './getMatrixFieldStructure';
 var randomGeoJSON = require('geojson-random');
-
-export const generateData = async (fields: any, structure: any) => {
+/** Generate data for one record */
+export const generateData = async (fields: any, form: any) => {
   let data = {};
+  const structure = form.fields;
+  const structureForMatrix = form.structure;
   await Promise.all(
     fields.map(async (field: any) => {
       if (field.include) {
@@ -17,7 +20,13 @@ export const generateData = async (fields: any, structure: any) => {
             case 'text':
               switch (field.option) {
                 case 'month':
-                  data[field.field] = faker.date.month();
+                  data[field.field] = faker.date
+                    .between(
+                      '2020-01-01T00:00:00.000Z',
+                      '2030-01-01T00:00:00.000Z'
+                    )
+                    .toISOString()
+                    .slice(0, 7);
                   break;
                 case 'password':
                   data[field.field] = faker.internet.password();
@@ -101,11 +110,26 @@ export const generateData = async (fields: any, structure: any) => {
               let matrixDropdownItems = {};
               questionStructure.rows.forEach((row: any) => {
                 matrixDropdownItems[row.name] = {};
-                questionStructure.columns.forEach((column: any) => {
+                getMatrixFieldStructure(
+                  field.field,
+                  structureForMatrix
+                ).columns.forEach((column: any) => {
+                  const matrixDropdownChoices = column.choices?.map((item) => ({
+                    value: item,
+                  }));
                   const columnChoices =
-                    column.choices ?? questionStructure.choices;
-                  switch (column.type) {
+                    matrixDropdownChoices ?? questionStructure.choices;
+                  switch (column.cellType) {
                     case null:
+                    case undefined:
+                      matrixDropdownItems[row.name][column.name] =
+                        questionStructure.choices[
+                          faker.datatype.number({
+                            min: 0,
+                            max: questionStructure.choices.length - 1,
+                          })
+                        ].value;
+                      break;
                     case 'dropdown':
                     case 'radiogroup':
                       matrixDropdownItems[row.name][column.name] =
@@ -167,11 +191,26 @@ export const generateData = async (fields: any, structure: any) => {
                 i++
               ) {
                 let matrixDynamicItem = {};
-                questionStructure.columns.forEach((column: any) => {
+                getMatrixFieldStructure(
+                  field.field,
+                  structureForMatrix
+                ).columns.forEach((column: any) => {
+                  const matrixDynamicChoices = column.choices?.map((item) => ({
+                    value: item,
+                  }));
                   const columnChoices =
-                    column.choices ?? questionStructure.choices;
-                  switch (column.type) {
+                    matrixDynamicChoices ?? questionStructure.choices;
+                  switch (column.cellType) {
                     case null:
+                    case undefined:
+                      matrixDynamicItem[column.name] =
+                        questionStructure.choices[
+                          faker.datatype.number({
+                            min: 0,
+                            max: questionStructure.choices.length - 1,
+                          })
+                        ].value;
+                      break;
                     case 'dropdown':
                     case 'radiogroup':
                       matrixDynamicItem[column.name] =
@@ -389,9 +428,10 @@ export const generateData = async (fields: any, structure: any) => {
               data[field.field] = faker.phone.number();
               break;
             case 'time':
-              data[field.field] = faker.date
-                .between('2020-01-01T00:00:00.000Z', '2030-01-01T00:00:00.000Z')
-                .toISOString();
+              data[field.field] =
+                new Date(0).toISOString().slice(0, 11) +
+                faker.datatype.datetime().toISOString().slice(11, 16) +
+                ':00.000Z';
               break;
             case 'url':
               data[field.field] = faker.internet.url();
