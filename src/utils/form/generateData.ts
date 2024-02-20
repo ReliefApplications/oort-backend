@@ -3,65 +3,90 @@ import { Record, Role, User } from '@models';
 /** Generate data for one record */
 export const generateData = async (fields: any, form: any) => {
   let data = {};
-  let fieldUserAction = '';
   const questionsStructure = JSON.parse(form.structure).pages.reduce(
     (acc: any, page: any) => acc.concat(page.elements),
     []
   );
-  console.log('struc', JSON.stringify(questionsStructure, null, 2));
   /** Generate data for one field */
-  const _generateFieldData = async (questionStructure: any): Promise<any> => {
-    switch (questionStructure.type) {
+  const _generateFieldData = async (
+    questionStructure: any,
+    actions: any
+  ): Promise<any> => {
+    const type = questionStructure.inputType ?? questionStructure.type;
+    switch (type) {
       case 'text':
-        switch (questionStructure.inputType) {
-          case 'color':
-            return faker.internet.color();
-          case 'date':
-            return new Date(
-              faker.date
-                .between('2020-01-01T00:00:00.000Z', '2030-01-01T00:00:00.000Z')
-                .setHours(0, 0, 0, 0)
-            ).toISOString();
-          case 'datetime-local':
-            return faker.date
-              .between('2020-01-01T00:00:00.000Z', '2030-01-01T00:00:00.000Z')
-              .toISOString();
-          case 'email':
-            return faker.internet.email();
-          case 'number':
-            return faker.datatype.number({ min: 0, max: 1000 });
-          case 'tel':
-            return faker.phone.number();
-          case 'time':
-            return (
-              new Date(0).toISOString().slice(0, 11) +
-              faker.datatype.datetime().toISOString().slice(11, 16) +
-              ':00.000Z'
-            );
-          case 'url':
-            return faker.internet.url();
-          case 'month':
-            return faker.date
-              .between('2020-01-01T00:00:00.000Z', '2030-01-01T00:00:00.000Z')
-              .toISOString()
-              .slice(0, 7);
-          case 'password':
-            return faker.internet.password();
-          case 'range':
-            return faker.datatype.number({
-              min: 0,
-              max: 100,
-            });
-          case 'week':
-            return (
-              faker.datatype.number({ min: 2000, max: 2030 }) +
-              '-W' +
-              faker.datatype.number({ min: 1, max: 52 })
-            );
-          case undefined:
-          default:
-            return faker.lorem.sentence();
+        return faker.lorem.sentence();
+      case 'color':
+        return faker.internet.color();
+      case 'date':
+        return (
+          new Date(
+            faker.date.between(
+              actions.minDate ?? '2020-01-01T00:00:00.000Z',
+              actions.maxDate ?? '2030-01-01T00:00:00.000Z'
+            )
+          )
+            .toISOString()
+            .slice(0, 10) + 'T00:00:00.000Z'
+        );
+      case 'datetime-local':
+        if (actions.maxDate) {
+          return new Date(
+            faker.date.between(
+              actions.minDate ?? '2020-01-01T00:00:00.000Z',
+              actions.maxDate + 'T23:59:00.000Z'
+            )
+          ).toISOString();
         }
+        return new Date(
+          faker.date.between(
+            actions.minDate ?? '2020-01-01T00:00:00.000Z',
+            '2030-01-01T00:00:00.000Z'
+          )
+        ).toISOString();
+      case 'email':
+        return faker.internet.email();
+      case 'number':
+        return faker.datatype.number({
+          min: actions.minNumber ?? 0,
+          max: actions.maxNumber ?? 1000,
+        });
+      case 'tel':
+        return faker.phone.number();
+      case 'time':
+        return (
+          '1970-01-01T' +
+          new Date(
+            faker.date.between(
+              actions.minTime ?? '1970-01-01T00:00:00.000Z',
+              actions.maxTime ?? '1970-01-01T23:59:00.000Z'
+            )
+          )
+            .toISOString()
+            .slice(11, 16) +
+          ':00.000Z'
+        );
+      case 'url':
+        return faker.internet.url();
+      case 'month':
+        return faker.date
+          .between('2020-01-01T00:00:00.000Z', '2030-01-01T00:00:00.000Z')
+          .toISOString()
+          .slice(0, 7);
+      case 'password':
+        return faker.internet.password();
+      case 'range':
+        return faker.datatype.number({
+          min: 0,
+          max: 100,
+        });
+      case 'week':
+        return (
+          faker.datatype.number({ min: 2000, max: 2030 }) +
+          '-W' +
+          faker.datatype.number({ min: 1, max: 52 })
+        );
+      case undefined:
       case 'comment':
         return faker.lorem.paragraph();
       case 'radiogroup':
@@ -186,7 +211,7 @@ export const generateData = async (fields: any, form: any) => {
                   faker.datatype.number({ min: 1, max: 5 });
                 break;
               case 'expression':
-              // i dont know
+                break;
               default:
                 break;
             }
@@ -261,7 +286,7 @@ export const generateData = async (fields: any, form: any) => {
                 });
                 break;
               case 'expression':
-              // i dont know
+                break;
               default:
                 break;
             }
@@ -270,7 +295,7 @@ export const generateData = async (fields: any, form: any) => {
         }
         return matrixDynamicItems;
       case 'expression':
-      // i dont know
+        return;
       case 'resource':
         const record = await Record.findOne({
           resource: questionStructure.resource,
@@ -411,7 +436,8 @@ export const generateData = async (fields: any, form: any) => {
             questionStructure.templateElements?.map(
               async (panelQuestion: any) => {
                 panelItem[panelQuestion.name] = await _generateFieldData(
-                  panelQuestion
+                  panelQuestion,
+                  {}
                 );
               }
             )
@@ -420,7 +446,7 @@ export const generateData = async (fields: any, form: any) => {
         }
         return panelData;
       default:
-        return;
+        return faker.lorem.sentence();
     }
   };
   await Promise.all(
@@ -428,15 +454,22 @@ export const generateData = async (fields: any, form: any) => {
       const questionStructure = questionsStructure.find(
         (obj: any) => obj.name === field.field
       );
-      const fieldUserAction = field.option;
+      const actions = {
+        minDate: field.minDate,
+        maxDate: field.maxDate,
+        minNumber: field.minNumber,
+        maxNumber: field.maxNumber,
+        minTime: field.minTime,
+        maxTime: field.maxTime,
+      };
       if (field.include) {
         if (field.setDefault) {
           return field.default; // If default value is set, use it
-        } else {
-          data[questionStructure.name] = await _generateFieldData(
-            questionStructure
-          );
         }
+        data[questionStructure.name] = await _generateFieldData(
+          questionStructure,
+          actions
+        );
       }
     })
   );
