@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { Record, Role, User } from '@models';
+import { Record, Role, User, ReferenceData } from '@models';
 /** Generate data for one record */
 export const generateData = async (fields: any, form: any) => {
   let data = {};
@@ -7,12 +7,52 @@ export const generateData = async (fields: any, form: any) => {
     (acc: any, page: any) => acc.concat(page.elements),
     []
   );
+  const _getChoicesFromQuestion = async (question: any) => {
+    const questionToBeCopied = questionsStructure.find(
+      (obj: any) => obj.name === question
+    );
+    if (questionToBeCopied.referenceData) {
+      const refData = await ReferenceData.findOne({
+        _id: questionToBeCopied.referenceData,
+      });
+      if (refData) {
+        return refData.data.map((item) => item[refData.valueField]);
+      }
+    } else if (questionToBeCopied.choices) {
+      return questionToBeCopied.choices?.map((item) =>
+        typeof item === 'object' ? item.value : item
+      );
+    }
+    return question.choices?.map((item) =>
+      typeof item === 'object' ? item.value : item
+    );
+  };
   /** Generate data for one field */
   const _generateFieldData = async (
     questionStructure: any,
     actions: any
   ): Promise<any> => {
     const type = questionStructure.inputType ?? questionStructure.type;
+    let questionChoices = [];
+    if (questionStructure.referenceData) {
+      const refData = await ReferenceData.findOne({
+        _id: questionStructure.referenceData,
+      });
+      if (refData) {
+        const refDataChoices = refData.data.map(
+          (item) => item[refData.valueField]
+        );
+        questionChoices = refDataChoices;
+      }
+    } else if (questionStructure.choicesFromQuestion) {
+      questionChoices = await _getChoicesFromQuestion(
+        questionStructure.choicesFromQuestion
+      );
+    } else if (questionStructure.choices) {
+      questionChoices = questionStructure.choices?.map((item) =>
+        typeof item === 'object' ? item.value : item
+      );
+    }
     switch (type) {
       case 'text':
         return faker.lorem.sentence();
@@ -93,32 +133,26 @@ export const generateData = async (fields: any, form: any) => {
       case 'dropdown':
         // If the choices are set with values != texts, we only want the values
         // If the choices are set with values == texts, choices is an array of strings
-        const questionSingleChoices = questionStructure.choices.map((item) =>
-          typeof item === 'object' ? item.value : item
-        );
-        return questionSingleChoices[
+        return questionChoices[
           faker.datatype.number({
             min: 0,
-            max: questionSingleChoices.length - 1,
+            max: questionChoices.length - 1,
           })
         ];
       case 'tagbox':
       case 'checkbox':
         let choices = [];
-        const questionMultipleChoices = questionStructure.choices.map((item) =>
-          typeof item === 'object' ? item.value : item
-        );
-        questionMultipleChoices.forEach((choice: any) => {
+        questionChoices.forEach((choice: any) => {
           if (faker.datatype.boolean()) {
             choices.push(choice);
           }
         });
         if (choices.length === 0) {
           choices.push(
-            questionMultipleChoices[
+            questionChoices[
               faker.datatype.number({
                 min: 0,
-                max: questionMultipleChoices.length - 1,
+                max: questionChoices.length - 1,
               })
             ]
           );
@@ -146,24 +180,28 @@ export const generateData = async (fields: any, form: any) => {
         return matrixItems;
       case 'matrixdropdown':
         let matrixDropdownItems = {};
-        const questionChoices1 = questionStructure.choices.map((item) =>
-          typeof item === 'object' ? item.value : item
-        );
         questionStructure.rows.forEach((row: any) => {
           matrixDropdownItems[row.value] = {};
-          questionStructure.columns.forEach((column: any) => {
-            const matrixDropdownChoices = column.choices?.map((item) =>
-              typeof item === 'object' ? item.value : item
-            );
+          questionStructure.columns.forEach(async (column: any) => {
+            let matrixDropdownChoices = [];
+            if (column.choicesFromQuestion) {
+              matrixDropdownChoices = await _getChoicesFromQuestion(
+                column.choicesFromQuestion
+              );
+            } else {
+              matrixDropdownChoices = column.choices?.map((item) =>
+                typeof item === 'object' ? item.value : item
+              );
+            }
             // If choices are set for the column, use them, otherwise use the choices set for the question
-            const columnChoices = matrixDropdownChoices ?? questionChoices1;
+            const columnChoices = matrixDropdownChoices ?? questionChoices;
             switch (column.cellType) {
               case null:
               case undefined: // Undefined(default) is a dropdown which always uses the question choices
-                matrixDropdownItems[row.value][column.name] = questionChoices1[
+                matrixDropdownItems[row.value][column.name] = questionChoices[
                   faker.datatype.number({
                     min: 0,
-                    max: questionChoices1.length - 1,
+                    max: questionChoices.length - 1,
                   })
                 ].map((item) => (typeof item === 'object' ? item.value : item));
                 break;
@@ -220,25 +258,29 @@ export const generateData = async (fields: any, form: any) => {
         return matrixDropdownItems;
       case 'matrixdynamic':
         let matrixDynamicItems = [];
-        const questionChoices2 = questionStructure.choices.map((item) =>
-          typeof item === 'object' ? item.value : item
-        );
         // Since we don't know the number of rows, we'll generate a random number of rows between 1 and 5
         for (let i = 0; i < faker.datatype.number({ min: 1, max: 5 }); i++) {
           let matrixDynamicItem = {};
-          questionStructure.columns.forEach((column: any) => {
-            const matrixDynamicChoices = column.choices?.map((item) =>
-              typeof item === 'object' ? item.value : item
-            );
-            const columnChoices = matrixDynamicChoices ?? questionChoices2;
+          questionStructure.columns.forEach(async (column: any) => {
+            let matrixDynamicChoices = [];
+            if (column.choicesFromQuestion) {
+              matrixDynamicChoices = await _getChoicesFromQuestion(
+                column.choicesFromQuestion
+              );
+            } else {
+              matrixDynamicChoices = column.choices?.map((item) =>
+                typeof item === 'object' ? item.value : item
+              );
+            }
+            const columnChoices = matrixDynamicChoices ?? questionChoices;
             switch (column.cellType) {
               case null:
               case undefined:
                 matrixDynamicItem[column.name] =
-                  questionChoices2[
+                  questionChoices[
                     faker.datatype.number({
                       min: 0,
-                      max: questionChoices2.length - 1,
+                      max: questionChoices.length - 1,
                     })
                   ];
                 break;
@@ -473,6 +515,5 @@ export const generateData = async (fields: any, form: any) => {
       }
     })
   );
-  console.log(JSON.stringify(data, null, 2));
   return data;
 };
