@@ -40,6 +40,7 @@ interface FormDocument extends Document {
     padding: number;
   };
   importField: string;
+  allowUploadRecords: boolean;
   graphQLTypeName?: string;
   createdAt?: Date;
   modifiedAt?: Date;
@@ -90,6 +91,7 @@ const schema = new Schema<Form>(
       type: String,
       default: DEFAULT_IMPORT_FIELD.incID,
     },
+    allowUploadRecords: Boolean,
     graphQLTypeName: String,
     structure: mongoose.Schema.Types.Mixed,
     core: Boolean,
