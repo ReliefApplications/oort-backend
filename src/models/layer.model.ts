@@ -163,6 +163,11 @@ const layerSchema = new Schema(
       description: String,
       popupElements: [mongoose.Schema.Types.Mixed],
       fieldsInfo: [mongoose.Schema.Types.Mixed],
+      navigateToPage: Boolean,
+      navigateSettings: {
+        pageUrl: String,
+        field: String,
+      },
     },
     datasource: {
       resource: {
