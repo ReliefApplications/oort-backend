@@ -16,7 +16,7 @@ import { Types } from 'mongoose';
 import { getUploadColumns, loadRow, uploadFile } from '@utils/files';
 import { getNextId, getOwnership } from '@utils/form';
 import i18next from 'i18next';
-import get from 'lodash/get';
+import { get, isString } from 'lodash';
 import { logger } from '@services/logger.service';
 import { accessibleBy } from '@casl/mongoose';
 import { insertRecords as insertRecordsPulljob } from '@server/pullJobScheduler';
@@ -123,17 +123,15 @@ async function insertRecords(
     const versionsToCreate: Version[] = [];
     const recordsToCreate: Record[] = [];
     const recordToUpdate: Record[] = [];
-    const surveyPages = JSON.parse(form.structure).pages;
 
     // Get resource questions that are linked to a unique field
     const linkedResourceQuestion = (
       await Promise.all(
         columns.map(async (question, index) => {
-          const { name } = question;
           // Extract all the question info from the form structure
-          const fullQuestion = surveyPages
-            .flatMap((page) => page.elements)
-            .find((element) => element.name === name);
+          const fullQuestion = form.fields.find(
+            (field) => field.name === question.name
+          );
 
           if (fullQuestion && fullQuestion.type === 'resource') {
             // Verify if the question field is equal to any form import field of the resource
@@ -143,6 +141,11 @@ async function insertRecords(
                 // Saving the associated import field name and the column index to retrieve the corresponding data
                 question.importField = resForm.importField;
                 question.excelColumnIndex = index;
+                // Get the question type to avoid formatting issues with numeric values
+                const resQuestion = resForm.fields.find(
+                  (field) => field.name === fullQuestion.displayField
+                );
+                question.type = resQuestion?.type;
                 return question;
               }
             }
@@ -151,8 +154,8 @@ async function insertRecords(
       )
     ).filter(Boolean); // Remove undefined values
 
-    const promises = [];
-    worksheet.eachRow({ includeEmpty: false }, function (row) {
+    for (let i = 1; i <= worksheet.rowCount; i++) {
+      const row = worksheet.getRow(i);
       const { data, positionAttributes } = loadRow(columns, row.values);
       const oldRecord = oldRecords.find((rec) =>
         importField === DEFAULT_IMPORT_FIELD.incID
@@ -161,13 +164,16 @@ async function insertRecords(
       );
 
       // Change the import field value to the object ID if the record exists
-      promises.push(
+      await Promise.all(
         linkedResourceQuestion.map(async (field) => {
+          if (!isString(data[field.name]) && field.type !== 'numeric') {
+            data[field.name] = JSON.stringify(data[field.name]);
+          }
           const record = await Record.findOne({
             [`data.${field.importField}`]: data[field.name],
           });
           if (record) {
-            data[field.name] = record._id;
+            data[field.name] = record._id.toString();
           }
         })
       );
@@ -226,8 +232,7 @@ async function insertRecords(
           })
         );
       }
-    });
-    await Promise.all(promises);
+    }
 
     // Set the incrementalIDs of new records
     for (let i = 0; i < recordsToCreate.length; i += 1) {
