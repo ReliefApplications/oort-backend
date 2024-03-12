@@ -8,10 +8,26 @@ import { Record } from './record.model';
 import { deleteFolder } from '@utils/files/deleteFolder';
 import { logger } from '@services/logger.service';
 
+/** The type of the shape of the incrementalId field */
+export type DefaultIncrementalIdShapeT = {
+  shape: string;
+  padding: number;
+};
+
+/** The default shape of the incrementalId field */
+export const DEFAULT_INCREMENTAL_ID_SHAPE = {
+  shape: '{year}-{formInitial}{incremental}',
+  padding: 8,
+};
+
 /** Resource documents interface definition */
 export interface Resource extends Document {
   kind: 'Resource';
   name: string;
+  idShape?: {
+    shape: string;
+    padding: number;
+  };
   createdAt: Date;
   permissions: {
     canSee?: any[];
@@ -40,6 +56,16 @@ const resourceSchema = new Schema<Resource>(
       type: String,
       required: true,
       unique: true,
+    },
+    idShape: {
+      shape: {
+        type: String,
+        default: DEFAULT_INCREMENTAL_ID_SHAPE.shape,
+      },
+      padding: {
+        type: Number,
+        default: DEFAULT_INCREMENTAL_ID_SHAPE.padding,
+      },
     },
     permissions: {
       canSee: [

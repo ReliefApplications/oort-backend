@@ -12,7 +12,7 @@ import { deleteFolder } from '@utils/files/deleteFolder';
 import { logger } from '@services/logger.service';
 
 /** The default shape of the incrementalId field */
-export const DEFAULT_INCREMENTAL_ID_SHAPE = {
+const DEFAULT_INCREMENTAL_ID_SHAPE = {
   shape: '{year}-{formInitial}{incremental}',
   padding: 8,
 };

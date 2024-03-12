@@ -1,9 +1,10 @@
 import {
   Record,
-  Form,
   DEFAULT_INCREMENTAL_ID_SHAPE,
   ID_SHAPE_VARIABLES,
   Resource,
+  Form,
+  DefaultIncrementalIdShapeT,
 } from '@models';
 import i18next from 'i18next';
 import { isEqual } from 'lodash';
@@ -33,7 +34,7 @@ const TEMPLATES = {
  * @returns The incremental ID.
  */
 export const buildIncrementalId = (
-  idShape: Form['idShape'],
+  idShape: Resource['idShape'],
   variables: { [key in ID_SHAPE_VARIABLES]: string }
 ) => {
   const { shape, padding } = idShape;
@@ -73,25 +74,23 @@ export const buildIncrementalId = (
 /**
  * Updates all incremental IDs of a form
  *
- * @param form Id or form object.
+ * @param resource Id or resource object.
  * @param newShape New shape of the incremental ID.
  * @param force Whether to force the update even if the shape is the same.
  */
 export const updateIncrementalIds = async (
-  form: Form | string | Types.ObjectId,
-  newShape: Form['idShape'],
+  resource: Resource | string | Types.ObjectId,
+  newShape: Resource['idShape'],
   force = false
 ) => {
   // If form is a string, fetches the form object
-  if (!(form instanceof Form)) {
-    form = await Form.findOne({
-      $or: [{ _id: form }, { resource: form }],
+  if (!(resource instanceof Resource)) {
+    resource = await Resource.findOne({
+      _id: resource,
     });
   }
 
-  const { idShape: oldShape } = form as Form;
-
-  const resource = await Resource.findById((form as Form).resource);
+  const { idShape: oldShape } = resource as Resource;
 
   // If the shape is the same, do nothing
   if (isEqual(oldShape, newShape) && !force) {
@@ -127,8 +126,8 @@ export const updateIncrementalIds = async (
   for (let i = 0; i < totalRecords; i += BATCH_SIZE) {
     logger.log({
       level: 'info',
-      message: `Updating incremental ids record from form "${
-        (form as Form).name
+      message: `Updating incremental ids record from resource "${
+        (resource as Resource).name
       }": [${i}/${totalRecords}]...`,
     });
 
@@ -157,8 +156,9 @@ export const updateIncrementalIds = async (
       const newIncrementalId = buildIncrementalId(newShape, {
         incremental: inc.toString(),
         year: createdAt.getFullYear().toString(),
-        formInitial: (form as Form).name?.charAt(0).toUpperCase() || '',
-        formName: (form as Form).name?.toUpperCase() || '',
+        formInitial:
+          (records[r] as Record).form.name?.charAt(0).toUpperCase() || '',
+        formName: (records[r] as Record).form.name?.toUpperCase() || '',
       });
 
       records[r].incrementalId = newIncrementalId;
@@ -182,14 +182,20 @@ export const updateIncrementalIds = async (
  */
 export const getNextId = async (structureId: string | Form) => {
   // Gets the form name and id shape
-  const { name, idShape: formIDShape } =
-    typeof structureId === 'string'
-      ? await Form.findOne({
-          $or: [{ _id: structureId }, { resource: structureId }],
-        }).select('name idShape')
-      : structureId;
-
-  const idShape = formIDShape || DEFAULT_INCREMENTAL_ID_SHAPE;
+  let name: string = null;
+  let idShape: DefaultIncrementalIdShapeT = DEFAULT_INCREMENTAL_ID_SHAPE;
+  let resource: Resource = null;
+  if (typeof structureId === 'string') {
+    const form = await Form.findOne({
+      $or: [{ _id: structureId }, { resource: structureId }],
+    }).select('name resource');
+    name = form.name;
+    idShape = form.resource.idShape;
+  } else {
+    resource = await Resource.findOne({ _id: structureId.resource });
+    name = structureId.name;
+    idShape = resource.idShape;
+  }
 
   /** Gets the last id added to the form */
   const getLastID = async () => {
@@ -217,7 +223,7 @@ export const getNextId = async (structureId: string | Form) => {
       // If the last record has no incID, it means it was created before the incID field was added
       // to the Record model. In this case, we need to update the incID of all records
       // to avoid duplicates.
-      await updateIncrementalIds(structureId, idShape, true);
+      await updateIncrementalIds(resource, idShape, true);
 
       // Re-fetches the last record
       lastRecord = await Record.findOne(filters)
