@@ -134,7 +134,7 @@ export const updateIncrementalIds = async (
     const records = await Record.find({ resource })
       .skip(i)
       .limit(BATCH_SIZE)
-      .select('incID createdAt');
+      .select('incID createdAt _form');
 
     for (let r = 0; r < records.length; r++) {
       const { createdAt } = records[r];
@@ -157,8 +157,8 @@ export const updateIncrementalIds = async (
         incremental: inc.toString(),
         year: createdAt.getFullYear().toString(),
         formInitial:
-          (records[r] as Record).form.name?.charAt(0).toUpperCase() || '',
-        formName: (records[r] as Record).form.name?.toUpperCase() || '',
+          (records[r] as Record)._form.name?.charAt(0).toUpperCase() || '',
+        formName: (records[r] as Record)._form.name?.toUpperCase() || '',
       });
 
       records[r].incrementalId = newIncrementalId;
@@ -189,6 +189,7 @@ export const getNextId = async (structureId: string | Form) => {
     const form = await Form.findOne({
       $or: [{ _id: structureId }, { resource: structureId }],
     }).select('name resource');
+    resource = await Resource.findOne({ _id: form.resource });
     name = form.name;
     idShape = form.resource.idShape;
   } else {

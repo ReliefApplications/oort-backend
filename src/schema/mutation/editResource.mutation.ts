@@ -586,7 +586,8 @@ export default {
         (!args.fields &&
           !args.permissions &&
           !args.calculatedField &&
-          !args.fieldsPermissions)
+          !args.fieldsPermissions &&
+          !args.idShape)
       ) {
         throw new GraphQLError(
           context.i18next.t('mutations.resource.edit.errors.invalidArguments')
@@ -787,9 +788,9 @@ export default {
 
       if (args.idShape) {
         if (update.$set) {
-          Object.assign(update.$set, args.idShape);
+          Object.assign(update.$set, { ['idShape']: args.idShape });
         } else {
-          Object.assign(update, { $set: args.idShape });
+          Object.assign(update, { $set: { ['idShape']: args.idShape } });
         }
       }
 
