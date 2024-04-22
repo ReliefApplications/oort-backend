@@ -232,6 +232,9 @@ export default {
             : {}),
         };
         update.idShape = idShape;
+        // Save the logEvents
+        update.logEvents = structure.logEvents || false;
+
         const fields = [];
         for (const page of structure.pages) {
           await extractFields(page, fields, form.core);

@@ -3,6 +3,7 @@
  */
 module.exports = {
   server: {
+    port: 'SERVER_PORT',
     url: 'SERVER_URL',
     allowedOrigins: 'SERVER_ALLOWED_ORIGINS',
   },
@@ -38,6 +39,7 @@ module.exports = {
     clientId: 'AUTH_CLIENT_ID',
     tenantId: 'AUTH_TENANT_ID',
     allowedIssuers: 'AUTH_ALLOWED_ISSUERS',
+    audience: 'AUTH_AUDIENCE',
   },
   encryption: {
     key: 'ENCRYPTION_KEY',
@@ -60,5 +62,8 @@ module.exports = {
     clientId: 'COMMON_SERVICES_CLIENT_ID',
     clientSecret: 'COMMON_SERVICES_CLIENT_SECRET',
     scope: 'COMMON_SERVICES_SCOPE',
+  },
+  mixpanel: {
+    token: 'MIXPANEL_TOKEN',
   },
 };

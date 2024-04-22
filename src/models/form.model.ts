@@ -54,6 +54,7 @@ interface FormDocument extends Document {
   versions?: any[];
   channel?: any;
   layouts?: any;
+  logEvents?: boolean;
 }
 
 /** Interface of form */
@@ -82,6 +83,7 @@ const schema = new Schema<Form>(
     graphQLTypeName: String,
     structure: mongoose.Schema.Types.Mixed,
     core: Boolean,
+    logEvents: Boolean,
     status: {
       type: String,
       enum: Object.values(status),
