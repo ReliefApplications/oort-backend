@@ -19,6 +19,7 @@ import { logger } from '@services/logger.service';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
+import { recordEvent } from '@server/mixpanel';
 
 /** Interface for records with an error */
 interface RecordWithError extends Record {
@@ -29,7 +30,7 @@ interface RecordWithError extends Record {
 }
 
 /** Arguments for the editRecords mutation */
-type EditRecordsArgs = {
+export type EditRecordsArgs = {
   ids: string[] | Types.ObjectId[];
   data: any;
   template?: string | Types.ObjectId;
@@ -139,6 +140,20 @@ export default {
               }
             );
             await version.save();
+
+            // Log events
+            if (record.form.logEvents) {
+              recordEvent(
+                'Edit record',
+                record.form,
+                newRecord,
+                user,
+                update,
+                record,
+                'Classic record edition. Record edited along with many others'
+              );
+            }
+
             records.push(newRecord);
           }
         }

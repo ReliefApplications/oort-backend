@@ -12,9 +12,10 @@ import { logger } from '@services/logger.service';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
+import { recordEvent } from '@server/mixpanel';
 
 /** Arguments for the convertRecord mutation */
-type ConvertRecordArgs = {
+export type ConvertRecordArgs = {
   id: string | Types.ObjectId;
   form: string | Types.ObjectId;
   copyRecord: boolean;
@@ -90,13 +91,48 @@ export default {
             name: targetForm.name,
           },
         });
-        return await targetRecord.save();
+
+        const record = await targetRecord.save();
+
+        // Log event
+        if (oldForm.logEvents || targetForm.logEvents) {
+          recordEvent(
+            'Convert record',
+            targetForm,
+            record,
+            user,
+            args,
+            oldRecord,
+            'Convert record coping record to the target form (record in the old form still exists)',
+            oldForm
+          );
+        }
+
+        return record;
       } else {
         const update: any = {
           form: args.form,
           //modifiedAt: new Date(),
         };
-        return await Record.findByIdAndUpdate(args.id, update, { new: true });
+        const record = await Record.findByIdAndUpdate(args.id, update, {
+          new: true,
+        });
+
+        // Log event
+        if (oldForm.logEvents || targetForm.logEvents) {
+          recordEvent(
+            'Convert record',
+            targetForm,
+            record,
+            user,
+            args,
+            oldRecord,
+            'Convert record without copy record (overwriting record)',
+            oldForm
+          );
+        }
+
+        return record;
       }
     } catch (err) {
       logger.error(err.message, { stack: err.stack });

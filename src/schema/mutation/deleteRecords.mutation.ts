@@ -12,9 +12,10 @@ import { logger } from '@services/logger.service';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
+import { recordEvent } from '@server/mixpanel';
 
 /** Arguments for the deleteRecords mutation */
-type DeleteRecordsArgs = {
+export type DeleteRecordsArgs = {
   ids: string[] | Types.ObjectId[];
   hardDelete?: boolean;
 };
@@ -57,6 +58,22 @@ export default {
         const result = await Record.deleteMany({
           _id: { $in: toDelete.map((x) => x._id) },
         });
+
+        // Log events
+        for (const record of toDelete) {
+          if (record.form.logEvents) {
+            recordEvent(
+              'Delete record',
+              record.form,
+              record,
+              user,
+              args,
+              null,
+              'Record hard deleted. Record deleted along with many others'
+            );
+          }
+        }
+
         return result.deletedCount;
       } else {
         const result = await Record.updateMany(
@@ -66,6 +83,22 @@ export default {
           },
           { new: true }
         );
+
+        // Log events
+        for (const record of toDelete) {
+          if (record.form.logEvents) {
+            recordEvent(
+              'Delete record',
+              record.form,
+              record,
+              user,
+              args,
+              null,
+              'Record archived (soft deleted). Record archived along with many others'
+            );
+          }
+        }
+
         return result.modifiedCount;
       }
     } catch (err) {

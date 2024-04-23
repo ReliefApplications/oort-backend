@@ -36,6 +36,7 @@ import checkDefaultFields from '@utils/form/checkDefaultFields';
 import { preserveChildProperties } from '@utils/form/preserveChildProperties';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Context } from '@server/apollo/context';
+import { editFormEvent } from '@server/mixpanel';
 
 /**
  * List of keys of the structure's object which we want to inherit to the children forms when they are modified on the core form
@@ -77,7 +78,7 @@ type PermissionChange = {
 };
 
 /** Arguments for the editForm mutation */
-type EditFormArgs = {
+export type EditFormArgs = {
   id: string | mongoose.Types.ObjectId;
   structure?: any;
   status?: StatusType;
@@ -554,6 +555,11 @@ export default {
 
       if (update.idShape) {
         await updateIncrementalIds(form, update.idShape);
+      }
+
+      // Log event
+      if (form.logEvents) {
+        editFormEvent(form, args, user);
       }
 
       // Return updated form

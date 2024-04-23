@@ -10,9 +10,10 @@ import { logger } from '@services/logger.service';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
+import { recordEvent } from '@server/mixpanel';
 
 /** Arguments for the addRecord mutation */
-type AddRecordArgs = {
+export type AddRecordArgs = {
   form?: string | Types.ObjectId;
   data: any;
 };
@@ -133,6 +134,12 @@ export default {
         publisher.publish(channel.id, { notification });
       }
       await record.save();
+
+      // Log event
+      if (form.logEvents) {
+        recordEvent('Add record', form, record, user, args);
+      }
+
       return record;
     } catch (err) {
       logger.error(err.message, { stack: err.stack });

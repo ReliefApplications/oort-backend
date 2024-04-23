@@ -11,9 +11,10 @@ import { logger } from '@services/logger.service';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
+import { recordEvent } from '@server/mixpanel';
 
 /** Arguments for the deleteRecord mutation */
-type DeleteRecordArgs = {
+export type DeleteRecordArgs = {
   id: string | Types.ObjectId;
   hardDelete?: boolean;
 };
@@ -47,13 +48,43 @@ export default {
 
       // Delete the record
       if (args.hardDelete) {
-        return await Record.findByIdAndDelete(record._id);
+        const deletion = await Record.findByIdAndDelete(record._id);
+
+        // Log event
+        if (form.logEvents) {
+          recordEvent(
+            'Delete record',
+            form,
+            record,
+            user,
+            args,
+            null,
+            'Record hard deleted'
+          );
+        }
+
+        return deletion;
       } else {
-        return await Record.findByIdAndUpdate(
+        const deletion = await Record.findByIdAndUpdate(
           record._id,
           { archived: true },
           { new: true }
         );
+
+        // Log event
+        if (form.logEvents) {
+          recordEvent(
+            'Delete record',
+            form,
+            record,
+            user,
+            args,
+            null,
+            'Record archived (soft deleted)'
+          );
+        }
+
+        return deletion;
       }
     } catch (err) {
       logger.error(err.message, { stack: err.stack });

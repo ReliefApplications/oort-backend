@@ -65,5 +65,6 @@ module.exports = {
   },
   mixpanel: {
     token: 'MIXPANEL_TOKEN',
+    host: 'MIXPANEL_HOST',
   },
 };
