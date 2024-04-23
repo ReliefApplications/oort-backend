@@ -1,5 +1,5 @@
 import config from 'config';
-import { Form, Record } from '@models';
+import { Form, Record, RecordHistoryMeta } from '@models';
 import { UserWithAbility } from './apollo/context';
 import { EditFormArgs } from '@schema/mutation/editForm.mutation';
 import { EditRecordArgs } from '@schema/mutation/editRecord.mutation';
@@ -35,7 +35,7 @@ export const loginEvent = async (user: UserWithAbility) => {
   if (mixpanel) {
     mixpanel.track('Login', {
       distinct_id: user.id ?? user._id,
-      user: user,
+      user,
     });
   }
 };
@@ -77,13 +77,13 @@ export const recordEvent = async (
   if (mixpanel) {
     mixpanel.track(type, {
       distinct_id: user.id ?? user._id,
-      user: user,
-      parentForm: form,
-      editionArguments: args,
-      record: record,
-      ...(oldRecord && { recordOldData: oldRecord }),
-      ...(oldForm && { oldForm: oldForm }),
-      ...(details && { details: details }),
+      user,
+      parent_form: form,
+      edition_arguments: args,
+      record,
+      ...(oldRecord && { record_old_data: oldRecord }),
+      ...(oldForm && { oldForm }),
+      ...(details && { details }),
     });
   }
 };
@@ -105,11 +105,40 @@ export const editFormEvent = async (
   if (mixpanel) {
     mixpanel.track('Edit form', {
       distinct_id: user.id ?? user._id,
-      user: user,
-      formId: form.id,
-      formOldData: form,
-      editionArguments: args,
-      ...(details && { details: details }),
+      user,
+      form_id: form.id,
+      form_old_data: form,
+      edition_arguments: args,
+      ...(details && { details }),
+    });
+  }
+};
+
+/**
+ * Register download file from from events.
+ *
+ * @param form form object without the updated data
+ * @param fileName name of the file downloaded
+ * @param user user responsible for the action
+ * @param recordMeta record metadate export details
+ * @param details extra details about the event to be register
+ */
+export const downloadFormFileEvent = async (
+  form: Form,
+  fileName: string,
+  user: UserWithAbility,
+  recordMeta?: RecordHistoryMeta,
+  details?: string
+) => {
+  if (mixpanel) {
+    mixpanel.track('Download file from form', {
+      distinct_id: user.id ?? user._id,
+      user,
+      form_id: form.id,
+      form: form,
+      file_name: fileName,
+      ...(recordMeta && { record_metadate: recordMeta }),
+      ...(details && { details }),
     });
   }
 };

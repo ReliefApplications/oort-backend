@@ -31,6 +31,7 @@ import { formatFilename } from '@utils/files/format.helper';
 import { sendEmail } from '@utils/email';
 import exportBatch from '@utils/files/exportBatch';
 import { accessibleBy } from '@casl/mongoose';
+import { downloadFormFileEvent } from '@server/mixpanel';
 
 /**
  * Exports files in csv or xlsx format, excepted if specified otherwise
@@ -117,7 +118,19 @@ router.get('/form/records/:id', async (req, res) => {
       );
       // If the export is only of a template, build and export it, else build and export a file with the records
       if (req.query.template) {
-        return await templateBuilder(res, form.name, columns);
+        const file = await templateBuilder(res, form.name, columns);
+        // Log event
+        if (form.logEvents) {
+          const user = req.context.user;
+          downloadFormFileEvent(
+            form,
+            form.name,
+            user,
+            null,
+            'Export of the template of the form to upload new records.'
+          );
+        }
+        return file;
       } else {
         const records = await Record.find(filter);
         const rows = await getRows(
@@ -131,7 +144,19 @@ router.get('/form/records/:id', async (req, res) => {
         });
         const type = (req.query ? req.query.type : 'xlsx').toString();
         const filename = formatFilename(form.name);
-        return await fileBuilder(res, filename, columns, rows, type);
+        const file = await fileBuilder(res, filename, columns, rows, type);
+        // Log event
+        if (form.logEvents) {
+          const user = req.context.user;
+          downloadFormFileEvent(
+            form,
+            filename,
+            user,
+            null,
+            'Export of the records of the form'
+          );
+        }
+        return file;
       }
     } else {
       return res.status(404).send(i18next.t('common.errors.dataNotFound'));
@@ -259,7 +284,19 @@ router.get('/form/records/:id/history', async (req, res) => {
         dateLocale,
         type,
       };
-      return await historyFileBuilder(res, history, meta, options);
+      const file = await historyFileBuilder(res, history, meta, options);
+      // Log event
+      if (form.logEvents) {
+        const user = req.context.user;
+        downloadFormFileEvent(
+          form,
+          'Record history ' + meta.record,
+          user,
+          meta,
+          'Export versions of the record'
+        );
+      }
+      return file;
     } else {
       return res.status(404).send(req.t('common.errors.dataNotFound'));
     }
@@ -549,6 +586,17 @@ router.get('/file/:form/:blob/:record/:field', async (req, res) => {
       const path = `files/${sanitize(req.params.blob)}`;
       await downloadFile('forms', blobName, path);
       res.download(path, () => {
+        // Log event
+        if (form.logEvents) {
+          const user = req.context.user;
+          downloadFormFileEvent(
+            form,
+            blobName,
+            user,
+            null,
+            'Export another type of file from blob storage. Path: ' + path
+          );
+        }
         fs.unlink(path, () => {
           logger.info('file deleted');
         });
