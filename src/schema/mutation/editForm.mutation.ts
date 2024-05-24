@@ -27,6 +27,7 @@ import { logger } from '@services/logger.service';
 import checkDefaultFields from '@utils/form/checkDefaultFields';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Context } from '@server/apollo/context';
+import { onUpdateFieldName } from '@utils/form/onUpdateFieldName';
 
 /**
  * List of keys of the structure's object which we want to inherit to the children forms when they are modified on the core form
@@ -332,6 +333,7 @@ export default {
                     // Update structure
                     const newStructure = JSON.parse(template.structure); // Get the inheriting form's structure
                     replaceField(
+                      field.oid,
                       field.name,
                       newStructure,
                       structure,
@@ -426,7 +428,7 @@ export default {
                   if (!field.generated) {
                     // Remove from structure
                     const templateStructure = JSON.parse(template.structure);
-                    removeField(templateStructure, field.name);
+                    removeField(templateStructure, field.oid, field.name);
                     template.structure = JSON.stringify(templateStructure);
                   }
                 }
@@ -442,7 +444,12 @@ export default {
                   if (!field.generated) {
                     // Add to structure
                     const templateStructure = JSON.parse(template.structure);
-                    addField(templateStructure, field.name, structure);
+                    addField(
+                      templateStructure,
+                      field.oid,
+                      field.name,
+                      structure
+                    );
                     template.structure = JSON.stringify(templateStructure);
                   }
                 }
@@ -529,6 +536,8 @@ export default {
         new: true,
       });
 
+      // Check if any field name was updated to also update records and aggregation/layouts
+      await onUpdateFieldName(form, update.fields);
       // Return updated form
       return resForm;
     } catch (err) {

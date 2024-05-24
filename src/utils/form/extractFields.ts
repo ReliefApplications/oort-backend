@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql/error';
 import { getFieldType } from './getFieldType';
 import i18next from 'i18next';
 import { validateGraphQLFieldName } from '@utils/validators';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Push in fields array all detected fields in the json structure of object.
@@ -30,6 +31,7 @@ export const extractFields = async (object, fields, core): Promise<void> => {
         const field = {
           type,
           name: element.valueName,
+          oid: uuidv4(),
           unique: !!element.unique,
           isRequired: !!element.isRequired,
           showOnXlsxTemplate: !element.omitOnXlsxTemplate,
@@ -37,6 +39,9 @@ export const extractFields = async (object, fields, core): Promise<void> => {
           isCore: core,
           ...(element.hasOwnProperty('defaultValue')
             ? { defaultValue: element.defaultValue }
+            : {}),
+          ...(element.oldName && element.oldName !== element.valueName
+            ? { oldName: element.oldName }
             : {}),
         };
         // ** Resource **
@@ -217,8 +222,12 @@ export const extractFields = async (object, fields, core): Promise<void> => {
           fields.push({
             type: 'text',
             name: `${element.valueName}_comment`,
+            oid: uuidv4(),
             isCore: core,
             generated: true,
+            ...(element.oldName && element.oldName !== element.valueName
+              ? { oldName: element.oldName }
+              : {}),
           });
         }
         // ** Users **

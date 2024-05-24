@@ -3,11 +3,13 @@ import mongoose from 'mongoose';
 import { sortBy } from 'lodash';
 import extendAbilityForRecords from '@security/extendAbilityForRecords';
 import { accessibleBy } from '@casl/mongoose';
+import { v4 as uuidv4 } from 'uuid';
 
 export type Metadata = {
   automated?: boolean;
   name: string;
   type?: string;
+  oid?: string;
   editor?: string;
   filter?: { defaultOperator?: string; operators: string[] };
   canSee?: boolean;
@@ -254,6 +256,7 @@ export const getMetaData = async (
     const fieldMeta: Metadata = {
       name: field.name,
       type: field.type,
+      oid: uuidv4(),
       editor: null,
       usedIn: forms
         .filter((form) => form.fields.find((x) => x.name === field.name))
