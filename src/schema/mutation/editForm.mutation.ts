@@ -532,12 +532,42 @@ export default {
         update.$push = { versions: version._id };
       }
 
-      const resForm = await Form.findByIdAndUpdate(args.id, update, {
+      let resForm = await Form.findByIdAndUpdate(args.id, update, {
         new: true,
       });
 
       // Check if any field name was updated to also update records and aggregation/layouts
-      await onUpdateFieldName(form, update.fields);
+      const updatedFieldName = await onUpdateFieldName(form, update.fields);
+      if (updatedFieldName) {
+        //Remove oldName property from form structure and fields
+        const structure = JSON.parse(update.structure);
+        const fields = update.fields.map((field: any) => {
+          if (field.oldName) {
+            delete field.oldName;
+          }
+          return field;
+        });
+        const pages = structure.pages.map((page: any) => {
+          page.elements = page.elements.map((element: any) => {
+            if (element.oldName) {
+              delete element.oldName;
+            }
+            return element;
+          });
+          return page;
+        });
+        structure.pages = pages;
+        resForm = await Form.findByIdAndUpdate(
+          args.id,
+          {
+            structure: JSON.stringify(structure),
+            fields: fields,
+          },
+          {
+            new: true,
+          }
+        );
+      }
       // Return updated form
       return resForm;
     } catch (err) {

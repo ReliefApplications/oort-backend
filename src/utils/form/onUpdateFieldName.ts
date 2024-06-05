@@ -51,11 +51,12 @@ const updateFilters = (filters: any) => {
  *
  * @param form form updated
  * @param fields list of fields
+ * @returns if updates were made because of field names
  */
 export const onUpdateFieldName = async (
   form: any,
   fields: any[]
-): Promise<void> => {
+): Promise<boolean> => {
   for (const field of fields) {
     if (field.hasOwnProperty('oldName') && field.oldName) {
       oldName = field.oldName;
@@ -102,14 +103,45 @@ export const onUpdateFieldName = async (
                     updated = true;
                   }
                   break;
-                // TODO: stages user, group, label and unwind
                 case 'user':
+                  if (stage.form.field === oldName) {
+                    stage.form.field = newName;
+                    updated = true;
+                  }
                   break;
                 case 'group':
+                  for (const groupBy of stage.form.groupBy) {
+                    if (groupBy.field === oldName) {
+                      groupBy.field = newName;
+                      updated = true;
+                    }
+                    if (groupBy.expression.field === oldName) {
+                      groupBy.expression.field = newName;
+                      updated = true;
+                    }
+                  }
+                  for (const addFields of stage.form.addFields) {
+                    if (addFields.expression.field === oldName) {
+                      addFields.expression.field = newName;
+                      updated = true;
+                    }
+                  }
                   break;
                 case 'label':
+                  if (stage.form.field === oldName) {
+                    stage.form.field = newName;
+                    updated = true;
+                  }
+                  if (stage.form.copyFrom === oldName) {
+                    stage.form.copyFrom = newName;
+                    updated = true;
+                  }
                   break;
                 case 'unwind':
+                  if (stage.form.field === oldName) {
+                    stage.form.field = newName;
+                    updated = true;
+                  }
                   break;
                 default:
                   break;
@@ -175,7 +207,9 @@ export const onUpdateFieldName = async (
         if (updated) {
           await resource.save();
         }
+        return true;
       }
     }
   }
+  return false;
 };
