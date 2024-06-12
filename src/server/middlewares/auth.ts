@@ -59,6 +59,7 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
                 user.firstName = token.given_name;
                 user.lastName = token.family_name;
                 user.name = token.name;
+                user.lastLogin = new Date();
                 user.oid = token.sub;
                 user.deleteAt = undefined; // deactivate the planned deletion
                 user
@@ -77,6 +78,7 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
                   if (!user.lastName) {
                     user.lastName = token.family_name;
                   }
+                  user.lastLogin = new Date();
                   user
                     .save()
                     .then(() => {
@@ -86,7 +88,15 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
                       userAuthCallback(err2, done, token, user);
                     });
                 } else {
-                  userAuthCallback(null, done, token, user);
+                  user.lastLogin = new Date();
+                  user
+                    .save()
+                    .then(() => {
+                      userAuthCallback(null, done, token, user);
+                    })
+                    .catch((err2) => {
+                      userAuthCallback(err2, done, token, user);
+                    });
                 }
               }
             } else {
@@ -97,6 +107,7 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
                 username: token.email,
                 name: token.name,
                 oid: token.sub,
+                lastLogin: new Date(),
                 roles: [],
                 positionAttributes: [],
               });
@@ -171,6 +182,7 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
                 user.firstName = token.given_name;
                 user.lastName = token.family_name;
                 user.name = token.name;
+                user.lastLogin = new Date();
                 user.oid = token.oid;
                 updateUser(user, req).then(() => {
                   user
@@ -191,6 +203,7 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
                     if (!user.lastName) {
                       user.lastName = token.family_name;
                     }
+                    user.lastLogin = new Date();
                     user
                       .save()
                       .then(() => {
@@ -211,6 +224,7 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
                 lastName: token.family_name,
                 username: token.preferred_username,
                 name: token.name,
+                lastLogin: new Date(),
                 oid: token.oid,
                 roles: [],
                 positionAttributes: [],

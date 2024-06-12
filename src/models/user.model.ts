@@ -34,6 +34,7 @@ const userSchema = new Schema(
       type: mongoose.Schema.Types.Mixed,
     },
     deleteAt: { type: Date, expires: 0 }, // Date of when we must remove the user
+    lastLogin: Date,
   },
   {
     timestamps: { createdAt: 'createdAt', updatedAt: 'modifiedAt' },
@@ -56,6 +57,7 @@ export interface User extends Document {
   attributes?: any;
   modifiedAt?: Date;
   deleteAt?: Date;
+  lastLogin?: Date;
 }
 
 userSchema.index(
