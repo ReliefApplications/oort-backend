@@ -9,14 +9,20 @@ import { getQuestionPosition } from './getQuestionPosition';
  * Function by induction.
  *
  * @param structure structure of the form to edit
+ * @param oid unique id of the field to search for
  * @param name name of the field to search for
  * @param template structure of the core template
  */
-export const addField = (structure: any, name: string, template: any): void => {
-  const templateQuestion = getQuestion(template, name);
+export const addField = (
+  structure: any,
+  oid: string,
+  name: string,
+  template: any
+): void => {
+  const templateQuestion = getQuestion(template, oid, name);
   try {
-    const templatePreviousQuestion = getPreviousQuestion(template, name);
-    const templateNextQuestion = getNextQuestion(template, name);
+    const templatePreviousQuestion = getPreviousQuestion(template, oid, name);
+    const templateNextQuestion = getNextQuestion(template, oid);
     if (templatePreviousQuestion) {
       const { parent, index } = getQuestionPosition(
         structure,

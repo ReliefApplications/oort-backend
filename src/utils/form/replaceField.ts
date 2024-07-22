@@ -5,13 +5,15 @@ import { preserveChildProperties } from './preserveChildProperties';
  * Check if the structure is correct and replace the chosen field by the corresponding one in the referenceStructure.
  * Function by induction.
  *
- * @param fieldName name of the field to search for
+ * @param fieldId unique id of the field to search for
+ * @param fieldName name of the field
  * @param editedStructure structure of the form that will be edited
  * @param referenceStructure structure which should be used as a reference to change field value
  * @param prevReferenceStructure structure which represent the previous state of the reference structure
  * @returns {boolean} status of request
  */
 export const replaceField = (
+  fieldId: string,
   fieldName: string,
   editedStructure: any,
   referenceStructure: any,
@@ -22,6 +24,7 @@ export const replaceField = (
     for (const page of editedStructure.pages) {
       if (
         replaceField(
+          fieldId,
           fieldName,
           page,
           referenceStructure,
@@ -37,6 +40,7 @@ export const replaceField = (
         if (element.type === 'panel') {
           if (
             replaceField(
+              fieldId,
               fieldName,
               element,
               referenceStructure,
@@ -45,10 +49,15 @@ export const replaceField = (
           )
             return true;
         } else {
-          if (element.valueName === fieldName) {
-            const referenceField = getQuestion(referenceStructure, fieldName);
+          if (element.oid === fieldId) {
+            const referenceField = getQuestion(
+              referenceStructure,
+              fieldId,
+              fieldName
+            );
             const prevReferenceField = getQuestion(
               prevReferenceStructure,
+              fieldId,
               fieldName
             );
             // If the edited structure's field has different properties than

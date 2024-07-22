@@ -27,6 +27,7 @@ import { logger } from '@services/logger.service';
 import checkDefaultFields from '@utils/form/checkDefaultFields';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Context } from '@server/apollo/context';
+import { onUpdateFieldName } from '@utils/form/onUpdateFieldName';
 
 /**
  * List of keys of the structure's object which we want to inherit to the children forms when they are modified on the core form
@@ -332,6 +333,7 @@ export default {
                     // Update structure
                     const newStructure = JSON.parse(template.structure); // Get the inheriting form's structure
                     replaceField(
+                      field.oid,
                       field.name,
                       newStructure,
                       structure,
@@ -426,7 +428,7 @@ export default {
                   if (!field.generated) {
                     // Remove from structure
                     const templateStructure = JSON.parse(template.structure);
-                    removeField(templateStructure, field.name);
+                    removeField(templateStructure, field.oid, field.name);
                     template.structure = JSON.stringify(templateStructure);
                   }
                 }
@@ -442,7 +444,12 @@ export default {
                   if (!field.generated) {
                     // Add to structure
                     const templateStructure = JSON.parse(template.structure);
-                    addField(templateStructure, field.name, structure);
+                    addField(
+                      templateStructure,
+                      field.oid,
+                      field.name,
+                      structure
+                    );
                     template.structure = JSON.stringify(templateStructure);
                   }
                 }
@@ -525,10 +532,42 @@ export default {
         update.$push = { versions: version._id };
       }
 
-      const resForm = await Form.findByIdAndUpdate(args.id, update, {
+      let resForm = await Form.findByIdAndUpdate(args.id, update, {
         new: true,
       });
 
+      // Check if any field name was updated to also update records and aggregation/layouts
+      const updatedFieldName = await onUpdateFieldName(form, update.fields);
+      if (updatedFieldName) {
+        //Remove oldName property from form structure and fields
+        const structure = JSON.parse(update.structure);
+        const fields = update.fields.map((field: any) => {
+          if (field.oldName) {
+            delete field.oldName;
+          }
+          return field;
+        });
+        const pages = structure.pages.map((page: any) => {
+          page.elements = page.elements.map((element: any) => {
+            if (element.oldName) {
+              delete element.oldName;
+            }
+            return element;
+          });
+          return page;
+        });
+        structure.pages = pages;
+        resForm = await Form.findByIdAndUpdate(
+          args.id,
+          {
+            structure: JSON.stringify(structure),
+            fields: fields,
+          },
+          {
+            new: true,
+          }
+        );
+      }
       // Return updated form
       return resForm;
     } catch (err) {
