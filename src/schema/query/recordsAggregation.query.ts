@@ -407,6 +407,7 @@ export default {
           {
             $addFields: {
               'fields.form': '$_id',
+              'fields.relatedFieldResource': '$resource',
             },
           },
           {
@@ -519,16 +520,16 @@ export default {
           }
           // If we have a field referring to another form with a question targeting our source
           if (!field) {
-            const relatedField = relatedFields.find(
+            const relatedField = relatedFields.filter(
               (x: any) => x.relatedName === fieldName
             );
-            if (relatedField) {
+            if (relatedField.length > 0) {
               pipeline = pipeline.concat([
                 {
                   $lookup: {
                     from: 'records',
                     localField: 'record_id',
-                    foreignField: `data.${relatedField.name}`,
+                    foreignField: `data.${relatedField[0].name}`,
                     as: `data.${fieldName}`,
                   },
                 },
@@ -538,7 +539,10 @@ export default {
                       $filter: {
                         input: `$data.${fieldName}`,
                         cond: {
-                          $eq: ['$$this.form', relatedField.form],
+                          $in: [
+                            '$$this.resource',
+                            relatedField.map((x) => x.relatedFieldResource),
+                          ],
                         },
                       },
                     },
