@@ -5,11 +5,13 @@ import onFamilyTransfer from './onFamilyTransfer';
 import onFamilyUpdated from './onFamilyEdited';
 import onFamilyAdded from './onFamilyAdded';
 import { Record } from '@models';
+import onStructureUpdated from './onStructureUpdated';
 
 /** Whether or not the current environment is Alimentaide */
 const IS_ALIMENTAIDE =
   config.get('server.url') ===
-  'https://alimentaide-973-guyane.oortcloud.tech/api';
+    'https://alimentaide-973-guyane.oortcloud.tech/api' ||
+  config.get('server.url') === 'https://demo.oortcloud.tech/api';
 /** The ID of the structure form */
 const STRUCTURE_FORM_ID = new Types.ObjectId('649ade1ceae9f80d6591886a');
 
@@ -45,6 +47,8 @@ export const setupCustomAlimentaideListeners = <DocType>(
   schema.post('findOneAndUpdate', async function (doc) {
     if (FAMILY_FORM_ID.equals(doc.form)) {
       await onFamilyUpdated(doc);
+    } else if (STRUCTURE_FORM_ID.equals(doc.form)) {
+      await onStructureUpdated(doc);
     }
   });
 
