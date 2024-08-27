@@ -67,7 +67,7 @@ export const scheduleKoboSync = async (form: Form) => {
             // call addRecordsFromKobo.mutation
             try {
               const koboExtractor = new KoboDataExtractor(form);
-              const { added, updated } = await koboExtractor.sync();
+              const { added, updated } = await koboExtractor.fetchEntries();
               const addedRecords = added + updated > 0;
 
               if (addedRecords) {

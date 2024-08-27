@@ -22,7 +22,7 @@ type KoboFormsFromAPIConfigurationArgs = {
 
 /** Define the GraphQLObjectType for a single kobo form */
 const koboFormType = new GraphQLObjectType({
-  name: 'KoboForm',
+  name: 'KoboFormListing',
   fields: {
     title: { type: GraphQLString },
     id: { type: GraphQLString },
@@ -30,7 +30,7 @@ const koboFormType = new GraphQLObjectType({
 });
 
 /**
- * From a Kobotoolbox API configuration, get the name and id from all the forms of the Kobo profile
+ * From a KoboToolbox API configuration, get the name and id from all the forms of the Kobo profile
  * Throw GraphQL error if not logged.
  */
 export default {
@@ -38,11 +38,7 @@ export default {
   args: {
     apiConfiguration: { type: new GraphQLNonNull(GraphQLID) },
   },
-  async resolve(
-    parent,
-    args: KoboFormsFromAPIConfigurationArgs,
-    context: Context
-  ) {
+  async resolve(_, args: KoboFormsFromAPIConfigurationArgs, context: Context) {
     graphQLAuthCheck(context);
     try {
       const apiConfiguration = await ApiConfiguration.findById(
@@ -55,7 +51,7 @@ export default {
           config.get('encryption.key')
         ).toString(CryptoJS.enc.Utf8)
       );
-      // Get Kobotoolbox profile data
+      // Get KoboToolbox profile data
       const response = await axios.get(url, {
         headers: {
           // settings.tokenPrefix MUST be 'Token'
