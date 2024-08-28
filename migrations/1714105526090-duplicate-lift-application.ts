@@ -5,6 +5,7 @@ import {
   Page,
   ReferenceData,
   Resource,
+  Role,
   Step,
   Workflow,
 } from '@models';
@@ -17,12 +18,17 @@ import config from 'config';
 import { pluralize } from 'inflection';
 import { getGraphQLTypeName } from '@utils/validators';
 
+//////////////////////////////////////////////////////////////
 // This migration duplicates the base app for a new country
+//////////////////////////////////////////////////////////////
 //
-// In order to run it, fill the auth and COUNTRY_NAME variables with the appropriate values
-// After that, two steps need to be taken manually:
-//   1. Make any change to the Register a complaint form (e.g. the description) and save it
-//   2. Copy the custom styling of the base app to the new one
+//   - make sure to have the server running connected to the same DB and auth server as LIFT
+//   - allow your IP in the blob firewall, (or just copy the styling manually after running the script)
+//   - fill the auth and COUNTRY_NAME variables with the appropriate values
+//   - run the migration (npm run migrate up)
+//   - make any change to the Register a complaint form (e.g. the description) and save it
+//
+//////////////////////////////////////////////////////////////
 
 /** Use your own bearer token when running this */
 const auth = 'Bearer ...';
@@ -65,9 +71,10 @@ const substitute = (obj: { [key: string]: any } | string) => {
  * Duplicate a resource and its forms from its id
  *
  * @param resource Resource to be duplicated
+ * @param role Role to be applied to the new resource
  * @returns The duplicated resource
  */
-const duplicateResource = async (resource: Resource) => {
+const duplicateResource = async (resource: Resource, role: Role) => {
   // First we duplicate any reference data that the resource uses
   const refDatasToDuplicate = resource.fields
     .filter(
@@ -86,6 +93,11 @@ const duplicateResource = async (resource: Resource) => {
       ...refData.toJSON(),
       name,
       graphQLTypeName: ReferenceData.getGraphQLTypeName(name),
+      permissions: {
+        canSee: [role._id],
+        canUpdate: [role._id],
+        canDelete: [],
+      },
     };
     delete newRefData._id;
 
@@ -154,12 +166,20 @@ const duplicateResource = async (resource: Resource) => {
     const newNameForm = `${COUNTRY_NAME} - ${form.name.split('-')[1].trim()}`;
     const newFormJSON = substitute(form.toJSON());
 
+    const canSee = [...(newFormJSON.permissions.canSee ?? []), role._id];
+    const canUpdate = [...(newFormJSON.permissions.canUpdate ?? []), role._id];
+    const updatedPermissions = {
+      ...form.permissions,
+      canSee,
+      canUpdate,
+    };
+
     const duplicatedForm = new Form({
       name: newNameForm,
       graphQLTypeName: Form.getGraphQLTypeName(newNameForm),
       core: newFormJSON.core,
       status: newFormJSON.status,
-      permissions: newFormJSON.permissions,
+      permissions: updatedPermissions,
       resource: duplicatedResource._id,
       fields: newFormJSON.fields,
       layouts: newFormJSON.layouts,
@@ -209,6 +229,12 @@ export const up = async () => {
 
   await startDatabaseForMigration();
 
+  const newAdminRole = new Role({
+    title: `Admin - ${COUNTRY_NAME}`,
+  });
+
+  await newAdminRole.save();
+
   // Check that the app exists
   const app = await Application.findById(BASE_APP);
   if (!app) {
@@ -232,7 +258,7 @@ export const up = async () => {
 
   // Duplicate each resource
   for (const resource of resources) {
-    const { updateStructure } = await duplicateResource(resource);
+    const { updateStructure } = await duplicateResource(resource, newAdminRole);
     updateFormCallbacks.push(updateStructure);
   }
 
@@ -266,16 +292,14 @@ export const up = async () => {
       .then((r) => {
         resolve(r);
       })
-      .catch((err) => {
+      .catch(() => {
         logger.error('Error duplicating application');
-        logger.error(JSON.stringify(err.response.data));
         resolve(null);
       });
   });
 
   if (res === null) {
-    logger.error('Error duplicating application');
-    return;
+    throw new Error('Error duplicating application');
   }
 
   if (res.data.errors) {

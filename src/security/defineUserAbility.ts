@@ -337,8 +337,8 @@ export default function defineUserAbility(user: User | Client): AppAbility {
     can('read', 'ApiConfiguration');
     can('update', 'ApiConfiguration', filters('canUpdate', user));
     can('delete', 'ApiConfiguration', filters('canDelete', user));
-    // can('read', 'ReferenceData', filters('canSee', user));
-    can('read', 'ReferenceData');
+    can('read', 'ReferenceData', filters('canSee', user));
+    //can('read', 'ReferenceData');
     can('update', 'ReferenceData', filters('canUpdate', user));
     can('delete', 'ReferenceData', filters('canDelete', user));
   }
