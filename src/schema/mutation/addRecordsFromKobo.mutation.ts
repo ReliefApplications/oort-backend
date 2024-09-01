@@ -53,7 +53,7 @@ export default {
       }
 
       const koboExtractor = new KoboDataExtractor(form).setUser(user);
-      const { added, updated } = await koboExtractor.sync();
+      const { added, updated } = await koboExtractor.fetchEntries();
       return added + updated > 0;
     } catch (err) {
       logger.error(err.message, { stack: err.stack });

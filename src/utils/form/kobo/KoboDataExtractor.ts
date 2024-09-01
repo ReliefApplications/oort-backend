@@ -111,16 +111,38 @@ export class KoboDataExtractor {
   }
 
   /** Syncs entries from kobo and save them as records on oort */
-  public async sync() {
+  public async fetchEntries() {
     // Sleep for a while to avoid rate limiting
     await this.fetchSubmissions();
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // console.log(
+    //   `[Fetching Kobo submissions] ${JSON.stringify(this.submissions)}`
+    // );
 
     const newVersions: Version[] = [];
     const newRecords: Record[] = [];
     const updatedRecords: Record[] = [];
 
-    for (const submission of this.submissions) {
+    for (const submissionCpy of this.submissions) {
+      const submission = { ...submissionCpy };
+      const dataKeys = Object.keys(submission);
+      console.log('dataKeys', dataKeys);
+      this.form.fields.forEach((field) => {
+        const key = dataKeys.find((k) =>
+          k.startsWith(field.kobo?.path ?? field.name)
+        );
+
+        if (key) {
+          const newKey = key.replace(
+            field.kobo?.path ?? field.name,
+            field.name
+          );
+          submission[newKey] = submission[key];
+          delete submission[key];
+        }
+      });
+      // console.log(submission);
+
       const koboID = submission['meta/rootUuid'] ?? submission._uuid;
       const oldRecord = submission.record;
       const data = await this.extractData(submission);
@@ -436,7 +458,9 @@ export class KoboDataExtractor {
 
     // Filter submission object, keeping only questions data
     for (const key in { ...initData, ...submission }) {
-      const field = this.form.fields.find((f) => f.name === key);
+      const field = this.form.fields.find(
+        (f) => f.name === key || f.kobo?.path === key
+      );
       if (!field) {
         const value = submission[key];
         await processUnknownDataKey(key, value);

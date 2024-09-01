@@ -1,23 +1,25 @@
+import { snakeCase } from 'lodash';
 import { mapKoboExpression } from './kobo/mapKoboExpression';
-import { commonProperties } from './kobo/commonProperties';
+
+import { validateGraphQLTypeName } from '@utils/validators';
 
 /**
- * Saves all groupElement questions equivalent to the panel question.
- * Groups and panels can be nested.
+ * Returns the a valid name for a kobo form entity
+ *
+ * @param name name to validate
+ * @returns the same name if it's valid, or a snake case version of it
  */
-const groupElements = [];
-/**
- * Saves the repeatGroupElement question equivalent to the dynamic panel question.
- * Groups and panels can be nested.
- */
-const repeatGroupElements = [];
-/** Saves the matrixElement question equivalent to the matrix question */
-let matrixElement = null;
+export const getValidName = (name: string) => {
+  try {
+    validateGraphQLTypeName(name);
+    return name;
+  } catch (_) {
+    return snakeCase(name);
+  }
+};
 
-/**
- * SurveyJS survey structure
- */
-const survey = {
+/** Default survey structure */
+const DEFAULT_SURVEY = {
   title: '',
   pages: [
     {
@@ -27,11 +29,11 @@ const survey = {
   ],
   showQuestionNumbers: 'off',
   checkErrorsMode: 'onValueChanged',
+  hidePagesTab: true,
+  defaultLanguage: 'en',
 };
 
-/**
- * available fields types in kobo that are compatible with oort
- */
+/** Available fields types in kobo that are compatible with oort */
 const AVAILABLE_TYPES = [
   'decimal',
   'geopoint',
@@ -67,98 +69,146 @@ const AVAILABLE_TYPES = [
   'end_kobomatrix',
 ];
 
-/**
- * Get all the groups names that are related to a kobo element.
- *
- * @param groupPath string with the group path of the kobo element (e.g. 'group_au9sz58/group_hl8uz79/ig1')
- * @returns array with all the groups in the groupPath of the element.
- */
-const getElementsGroups = (groupPath: string) => {
-  // Split all the paths in the group path
-  const allPaths = groupPath.split('/');
-  // Remove the last element (is the name of the current question)
-  allPaths.pop();
-  return allPaths;
-
-  // NO LONGER USED BECAUSE IN THE INTEGRATION TESTS ALL THE GROUPS ARE RE-NAMED AND THE ID IS NOT THE SAME
-  // const groupDelimiter = 'group_';
-  // Filter parts that start with the groupDelimiter (that are group names)
-  // return allPaths.filter((part: string) => part.startsWith(groupDelimiter));
-};
-
-/**
- * Adds a new question/element to the page elements, panel elements or to the dynamic panel template elements
- *
- * @param newElement element to add
- * @param elementPath string with the element path of the kobo element (e.g. 'group_au9sz58/group_hl8uz79/ig1')
- * @param parentGroup if element is a group and have a parent group, we already know it's parent group
- */
-const addToElements = (
-  newElement: any,
-  elementPath: string | null,
-  parentGroup?: string
-) => {
-  if (matrixElement) {
-    const element = structuredClone(newElement);
-    element.cellType = element.type;
-    delete element.type;
-
-    matrixElement.columns.push(element);
-    return;
-  }
-
-  const groups = elementPath ? getElementsGroups(elementPath) : [];
-  // If element is not part of a group
-  if (!groups.length && !parentGroup) {
-    survey.pages[0].elements.push(newElement);
-  } else {
-    // If element is part of a group, find out which one to add it to
-    const groupElement = groupElements.find(
-      (element: any) =>
-        element.name === (parentGroup ?? groups[groups.length - 1])
-    );
-    if (groupElement) {
-      groupElement.elements.push(newElement);
-    } else {
-      const repeatGroupElement = repeatGroupElements.find(
-        (element: any) =>
-          element.name === (parentGroup ?? groups[groups.length - 1])
-      );
-      if (repeatGroupElement) {
-        repeatGroupElement.templateElements.push(newElement);
-      }
-    }
-  }
+type ExtractKoboFieldsProps = {
+  questions: any;
+  title: string;
+  choices: any;
+  translations: string[];
 };
 
 /**
  * Extract kobo form fields and convert to oort fields
  *
- * @param koboSurvey Kobo survey structure
- * @param title Kobo survey title
- * @param choices Kobo choices data for the questions
+ * @param options options object
+ * @param options.questions Kobo survey structure
+ * @param options.title Kobo survey title
+ * @param options.choices Kobo choices data for the questions
+ * @param options.translations Kobo translations data for the questions
  * @returns oort survey
  */
-export const extractKoboFields = (
-  koboSurvey: any,
-  title: string,
-  choices: any
-) => {
+export const extractKoboFields = ({
+  questions,
+  title,
+  choices,
+  translations,
+}: ExtractKoboFieldsProps) => {
+  const context: any[] = [];
+  let matrixElement = null;
+  const survey = DEFAULT_SURVEY;
+
+  const pushQuestion = (question: any) => {
+    if (matrixElement) {
+      const element = structuredClone(question);
+      element.cellType = element.type;
+      delete element.type;
+
+      matrixElement.columns.push(element);
+      return;
+    }
+
+    const parent = context.length ? context.at(-1) : survey.pages[0];
+    const children = parent.elements ?? parent.templateElements ?? [];
+
+    children.push(question);
+  };
+
   survey.title = title;
   survey.pages[0].elements = [];
   let newRateQuestion: any = null;
   let rakingItems: string[] = [];
   let rankChoiceId = '';
 
-  koboSurvey.map((question: any, index: number) => {
+  const langs = translations
+    .map((translation) => {
+      if (!translation) {
+        return null;
+      }
+      const inBetweenParentheses = translation.match(/\(([^)]+)\)/);
+      return inBetweenParentheses ? inBetweenParentheses[1] : null;
+    })
+    .filter((lang) => lang);
+
+  // The first translation is the default language
+  survey.defaultLanguage = langs[0];
+
+  const getLabelTranslations = (labels: string[]) => {
+    if (!labels || !Array.isArray(labels)) {
+      return labels;
+    }
+    if (labels.length === 1) {
+      return labels[0];
+    }
+    const res = {} as Record<string, any>;
+    translations.forEach((_, idx) => {
+      const lang = idx === 0 ? 'default' : langs[idx];
+      res[lang] = labels[idx];
+    });
+
+    return res;
+  };
+
+  const validators = (question: any) => {
+    return {
+      validators: [
+        {
+          type: 'expression',
+          text: question.constraint_message
+            ? typeof question.constraint_message === 'string'
+              ? question.constraint_message
+              : question.constraint_message[0]
+            : '',
+          expression: mapKoboExpression(
+            question.constraint,
+            question.$given_name ?? question.$autoname
+          ),
+        },
+      ],
+      validateOnValueChange: true,
+    };
+  };
+
+  console.log(JSON.stringify(questions));
+  questions.map((question: any, index: number) => {
+    // Save the context path for reference later
+    const path = context
+      .map((element) => element.name)
+      .concat(question.$given_name ?? question.$autoname)
+      .join('/');
+    const valueName = question.$given_name ?? question.$autoname;
+
+    const sharedProps = () => {
+      return {
+        index,
+        name: getValidName(valueName),
+        title: getLabelTranslations(question.label ?? valueName),
+        valueName,
+        isRequired: question.required,
+        ...(question.hint && {
+          description: getLabelTranslations(question.hint),
+        }),
+        ...(question.default && {
+          defaultValue: mapKoboExpression(question.default),
+        }),
+        ...(question.relevant && {
+          visibleIf: mapKoboExpression(question.relevant),
+        }),
+        ...(question.constraint && validators(question)),
+        kobo: {
+          type: question.type,
+          path,
+        },
+      };
+    };
+
     if (AVAILABLE_TYPES.includes(question.type)) {
       switch (question.type) {
         case 'decimal': {
           const newQuestion = {
-            ...commonProperties(index, question, 'text'),
+            ...sharedProps(),
+            type: 'text',
             inputType: 'number',
           };
-          addToElements(newQuestion, question.$xpath);
+          pushQuestion(newQuestion);
           break;
         }
         case 'geoshape':
@@ -171,27 +221,26 @@ export const extractKoboFields = (
           } as const;
 
           const newQuestion = {
-            ...commonProperties(index, question, 'geospatial'),
+            ...sharedProps(),
+            type: 'geospatial',
             geometry: typeToFeature[question.type],
           };
-          addToElements(newQuestion, question.$xpath);
+          pushQuestion(newQuestion);
           break;
         }
         case 'select_one':
         case 'select_multiple': {
           const newQuestion = {
-            ...commonProperties(
-              index,
-              question,
-              question.type === 'select_multiple' ? 'checkbox' : 'radiogroup'
-            ),
+            ...sharedProps(),
+            type:
+              question.type === 'select_multiple' ? 'checkbox' : 'radiogroup',
             choices: choices
               .filter(
                 (choice) => question.select_from_list_name === choice.list_name
               )
               .map((choice) => ({
                 value: choice.$autovalue,
-                text: choice.label[0],
+                text: getLabelTranslations(choice.label),
                 ...(question.choice_filter &&
                   // If in the Kobo form the choice has the 'other' property, we will not add the visibleIf because of the 'or other=0' in the expression
                   !Object.prototype.hasOwnProperty.call(choice, 'other') && {
@@ -207,27 +256,47 @@ export const extractKoboFields = (
                 choicesOrder: 'random',
               }),
           };
-          addToElements(newQuestion, question.$xpath);
+          pushQuestion(newQuestion);
           break;
         }
         case 'date': {
           const newQuestion = {
-            ...commonProperties(index, question, 'text'),
+            ...sharedProps(),
+            type: 'text',
             inputType: 'date',
           };
-          addToElements(newQuestion, question.$xpath);
+          pushQuestion(newQuestion);
           break;
         }
         case 'note': {
-          const newQuestion = {
-            ...commonProperties(index, question, 'expression'),
+          let html;
+          const parseSimpleHtml = (markup: string) => {
+            // Replace ** with <strong> tag
+            return markup.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
           };
-          addToElements(newQuestion, question.$xpath);
+
+          const i18n = getLabelTranslations(question.label);
+          if (typeof i18n === 'string') {
+            html = mapKoboExpression(parseSimpleHtml(i18n));
+          } else {
+            html = {};
+            Object.entries(i18n).forEach(([lang, markup]) => {
+              html[lang] = mapKoboExpression(parseSimpleHtml(markup));
+            });
+          }
+
+          const newQuestion = {
+            ...sharedProps(),
+            type: 'html',
+            html,
+          };
+          pushQuestion(newQuestion);
           break;
         }
         case 'begin_score': {
           newRateQuestion = {
-            ...commonProperties(index, question, 'matrixdropdown'),
+            ...sharedProps(),
+            type: 'matrixdropdown',
             columns: [
               {
                 name: 'rating',
@@ -241,26 +310,22 @@ export const extractKoboFields = (
               )
               .map((choice) => ({
                 value: choice.$autovalue,
-                text: choice.label[0],
+                text: getLabelTranslations(choice.label),
               })),
             rows: [],
-            $xpath: question.$xpath,
           };
           break;
         }
         case 'score__row': {
           newRateQuestion.rows.push({
-            value: question.$xpath,
-            text: question.label[0],
+            value: valueName,
+            text: getLabelTranslations(question.label),
           });
           break;
         }
         case 'end_score': {
-          const xpath = newRateQuestion.$xpath;
-          delete newRateQuestion.$xpath;
-
           // Add the matrix question to the survey
-          addToElements(newRateQuestion, xpath);
+          pushQuestion(newRateQuestion);
 
           // Reset the newRateQuestion object
           newRateQuestion = null;
@@ -272,19 +337,20 @@ export const extractKoboFields = (
           break;
         }
         case 'rank__level': {
-          rakingItems.push(question.$xpath);
+          rakingItems.push(valueName);
 
           const newQuestion = {
-            ...commonProperties(index, question, 'dropdown'),
+            ...sharedProps(),
+            type: 'dropdown',
             choices: choices
               .filter((choice) => rankChoiceId === choice.list_name)
               .map((choice) => ({
                 value: choice.$autovalue,
-                text: choice.label[0],
+                text: getLabelTranslations(choice.label),
               })),
           };
 
-          addToElements(newQuestion, question.$xpath);
+          pushQuestion(newQuestion);
           break;
         }
         case 'end_rank': {
@@ -315,16 +381,17 @@ export const extractKoboFields = (
             )
             .map((choice) => ({
               value: choice.$autovalue,
-              text: choice.label[0],
+              text: getLabelTranslations(choice.label),
             }));
 
           const newMatrixQuestion = {
-            ...commonProperties(index, question, 'matrixdropdown'),
+            ...sharedProps(),
+            type: 'matrixdropdown',
             columns: [],
             rows,
           };
 
-          addToElements(newMatrixQuestion, question.$xpath);
+          pushQuestion(newMatrixQuestion);
           matrixElement = newMatrixQuestion;
           break;
         }
@@ -335,17 +402,19 @@ export const extractKoboFields = (
         case 'barcode':
         case 'text': {
           const newQuestion = {
-            ...commonProperties(index, question, 'text'),
+            ...sharedProps(),
+            type: 'text',
           };
-          addToElements(newQuestion, question.$xpath);
+          pushQuestion(newQuestion);
           break;
         }
         case 'time': {
           const newQuestion = {
-            ...commonProperties(index, question, 'text'),
+            ...sharedProps(),
+            type: 'text',
             inputType: 'time',
           };
-          addToElements(newQuestion, question.$xpath);
+          pushQuestion(newQuestion);
           break;
         }
         case 'audio':
@@ -353,36 +422,40 @@ export const extractKoboFields = (
         case 'image':
         case 'file': {
           const newQuestion = {
-            ...commonProperties(index, question, 'file'),
+            ...sharedProps(),
+            type: 'file',
             storeDataAsText: false,
             maxSize: 7340032,
             acceptedTypes:
               question.type !== 'file' ? `${question.type}/*` : undefined,
           };
-          addToElements(newQuestion, question.$xpath);
+          pushQuestion(newQuestion);
           break;
         }
         case 'integer': {
           const newQuestion = {
-            ...commonProperties(index, question, 'text'),
+            ...sharedProps(),
+            type: 'text',
             inputType: 'number',
           };
-          addToElements(newQuestion, question.$xpath);
+          pushQuestion(newQuestion);
           break;
         }
         case 'datetime': {
           const newQuestion = {
-            ...commonProperties(index, question, 'text'),
+            ...sharedProps(),
+            type: 'text',
             inputType: 'datetime-local',
           };
-          addToElements(newQuestion, question.$xpath);
+          pushQuestion(newQuestion);
           break;
         }
         case 'acknowledge': {
           const newQuestion = {
-            ...commonProperties(index, question, 'boolean'),
+            ...sharedProps(),
+            type: 'boolean',
           };
-          addToElements(newQuestion, question.$xpath);
+          pushQuestion(newQuestion);
           break;
         }
         case 'range': {
@@ -393,85 +466,62 @@ export const extractKoboFields = (
             .map((param) => parseInt(param.split('=')[1]));
           const step = parseInt(parameters[2].split('=')[1]);
           const newQuestion = {
-            ...commonProperties(index, question, 'text'),
+            ...sharedProps(),
+            type: 'text',
             inputType: 'range',
             step: typeof step === 'number' ? step : undefined,
             min: typeof minValue === 'number' ? minValue : undefined,
             max: typeof maxValue === 'number' ? maxValue : undefined,
           };
-          addToElements(newQuestion, question.$xpath);
+          pushQuestion(newQuestion);
           break;
         }
         case 'calculate': {
           const newQuestion = {
-            ...commonProperties(
-              index,
-              question,
-              'expression',
-              question.calculation
-            ),
+            ...sharedProps(),
+            type: 'expression',
             visible: false, // They are not displayed in the Kobo form, so make it invisible by default for the SurveyJS
             expression: mapKoboExpression(question.calculation),
             // This question does not have hint (description)
           };
-          addToElements(newQuestion, question.$xpath);
+          pushQuestion(newQuestion);
           break;
         }
         case 'begin_group': {
-          // Get all the groups names that are related to this group
-          const groups = getElementsGroups(question.$xpath);
           const newGroupElement = {
-            ...commonProperties(index, question, 'panel'),
-            state: 'expanded',
+            ...sharedProps(),
+            type: 'panel',
+            title: getLabelTranslations(question.label) || ' ',
             elements: [],
-            groupId: question.$kuid,
-            // If groups still has names, the last one is the directly parent group (i.e. this group is within another group)
-            parentGroup: groups.length ? groups[groups.length - 1] : null,
+            state: 'expanded',
           };
-          groupElements.push(newGroupElement);
+
+          pushQuestion(newGroupElement);
+          context.push(newGroupElement);
+
           break;
         }
         case 'end_group': {
-          const groupIndex = groupElements.findIndex(
-            (element: any) =>
-              element.groupId === question.$kuid.substring(1) ||
-              question.name === element.valueName
-          );
-          const groupElement = groupElements.splice(groupIndex, 1)[0];
-          addToElements(groupElement, null, groupElement.parentGroup);
+          context.pop();
           break;
         }
         case 'begin_repeat': {
-          // Get all the groups names that are related to this group
-          const groups = getElementsGroups(question.$xpath);
           const newRepeatGroupElement = {
-            ...commonProperties(index, question, 'paneldynamic'),
-            state: 'expanded',
+            ...sharedProps(),
+            type: 'paneldynamic',
             confirmDelete: true,
             panelCount: 1,
             templateElements: [],
-            groupId: question.$kuid,
-            // If groups still has group names, the last one is the directly parent group (i.e. this group is within another group)
-            parentGroup: groups.length ? groups[groups.length - 1] : null,
           };
-          repeatGroupElements.push(newRepeatGroupElement);
+
+          pushQuestion(newRepeatGroupElement);
+          context.push(newRepeatGroupElement);
+
           break;
         }
         case 'end_repeat': {
-          const groupIndex = repeatGroupElements.findIndex(
-            (element: any) =>
-              element.groupId === question.$kuid.substring(1) ||
-              question.name === element.valueName
-          );
-          const repeatGroupElement = repeatGroupElements.splice(
-            groupIndex,
-            1
-          )[0];
-          addToElements(
-            repeatGroupElement,
-            null,
-            repeatGroupElement.parentGroup
-          );
+          context.pop();
+
           break;
         }
       }

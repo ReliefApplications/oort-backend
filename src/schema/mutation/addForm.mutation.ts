@@ -111,14 +111,19 @@ export default {
               Authorization: `${settings.tokenPrefix} ${settings.token}`,
             },
           });
-          const survey = response.data.content.survey;
-          const choices = response.data.content.choices;
+          const { survey, choices, translations } = response.data.content;
           const title = response.data.name;
+
           const deployedVersionId = response.data.deployed_version_id;
 
           // Get structure from the kobo form
           const structure = JSON.stringify(
-            extractKoboFields(survey, title, choices)
+            extractKoboFields({
+              questions: survey,
+              choices,
+              title,
+              translations,
+            })
           );
 
           // Extract fields

@@ -59,6 +59,7 @@ type Field = {
   isCore?: boolean;
   kobo?: {
     type: string;
+    path: string;
   };
   defaultValue?: any;
   resource?: string;
