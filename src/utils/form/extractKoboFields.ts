@@ -138,7 +138,7 @@ export const extractKoboFields = ({
     if (labels.length === 1) {
       return labels[0];
     }
-    const res = {};
+    const res = {} as Record<string, any>;
     translations.forEach((_, idx) => {
       const lang = idx === 0 ? 'default' : langs[idx];
       res[lang] = labels[idx];
@@ -269,9 +269,26 @@ export const extractKoboFields = ({
           break;
         }
         case 'note': {
+          let html;
+          const parseSimpleHtml = (markup: string) => {
+            // Replace ** with <strong> tag
+            return markup.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+          };
+
+          const i18n = getLabelTranslations(question.label);
+          if (typeof i18n === 'string') {
+            html = mapKoboExpression(parseSimpleHtml(i18n));
+          } else {
+            html = {};
+            Object.entries(i18n).forEach(([lang, markup]) => {
+              html[lang] = mapKoboExpression(parseSimpleHtml(markup));
+            });
+          }
+
           const newQuestion = {
             ...sharedProps(),
-            type: 'expression',
+            type: 'html',
+            html,
           };
           pushQuestion(newQuestion);
           break;
@@ -474,8 +491,9 @@ export const extractKoboFields = ({
           const newGroupElement = {
             ...sharedProps(),
             type: 'panel',
-            title: ' ',
+            title: getLabelTranslations(question.label) || ' ',
             elements: [],
+            state: 'expanded',
           };
 
           pushQuestion(newGroupElement);
