@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import {
   GraphQLNonNull,
   GraphQLID,
@@ -133,6 +133,13 @@ const checkFieldPermission = (
       context.i18next.t('mutations.resource.edit.errors.field.notFound')
     );
   }
+
+  const toOID = (arr: (string | Types.ObjectId)[]) => {
+    return arr
+      .filter((p) => Types.ObjectId.isValid(p))
+      .map((p) => new Types.ObjectId(p));
+  };
+
   switch (permission) {
     case 'canSee': {
       if (
@@ -166,7 +173,9 @@ const checkFieldPermission = (
           )
         );
       }
-      if (!get(field, 'permissions.canSee', []).find((p) => p.equals(role))) {
+      if (
+        !toOID(get(field, 'permissions.canSee', [])).find((p) => p.equals(role))
+      ) {
         throw new GraphQLError(
           context.i18next.t('mutations.resource.edit.errors.field.notVisible')
         );
