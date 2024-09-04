@@ -3,6 +3,7 @@ import {
   Dashboard,
   Form,
   Page,
+  ReferenceData,
   Resource,
   Step,
   Workflow,
@@ -20,13 +21,13 @@ import { getGraphQLTypeName } from '@utils/validators';
 //
 // In order to run it, fill the auth and COUNTRY_NAME variables with the appropriate values
 // After that, two steps need to be taken manually:
-//   1. Make any changes to the Proactive and Register a complaint forms (e.g. the description) and save them
+//   1. Make any change to the Register a complaint form (e.g. the description) and save it
 //   2. Copy the custom styling of the base app to the new one
 
 /** Use your own bearer token when running this */
-const auth = 'Bearer [...]';
+const auth = 'Bearer ...';
 /** Name of the new country to duplicate base app from */
-const COUNTRY_NAME = '';
+const COUNTRY_NAME = '[COUNTRY NAME]';
 
 /** ID of the base app to be copied */
 const BASE_APP = '64ccb80356774f7aa3f6861b';
@@ -67,6 +68,41 @@ const substitute = (obj: { [key: string]: any } | string) => {
  * @returns The duplicated resource
  */
 const duplicateResource = async (resource: Resource) => {
+  // First we duplicate any reference data that the resource uses
+  const refDatasToDuplicate = resource.fields
+    .filter(
+      // Only duplicates reference data that have not been duplicated yet (not in the map)
+      (f) => f.referenceData?.id && !idSubstitutionMap.has(f.referenceData.id)
+    )
+    .map((f) => f.referenceData.id);
+
+  const refDatas = await ReferenceData.find({
+    _id: { $in: refDatasToDuplicate },
+  });
+
+  const duplicatedRefDatas = refDatas.map((refData) => {
+    const name = refData.name.replace('Standard -', `${COUNTRY_NAME} -`);
+    const newRefData = {
+      ...refData.toJSON(),
+      name,
+      graphQLTypeName: ReferenceData.getGraphQLTypeName(name),
+    };
+    delete newRefData._id;
+
+    return new ReferenceData(newRefData);
+  });
+
+  // Save the duplicated reference data
+  await ReferenceData.insertMany(duplicatedRefDatas);
+
+  // Add the new ids to the map
+  refDatas.forEach((refData, i) => {
+    idSubstitutionMap.set(
+      refData._id.toString(),
+      duplicatedRefDatas[i]._id.toString()
+    );
+  });
+
   const resourceName = RESOURCES_IDS.find(
     (r) => r[1] === resource._id.toString()
   )?.[0];
@@ -110,6 +146,7 @@ const duplicateResource = async (resource: Resource) => {
 
   // Get all forms with the resource id
   const forms = await Form.find({ resource: resource._id });
+  const newForms: Form[] = [];
 
   // Duplicate forms with new resource id
   for (const form of forms) {
@@ -135,12 +172,22 @@ const duplicateResource = async (resource: Resource) => {
     handleRelatedNames(duplicatedForm);
 
     await Form.create(duplicatedForm);
+    newForms.push(duplicatedForm);
 
     // Add the new id to the map
     idSubstitutionMap.set(form._id.toString(), duplicatedForm._id.toString());
   }
 
-  return duplicatedResource;
+  return {
+    resource: duplicatedResource,
+    updateStructure: async () => {
+      for (const form of newForms) {
+        form.structure = JSON.stringify(substitute(form.structure));
+      }
+
+      await Form.bulkSave(newForms);
+    },
+  };
 };
 
 /**
@@ -181,8 +228,14 @@ export const up = async () => {
     return;
   }
 
+  const updateFormCallbacks: (() => Promise<void>)[] = [];
+
   // Duplicate each resource
-  await Promise.all(resources.map(duplicateResource));
+  for (const resource of resources) {
+    const { updateStructure } = await duplicateResource(resource);
+    updateFormCallbacks.push(updateStructure);
+  }
+
   // sleep for 5 seconds
   logger.info('Sleeping for 5 seconds');
   await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -234,8 +287,10 @@ export const up = async () => {
   // Add the new id to the map
   idSubstitutionMap.set(BASE_APP, res.data.data.duplicateApplication.id);
 
-  logger.info('Substitution map:');
-  logger.info(Object.keys(idSubstitutionMap));
+  // Replace the application id on the users questions of each form
+  for (const cb of updateFormCallbacks) {
+    await cb();
+  }
 
   // Replace resource ids in widget aggregations
   const newApp = await Application.findById(

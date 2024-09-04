@@ -69,6 +69,32 @@ const buildUserExport = (req, res, users) => {
 };
 
 /**
+ * Build chart data export file
+ *
+ * @param req current http request
+ * @param res http response
+ * @returns User export file
+ */
+const buildChartDataExport = (req, res) => {
+  const rows = req.body.chartData[0].data;
+
+  if (rows) {
+    const columns = Object.keys(rows[0]).map((key) => {
+      return {
+        name: key,
+        title: key,
+        field: key,
+      };
+    });
+    const type = req.body.format;
+    const fileName = req.body.fileName;
+    return fileBuilder(res, fileName, columns, rows, type);
+  } else {
+    return false;
+  }
+};
+
+/**
  * Get list of fields for user template file
  *
  * @param roles list of roles
@@ -424,12 +450,45 @@ router.post('/records', async (req, res) => {
       await sendEmail({
         message: {
           to: req.context.user.username,
-          subject: `${params.application} - Your data export is completed - ${params.fileName}`, // TODO : put in config for 1.3
-          html: 'Dear colleague,\n\nPlease find attached to this e-mail the requested data export.\n\nFor any issues with the data export, please contact ems2@who.int\n\n Best regards,\nems2@who.int', // TODO : put in config for 1.3
+          subject: `${params.application} - Your data export is completed - ${params.fileName}`,
+          html: 'Dear colleague,\n\nPlease find attached to this e-mail the requested data export.\n\nFor any issues with the data export, please contact your manager.',
           attachments,
         },
       });
     }
+  } catch (err) {
+    logger.error(err.message, { stack: err.stack });
+    res.status(500).send(req.t('common.errors.internalServerError'));
+  }
+});
+
+/**
+ * Export the chart data
+ */
+router.post('/charts', async (req, res) => {
+  try {
+    const params = req.body;
+    // Send res accordingly to parameters
+    if (!params.chartData) {
+      return res
+        .status(400)
+        .send(i18next.t('routes.download.errors.missingParameters'));
+    }
+
+    /** check if user has access to resource before allowing him to download */
+    const ability: AppAbility = req.context.user.ability;
+    const filters = Resource.find(accessibleBy(ability, 'read').Resource)
+      .where({
+        _id: {
+          $eq: params.resource,
+        },
+      })
+      .getFilter();
+    const resource = await Resource.findOne(filters).select('fields');
+    if (!resource) {
+      return res.status(404).send(i18next.t('common.errors.dataNotFound'));
+    }
+    return await buildChartDataExport(req, res);
   } catch (err) {
     logger.error(err.message, { stack: err.stack });
     res.status(500).send(req.t('common.errors.internalServerError'));

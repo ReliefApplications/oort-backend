@@ -11,10 +11,11 @@ export interface Context {
   token?: string;
   i18next: any;
   timeZone: string;
+  resourceFieldsById?: Record<string, any[]>;
 }
 
 /** User interface with specified AppAbility */
-interface UserWithAbility extends User {
+export interface UserWithAbility extends User {
   ability: AppAbility;
 }
 
