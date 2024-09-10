@@ -25,7 +25,7 @@ type EditApplicationArgs = {
   description?: string;
   sideMenu?: boolean;
   variant?: string;
-  logo?: Buffer;
+  logo?: string;
   hideMenu?: boolean;
   name?: string;
   status?: StatusType;
