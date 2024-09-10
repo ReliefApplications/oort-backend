@@ -13,7 +13,12 @@ import {
 } from '@models';
 import { AppAbility } from '@security/defineUserAbility';
 import { Types } from 'mongoose';
-import { getUploadColumns, loadRow, uploadFile } from '@utils/files';
+import {
+  downloadFile,
+  getUploadColumns,
+  loadRow,
+  uploadFile,
+} from '@utils/files';
 import { getNextId, getOwnership } from '@utils/form';
 import i18next from 'i18next';
 import get from 'lodash/get';
@@ -23,9 +28,18 @@ import { insertRecords as insertRecordsPulljob } from '@server/pullJobScheduler'
 import jwtDecode from 'jwt-decode';
 import { cloneDeep, has, isEqual } from 'lodash';
 import { Context } from '@server/apollo/context';
+import sanitize from 'sanitize-filename';
+import { deleteFolder } from '@utils/files/deleteFolder';
+import * as fs from 'fs';
 
 /** File size limit, in bytes  */
 const FILE_SIZE_LIMIT = 7 * 1024 * 1024;
+
+/** File size limit for logo uploads (2MB) */
+const LOGO_SIZE_LIMIT = 2 * 1024 * 1024;
+
+/** Allowed file types for logos */
+const ALLOWED_FILE_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
 
 /** Import data from user-uploaded files */
 const router = express.Router();
@@ -663,6 +677,95 @@ router.post('/style/:application', async (req, res) => {
   } catch (err) {
     logger.error(err.message, { stack: err.stack });
     return res.status(500).send(req.t('common.errors.internalServerError'));
+  }
+});
+
+/** Posts a logo to azure storage */
+router.post('/logo/:application', async (req: any, res) => {
+  try {
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res
+        .status(400)
+        .send(i18next.t('routes.upload.errors.missingFile'));
+    }
+
+    const logo = req.files.file;
+
+    // Check if logo is valid (size, type, etc.)
+    if (
+      logo.size > LOGO_SIZE_LIMIT ||
+      !ALLOWED_FILE_TYPES.includes(logo.mimetype)
+    ) {
+      return res.status(400).send(i18next.t('common.errors.invalidFile'));
+    }
+
+    // Find the application by ID
+    const application = await Application.findById(req.params.application);
+
+    if (!application) {
+      return res.status(404).send(i18next.t('common.errors.dataNotFound'));
+    }
+
+    const path = await uploadFile('applications', req.params.application, logo);
+    await Application.updateOne(
+      { _id: req.params.application },
+      { logo: path }
+    );
+
+    // Confirm update
+    return res.status(200).send({ path: logo.name });
+  } catch (err) {
+    logger.error(err.message, { stack: err.stack });
+    return res.status(500).send(i18next.t('common.errors.internalServerError'));
+  }
+});
+
+/** Gets a logo from azure storage */
+router.get('/logo/:application', async (req, res) => {
+  try {
+    const application = await Application.findById(req.params.application);
+
+    if (!application || !application.logo) {
+      return res.status(404).send(i18next.t('common.errors.dataNotFound'));
+    }
+
+    if (application.logo) {
+      const blobName = application.logo;
+      const path = `files/${sanitize(blobName)}`;
+      await downloadFile('applications', blobName, path);
+      res.download(path, () => {
+        fs.unlink(path, () => {
+          logger.info('file deleted');
+        });
+      });
+    }
+  } catch (err) {
+    logger.error(err.message, { stack: err.stack });
+    res.status(500).send(i18next.t('common.errors.internalServerError'));
+  }
+});
+
+/** Deletes a logo from azure storage */
+router.delete('/logo/:application', async (req, res) => {
+  try {
+    const application = await Application.findById(req.params.application);
+
+    if (!application || !application.logo) {
+      return res.status(404).send(i18next.t('common.errors.dataNotFound'));
+    }
+
+    const blobName = application.logo;
+    await deleteFolder('applications', blobName);
+
+    await Application.updateOne(
+      { _id: req.params.application },
+      { logo: null }
+    );
+
+    return res.status(200).send({ message: 'Logo deleted' });
+  } catch (err) {
+    logger.error(err.message, { stack: err.stack });
+    return res.status(500).send(i18next.t('common.errors.internalServerError'));
   }
 });
 
