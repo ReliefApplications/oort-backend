@@ -25,6 +25,7 @@ type EditApplicationArgs = {
   description?: string;
   sideMenu?: boolean;
   variant?: string;
+  logo?: Buffer;
   hideMenu?: boolean;
   name?: string;
   status?: StatusType;
@@ -44,6 +45,7 @@ export default {
     description: { type: GraphQLString },
     sideMenu: { type: GraphQLBoolean },
     variant: { type: GraphQLString },
+    logo: { type: GraphQLString },
     hideMenu: { type: GraphQLBoolean },
     name: { type: GraphQLString },
     status: { type: StatusEnumType },
@@ -93,6 +95,7 @@ export default {
         args.settings && { settings: args.settings },
         args.permissions && { permissions: args.permissions },
         args.variant && { variant: args.variant },
+        args.logo && { logo: args.logo },
         !isNil(args.sideMenu) && { sideMenu: args.sideMenu },
         !isNil(args.hideMenu) && { hideMenu: args.hideMenu }
       );

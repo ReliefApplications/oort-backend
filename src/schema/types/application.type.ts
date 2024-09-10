@@ -56,6 +56,7 @@ export const ApplicationType = new GraphQLObjectType({
     modifiedAt: { type: GraphQLString },
     description: { type: GraphQLString },
     variant: { type: GraphQLString },
+    logo: { type: GraphQLString },
     sideMenu: {
       type: GraphQLBoolean,
       resolve(parent) {
