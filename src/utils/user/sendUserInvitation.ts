@@ -60,7 +60,7 @@ export const sendCreateAccountInvitation = async (
             '/protocol/openid-connect/registrations?client_id=' +
             config.get('auth.clientId').toString() +
             '&scope=openid%20profile&redirect_uri=' +
-            config.get('frontOffice.uri').toString().slice(0, -1) +
+            url +
             '&response_type=code'
         ),
       },
