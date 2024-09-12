@@ -72,6 +72,9 @@ export const FormType = new GraphQLObjectType({
         return parent.core ? parent.core : false;
       },
     },
+    logEvents: {
+      type: GraphQLBoolean,
+    },
     records: {
       type: RecordConnectionType,
       args: {

@@ -6,9 +6,10 @@ import { logger } from '@services/logger.service';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
+import { recordEvent } from '@server/mixpanel';
 
 /** Arguments for the restoreRecord mutation */
-type RestoreRecordArgs = {
+export type RestoreRecordArgs = {
   id: string | Types.ObjectId;
 };
 
@@ -38,11 +39,18 @@ export default {
         );
       }
       // Update the record
-      return await Record.findByIdAndUpdate(
+      const resRecord = await Record.findByIdAndUpdate(
         record._id,
         { archived: false },
         { new: true }
       );
+
+      // Log event
+      if (record.form.logEvents) {
+        recordEvent('Restore record', record.form, resRecord, user, args);
+      }
+
+      return resRecord;
     } catch (err) {
       logger.error(err.message, { stack: err.stack });
       if (err instanceof GraphQLError) {

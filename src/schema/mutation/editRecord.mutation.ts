@@ -21,6 +21,7 @@ import { filter, isEqual, keys, union, has, get } from 'lodash';
 import { logger } from '@services/logger.service';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Context } from '@server/apollo/context';
+import { recordEvent } from '@server/mixpanel';
 
 /**
  * Checks if the user has the permission to update all the fields they're trying to update
@@ -56,7 +57,7 @@ export const hasInaccessibleFields = (
 };
 
 /** Arguments for the editRecord mutation */
-type EditRecordArgs = {
+export type EditRecordArgs = {
   id: string | Types.ObjectId;
   data?: any;
   version?: string | Types.ObjectId;
@@ -94,7 +95,7 @@ export default {
       const oldRecord: Record = await Record.findById(args.id);
       const parentForm: Form = await Form.findById(
         oldRecord.form,
-        'fields permissions resource structure'
+        'id name logEvents fields permissions resource structure'
       );
       if (!oldRecord || !parentForm) {
         throw new GraphQLError(context.i18next.t('common.errors.dataNotFound'));
@@ -119,6 +120,20 @@ export default {
           parentForm,
           context
         );
+
+        // Log events
+        if (parentForm.logEvents) {
+          recordEvent(
+            'Edit record',
+            parentForm,
+            triggeredRecord,
+            user,
+            args,
+            oldRecord,
+            'Draft record'
+          );
+        }
+
         return triggeredRecord;
       }
 
@@ -202,7 +217,22 @@ export default {
         );
         const record = Record.findByIdAndUpdate(args.id, update, { new: true });
         await version.save();
-        return await record;
+        const resRecord = await record;
+
+        // Log events
+        if (parentForm.logEvents) {
+          recordEvent(
+            'Edit record',
+            parentForm,
+            resRecord,
+            user,
+            args,
+            oldRecord,
+            'Classic record edition'
+          );
+        }
+
+        return resRecord;
       } else {
         const oldVersion = await Version.findOne({
           $and: [
@@ -232,7 +262,22 @@ export default {
         };
         const record = Record.findByIdAndUpdate(args.id, update, { new: true });
         await version.save();
-        return await record;
+        const resRecord = await record;
+
+        // Log events
+        if (parentForm.logEvents) {
+          recordEvent(
+            'Edit record',
+            parentForm,
+            resRecord,
+            user,
+            args,
+            oldRecord,
+            'Record version updated'
+          );
+        }
+
+        return resRecord;
       }
     } catch (err) {
       logger.error(err.message, { stack: err.stack });

@@ -4,6 +4,7 @@ import subscriberSafe from './server/subscriberSafe';
 import pullJobScheduler from './server/pullJobScheduler';
 import customNotificationScheduler from './server/customNotificationScheduler';
 import { startDatabase } from './server/database';
+import { initMixpanel } from './server/mixpanel';
 import config from 'config';
 import { logger } from './services/logger.service';
 import { checkConfig } from '@utils/server/checkConfig.util';
@@ -21,6 +22,9 @@ declare global {
     }
   }
 }
+
+/** Init Mixpanel */
+initMixpanel();
 
 // Ensure that all mandatory keys exist
 checkConfig();
