@@ -6,7 +6,7 @@ import permissions from '@const/permissions';
 import { validateEmail } from '@utils/validators';
 import { sendAppInvitation, sendCreateAccountInvitation } from '@utils/user';
 import config from 'config';
-import { logger } from '@services/logger.service';
+import { logger } from '@lib/logger';
 import { graphQLAuthCheck } from '@schema/shared';
 import { UserArgs, UserInputType } from '@schema/inputs/user.input';
 import { Types } from 'mongoose';
@@ -133,7 +133,7 @@ export default {
       const application = args.application
         ? await Application.findById(args.application)
         : null;
-      // Save the new users
+      // Save the new users & send them an email invitation
       if (invitedUsers.length > 0) {
         await User.insertMany(invitedUsers);
         if (config.get('email.sendInvite')) {
@@ -144,7 +144,7 @@ export default {
           );
         }
       }
-      //Update the existing ones
+      // Update the existing ones & send them an email notification
       if (registeredEmails.length > 0) {
         await User.bulkWrite(existingUserUpdates);
         if (application && config.get('email.sendInvite')) {

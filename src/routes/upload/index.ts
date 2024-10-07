@@ -22,7 +22,7 @@ import {
 import { getNextId, getOwnership } from '@utils/form';
 import i18next from 'i18next';
 import get from 'lodash/get';
-import { logger } from '@services/logger.service';
+import { logger } from '@lib/logger';
 import { accessibleBy } from '@casl/mongoose';
 import { insertRecords as insertRecordsPulljob } from '@server/pullJobScheduler';
 import jwtDecode from 'jwt-decode';
