@@ -25,7 +25,6 @@ export interface Application extends Document {
   modifiedAt: Date;
   description?: string;
   sideMenu?: boolean;
-  variant?: string;
   logo?: string;
   hideMenu?: boolean;
   status?: any;
@@ -77,7 +76,6 @@ const applicationSchema = new Schema<Application>(
     description: String,
     sideMenu: Boolean,
     hideMenu: Boolean,
-    variant: String,
     logo: String,
     permissions: {
       canSee: [
