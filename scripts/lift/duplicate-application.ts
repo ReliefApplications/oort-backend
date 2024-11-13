@@ -8,6 +8,7 @@ import {
   Page,
   ReferenceData,
   Resource,
+  Role,
   Step,
   Workflow,
 } from '@models';
@@ -39,8 +40,6 @@ const args = minimist(process.argv.slice(2), {
     token: 't',
   },
 });
-
-console.log(args);
 
 /** Default application to use for duplication */
 const DEFAULT_APP = '64ccb80356774f7aa3f6861b';
@@ -367,6 +366,25 @@ const duplicateApplication = async () => {
 
   // Add new application id to the map
   substituteMap.set(BASE_APP, newApp._id.toString());
+
+  logger.info('Fetching roles...');
+  // Get roles from base app
+  const baseRoles = await Role.find({
+    application: BASE_APP,
+  });
+
+  // Get roles from new app
+  const newRoles = await Role.find({
+    application: newApp._id.toString(),
+  });
+
+  for (const baseRole of baseRoles) {
+    const newRole = newRoles.find((r) => r.title === baseRole.title);
+    // Add new role id to the map
+    substituteMap.set(baseRole.id, newRole.id);
+  }
+
+  console.log(substituteMap);
 
   logger.info('Executing form callbacks...');
 
