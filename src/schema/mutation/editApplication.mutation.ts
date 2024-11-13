@@ -24,6 +24,7 @@ type EditApplicationArgs = {
   id: string | Types.ObjectId;
   description?: string;
   sideMenu?: boolean;
+  logo?: string;
   hideMenu?: boolean;
   name?: string;
   status?: StatusType;
@@ -42,6 +43,7 @@ export default {
     id: { type: new GraphQLNonNull(GraphQLID) },
     description: { type: GraphQLString },
     sideMenu: { type: GraphQLBoolean },
+    logo: { type: GraphQLString },
     hideMenu: { type: GraphQLBoolean },
     name: { type: GraphQLString },
     status: { type: StatusEnumType },
@@ -90,6 +92,7 @@ export default {
         args.pages && { pages: args.pages },
         args.settings && { settings: args.settings },
         args.permissions && { permissions: args.permissions },
+        args.logo && { logo: args.logo },
         !isNil(args.sideMenu) && { sideMenu: args.sideMenu },
         !isNil(args.hideMenu) && { hideMenu: args.hideMenu }
       );
