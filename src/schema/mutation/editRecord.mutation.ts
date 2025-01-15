@@ -187,10 +187,13 @@ export default {
         }
       } else {
         if (parentForm.resource) {
-          template = await Form.findOne({
-            resource: parentForm.resource,
-            core: true,
-          });
+          template = await Form.findOne(
+            {
+              resource: parentForm.resource,
+              core: true,
+            },
+            'name'
+          );
           fields = (await Resource.findById(parentForm.resource, 'fields'))
             .fields;
         } else {
