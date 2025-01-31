@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/ReliefApplications/oort-backend/compare/v1.0.3...v1.0.4) (2025-01-31)
+
+
+### Bug Fixes
+
+* $facet could break some aggregations on records, when using calculated fields ([#76](https://github.com/ReliefApplications/oort-backend/issues/76)) ([bd24b3b](https://github.com/ReliefApplications/oort-backend/commit/bd24b3b343bd7e64fe6ac12596bdca728f931467))
+
 ## [1.0.3](https://github.com/ReliefApplications/oort-backend/compare/v1.0.2...v1.0.3) (2024-12-03)
 
 
