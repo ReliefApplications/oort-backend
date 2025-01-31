@@ -15,4 +15,7 @@ module.exports = {
       local: true,
     },
   },
+  calculatedFields: {
+    useFacet: false,
+  },
 };

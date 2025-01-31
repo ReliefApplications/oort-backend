@@ -20,6 +20,7 @@ import { logger } from '@lib/logger';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Context } from '@server/apollo/context';
 import { IdShapeType } from '@schema/inputs/id-shape.input';
+import config from 'config';
 import buildCalculatedFieldPipeline from '@utils/aggregation/buildCalculatedFieldPipeline';
 
 /** Simple resource permission change type */
@@ -737,7 +738,21 @@ export default {
             context.timeZone
           );
 
-          if (pipeline[0].$facet.calcFieldFacet.length > 50) {
+          // Is calculated field using facet ( based on config )
+          const useFacet = config.get('calculatedFields.useFacet');
+          // Length coming from facet or from pipeline directly
+          const pipelineLength = useFacet
+            ? '$facet' in pipeline[0]
+              ? pipeline[0].$facet.calcFieldFacet.length
+              : 0
+            : pipeline.length;
+
+          // If system considers too many steps, then raise errors
+          const tooManySteps = useFacet
+            ? pipelineLength > 50
+            : pipelineLength > 36;
+
+          if (tooManySteps) {
             throw new GraphQLError(
               context.i18next.t(
                 'mutations.resource.edit.errors.calculatedFieldTooLong'
