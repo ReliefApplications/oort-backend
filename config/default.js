@@ -187,4 +187,7 @@ module.exports = {
     updateRecord: [],
     deleteRecord: [],
   },
+  calculatedFields: {
+    useFacet: true,
+  },
 };

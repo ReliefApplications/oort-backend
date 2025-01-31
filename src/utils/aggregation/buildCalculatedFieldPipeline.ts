@@ -1,4 +1,5 @@
 import { flattenDeep, isNil } from 'lodash';
+import config from 'config';
 import {
   DateOperationTypes,
   DoubleOperatorOperationsTypes,
@@ -524,21 +525,23 @@ const buildCalculatedFieldPipeline = (
   const operation = getExpressionFromString(expression);
   const pipeline = buildPipeline(operation, name, timeZone);
 
-  return [
-    {
-      $facet: {
-        calcFieldFacet: pipeline,
-      },
-    },
-    {
-      $unwind: '$calcFieldFacet',
-    },
-    {
-      $replaceRoot: {
-        newRoot: '$calcFieldFacet',
-      },
-    },
-  ];
+  return config.get('calculatedFields.useFacet')
+    ? [
+        {
+          $facet: {
+            calcFieldFacet: pipeline,
+          },
+        },
+        {
+          $unwind: '$calcFieldFacet',
+        },
+        {
+          $replaceRoot: {
+            newRoot: '$calcFieldFacet',
+          },
+        },
+      ]
+    : pipeline;
 };
 
 export default buildCalculatedFieldPipeline;
