@@ -525,23 +525,29 @@ const buildCalculatedFieldPipeline = (
   const operation = getExpressionFromString(expression);
   const pipeline = buildPipeline(operation, name, timeZone);
 
-  return config.get('calculatedFields.useFacet')
-    ? [
-        {
-          $facet: {
-            calcFieldFacet: pipeline,
-          },
+  const useFacet = config.get('calculatedFields.useFacet');
+
+  if (useFacet) {
+    // If useFacet is true, return pipeline with facet stages
+    return [
+      {
+        $facet: {
+          calcFieldFacet: pipeline,
         },
-        {
-          $unwind: '$calcFieldFacet',
+      },
+      {
+        $unwind: '$calcFieldFacet',
+      },
+      {
+        $replaceRoot: {
+          newRoot: '$calcFieldFacet',
         },
-        {
-          $replaceRoot: {
-            newRoot: '$calcFieldFacet',
-          },
-        },
-      ]
-    : pipeline;
+      },
+    ];
+  } else {
+    // Else, return pipeline as is
+    return pipeline;
+  }
 };
 
 export default buildCalculatedFieldPipeline;

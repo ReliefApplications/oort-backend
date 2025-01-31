@@ -738,11 +738,19 @@ export default {
             context.timeZone
           );
 
-          const tooManySteps = config.get('calculatedFields.useFacet')
-            ? '$facet' in pipeline[0] &&
-              pipeline[0].$facet.calcFieldFacet.length > 50
-            : // There are 14 stages in the all.ts pipeline
-              pipeline.length > 36;
+          // Is calculated field using facet ( based on config )
+          const useFacet = config.get('calculatedFields.useFacet');
+          // Length coming from facet or from pipeline directly
+          const pipelineLength = useFacet
+            ? '$facet' in pipeline[0]
+              ? pipeline[0].$facet.calcFieldFacet.length
+              : 0
+            : pipeline.length;
+
+          // If system considers too many steps, then raise errors
+          const tooManySteps = useFacet
+            ? pipelineLength > 50
+            : pipelineLength > 36;
 
           if (tooManySteps) {
             throw new GraphQLError(
