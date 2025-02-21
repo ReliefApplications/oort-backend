@@ -86,9 +86,11 @@ export default {
           if (x.positionAttributes) {
             newUser.positionAttributes = x.positionAttributes;
           }
-          // remove after 7 days if the user does not activate the account
+          // remove after 7 days (by default) if the user does not activate the account
+          const invitationExpiryDays: number =
+            config.get('user.invitationExpiryDays') ?? 7;
           const date = new Date();
-          date.setDate(date.getDate() + 7);
+          date.setDate(date.getDate() + invitationExpiryDays);
           newUser.deleteAt = date;
           invitedUsers.push(newUser);
         });
