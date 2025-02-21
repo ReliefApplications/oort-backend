@@ -76,6 +76,8 @@ module.exports = {
    * Paths should be in jsonpath syntax: https://github.com/dchester/jsonpath.
    */
   user: {
+    /** Invites not accepted after this many days are revoked */
+    invitationExpiryDays: 7,
     /**
      * Settings for groups.
      */
