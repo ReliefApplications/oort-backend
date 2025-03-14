@@ -63,4 +63,8 @@ module.exports = {
     clientSecret: 'COMMON_SERVICES_CLIENT_SECRET',
     scope: 'COMMON_SERVICES_SCOPE',
   },
+  unescoCountriesApi: {
+    token: 'UNESCO_COUNTRIES_API_TOKEN',
+    endpoint: 'UNESCO_COUNTRIES_API_ENDPOINT',
+  },
 };

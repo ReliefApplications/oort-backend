@@ -98,19 +98,26 @@ const getFeatureFromItem = (
             ...(typeof geo === 'string' ? JSON.parse(geo) : geo),
             properties: { ...omit(item, mapping.geoField) },
           };
-          // Only push if feature is of the same type as layer
-          // Get from feature, as geo can be stored as string for some models ( ref data )
-          const geoType = get(feature, 'geometry.type');
-          if (feature.type === 'Feature' && geoType === layerType) {
-            features.push(feature);
-          } else if (
-            feature.type === 'Feature' &&
-            `Multi${layerType}` === geoType
-          ) {
-            features.push(...parseToSingleFeature(feature));
+          const getFeature = (f: Feature) => {
+            // Only push if feature is of the same type as layer
+            // Get from feature, as geo can be stored as string for some models ( ref data )
+            const geoType = get(f, 'geometry.type');
+            if (f.type === 'Feature' && geoType === layerType) {
+              features.push(f);
+            } else if (
+              f.type === 'Feature' &&
+              `Multi${layerType}` === geoType
+            ) {
+              features.push(...parseToSingleFeature(f));
+            }
+          };
+
+          if (feature.type === 'FeatureCollection') {
+            feature.features.forEach((f: Feature) => getFeature(f));
+          } else {
+            getFeature(feature);
           }
         }
-      } else {
       }
     }
   } else {
@@ -521,7 +528,7 @@ router.post('/shapefile-to-geojson', async (req, res) => {
     ) {
       return res
         .status(400)
-        .send('routes.gis.shapefile.errors.featuresNotCorrect');
+        .send(i18next.t('routes.gis.shapefile.errors.featuresNotCorrect'));
     }
 
     res.send({ geojson: { type: 'FeatureCollection', features } });
