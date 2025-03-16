@@ -16,7 +16,7 @@ const buildReferenceDataAggregation = async (
   referenceData: ReferenceData,
   field: any,
   context: any
-): Promise<any[]> => {
+): Promise<{ steps: any[]; items: Record<string, string>[] }> => {
   let items: any[] = [];
   try {
     // If it's coming from an API Configuration, uses a dataSource, else extract items from object.
@@ -53,73 +53,73 @@ const buildReferenceDataAggregation = async (
     (f) => f.name === referenceData.valueField
   )?.graphQLFieldName;
 
-  if (MULTISELECT_TYPES.includes(field.type)) {
-    return [
-      {
-        $addFields: {
-          [`data.${field.name}`]: {
-            $cond: {
-              if: {
-                $ne: [{ $type: `$data.${field.name}` }, 'array'],
+  const steps = MULTISELECT_TYPES.includes(field.type)
+    ? [
+        {
+          $addFields: {
+            [`data.${field.name}`]: {
+              $cond: {
+                if: {
+                  $ne: [{ $type: `$data.${field.name}` }, 'array'],
+                },
+                then: [],
+                else: `$data.${field.name}`,
               },
-              then: [],
-              else: `$data.${field.name}`,
             },
           },
         },
-      },
-      {
-        $addFields: {
-          [`data.${field.name}`]: {
-            $let: {
-              vars: {
-                items: mappedItems,
-              },
-              in: {
-                $filter: {
-                  input: '$$items',
-                  cond: {
-                    $in: [
-                      `$$this.${
-                        valueFieldGraphqlName ?? referenceData.valueField
-                      }`,
-                      `$data.${field.name}`,
-                    ],
+        {
+          $addFields: {
+            [`data.${field.name}`]: {
+              $let: {
+                vars: {
+                  items: mappedItems,
+                },
+                in: {
+                  $filter: {
+                    input: '$$items',
+                    cond: {
+                      $in: [
+                        `$$this.${
+                          valueFieldGraphqlName ?? referenceData.valueField
+                        }`,
+                        `$data.${field.name}`,
+                      ],
+                    },
                   },
                 },
               },
             },
           },
         },
-      },
-    ];
-  } else {
-    return [
-      {
-        $addFields: {
-          [`data.${field.name}`]: {
-            $let: {
-              vars: {
-                // We concat null at the end because if there is no value for a particular record
-                // indexOfArray would return -1 and if we pass a negative index (-n for example) to $arrayElemAt
-                // it would return the nth element starting from the last element of the array
-                items: mappedItems.concat(null),
-                itemsIds,
-              },
-              in: {
-                $arrayElemAt: [
-                  '$$items',
-                  {
-                    $indexOfArray: ['$$itemsIds', `$data.${field.name}`],
-                  },
-                ],
+      ]
+    : [
+        {
+          $addFields: {
+            [`data.${field.name}`]: {
+              $let: {
+                vars: {
+                  // We concat null at the end because if there is no value for a particular record
+                  // indexOfArray would return -1 and if we pass a negative index (-n for example) to $arrayElemAt
+                  // it would return the nth element starting from the last element of the array
+                  items: mappedItems.concat(null),
+                  itemsIds,
+                },
+                in: {
+                  $arrayElemAt: [
+                    '$$items',
+                    {
+                      $indexOfArray: ['$$itemsIds', `$data.${field.name}`],
+                    },
+                  ],
+                },
               },
             },
           },
         },
-      },
-    ];
-  }
+      ];
+
+  return { steps, items: mappedItems };
 };
 
 export default buildReferenceDataAggregation;

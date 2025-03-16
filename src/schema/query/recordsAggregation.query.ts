@@ -295,321 +295,326 @@ export default {
       //   },
       // });
 
-      // Build the source fields step
-      if (aggregation.sourceFields && aggregation.sourceFields.length) {
-        // If we have user fields
-        if (
-          aggregation.sourceFields.some((x) =>
-            defaultRecordFields.some(
-              (y) =>
-                (x === y.field && y.type === UserType) ||
-                ['form', 'lastUpdateForm'].includes(y.field)
-            )
-          )
-        ) {
-          // Form
-          if (aggregation.sourceFields.includes('form')) {
-            const relatedForms = await Form.find({
-              resource: args.resource,
-            }).select('id name');
-            resource.fields.push({
-              name: 'form',
-              choices: relatedForms.map((x) => {
-                return { value: x.id, text: x.name };
-              }),
-            });
-          }
-          // Created By
-          if (aggregation.sourceFields.includes('createdBy')) {
-            pipeline = pipeline.concat(CREATED_BY_STAGES);
-          }
-          // Last updated by
-          if (aggregation.sourceFields.includes('lastUpdatedBy')) {
-            if (!aggregation.sourceFields.includes('createdBy')) {
-              pipeline = pipeline.concat(CREATED_BY_STAGES);
-            }
-            pipeline = pipeline.concat([
-              {
-                $addFields: {
-                  lastVersion: {
-                    $last: '$versions',
-                  },
-                },
-              },
-              {
-                $lookup: {
-                  from: 'versions',
-                  localField: 'lastVersion',
-                  foreignField: '_id',
-                  as: 'lastVersion',
-                },
-              },
-              {
-                $lookup: {
-                  from: 'users',
-                  localField: 'lastVersion.createdBy',
-                  foreignField: '_id',
-                  as: 'lastUpdatedBy',
-                },
-              },
-              {
-                $addFields: {
-                  lastUpdatedBy: {
-                    $last: '$lastUpdatedBy',
-                  },
-                },
-              },
-              {
-                $addFields: {
-                  lastUpdatedBy: {
-                    $ifNull: ['$lastUpdatedBy', '$createdBy'],
-                  },
-                },
-              },
-            ]);
-          }
-        }
-        // Fetch related fields from other forms
-        const relatedFields: any[] = await Form.aggregate([
-          {
-            $match: {
-              fields: {
-                $elemMatch: {
-                  resource: String(args.resource),
-                  $or: [
-                    {
-                      type: 'resource',
-                    },
-                    {
-                      type: 'resources',
-                    },
-                  ],
-                },
-              },
-            },
-          },
-          {
-            $unwind: '$fields',
-          },
-          {
-            $match: {
-              'fields.resource': String(args.resource),
-              $or: [
-                {
-                  'fields.type': 'resource',
-                },
-                {
-                  'fields.type': 'resources',
-                },
-              ],
-            },
-          },
-          {
-            $addFields: {
-              'fields.form': '$_id',
-              'fields.relatedFieldResource': '$resource',
-            },
-          },
-          {
-            $replaceRoot: {
-              newRoot: '$fields',
-            },
-          },
-        ]);
-        pipeline.push({
-          $addFields: {
-            record_id: {
-              $toString: '$_id',
-            },
-          },
-        });
-        // Loop on fields to apply lookups for special fields
-        for (const fieldName of aggregation.sourceFields) {
-          const field = resource.fields.find((x) => x.name === fieldName);
-          // If field is a calculated field
-          if (field && field.isCalculated) {
-            pipeline.unshift(
-              ...buildCalculatedFieldPipeline(
-                field.expression,
-                field.name,
-                context.timeZone
-              )
-            );
-          }
-
-          // If we have resource(s) questions
-          if (
-            field &&
-            (field.type === 'resource' || field.type === 'resources')
-          ) {
-            if (field.type === 'resource') {
-              pipeline.push({
-                $addFields: {
-                  [`data.${fieldName}`]: {
-                    $convert: {
-                      input: `$data.${fieldName}`,
-                      to: 'objectId',
-                      onError: null,
-                    },
-                  },
-                },
-              });
-            } else {
-              pipeline.push({
-                $addFields: {
-                  [`data.${fieldName}`]: {
-                    $map: {
-                      input: { $ifNull: [`$data.${fieldName}`, []] },
-                      in: {
-                        $convert: {
-                          input: '$$this',
-                          to: 'objectId',
-                          onError: null,
-                        },
-                      },
-                    },
-                  },
-                },
-              });
-            }
-            pipeline.push({
-              $lookup: {
-                from: 'records',
-                localField: `data.${fieldName}`,
-                foreignField: '_id',
-                as: `data.${fieldName}`,
-              },
-            });
-            if (field.type === 'resource') {
-              pipeline.push({
-                $unwind: `$data.${fieldName}`,
-              });
-            }
-            pipeline.push({
-              $addFields: selectableDefaultRecordFieldsFlat.reduce(
-                (fields, selectableField) => {
-                  if (selectableField === 'id' && field.type === 'resource') {
-                    // Special case for id
-                    return Object.assign(fields, {
-                      [`data.${fieldName}.data.id`]: {
-                        $toString: `$data.${fieldName}._id`,
-                      },
-                      [`data.${fieldName}.data.__ID__`]: {
-                        $toString: `$data.${fieldName}._id`,
-                      },
-                      [`data.${fieldName}.data._id`]: `$data.${fieldName}._id`,
-                    });
-                  } else if (!selectableField.includes('By')) {
-                    return Object.assign(fields, {
-                      [`data.${fieldName}.data.${selectableField}`]: `$data.${fieldName}.${selectableField}`,
-                    });
-                  } else {
-                    return Object.assign(fields, {
-                      [`data.${fieldName}.data.${selectableField}`]: `$data.${fieldName}._${selectableField}.user._id`,
-                    });
-                  }
-                },
-                {}
-              ),
-            });
-            pipeline.push({
-              $addFields: {
-                [`data.${fieldName}`]: `$data.${fieldName}.data`,
-              },
-            });
-          }
-          // If we have a field referring to another form with a question targeting our source
-          if (!field) {
-            const relatedField = relatedFields.find(
-              (x: any) => x.relatedName === fieldName
-            );
-            if (relatedField) {
-              pipeline = pipeline.concat([
-                {
-                  $lookup: {
-                    from: 'records',
-                    localField: 'record_id',
-                    foreignField: `data.${relatedField.name}`,
-                    as: `data.${fieldName}`,
-                  },
-                },
-                {
-                  $addFields: {
-                    [`data.${fieldName}`]: {
-                      $filter: {
-                        input: `$data.${fieldName}`,
-                        cond: {
-                          $eq: [
-                            '$$this.resource',
-                            relatedField.relatedFieldResource,
-                          ],
-                        },
-                      },
-                    },
-                  },
-                },
-                {
-                  $addFields: selectableDefaultRecordFieldsFlat.reduce(
-                    (fields, selectableField) => {
-                      if (!selectableField.includes('By')) {
-                        return Object.assign(fields, {
-                          [`data.${fieldName}.data.${selectableField}`]: `$data.${fieldName}.${selectableField}`,
-                        });
-                      } else {
-                        return Object.assign(fields, {
-                          [`data.${fieldName}.data.${selectableField}`]: `$data.${fieldName}._${selectableField}.user._id`,
-                        });
-                      }
-                    },
-                    {}
-                  ),
-                },
-                {
-                  $addFields: {
-                    [`data.${fieldName}`]: `$data.${fieldName}.data`,
-                  },
-                },
-              ]);
-            }
-          }
-          // If we have referenceData fields
-          if (field && field.referenceData && field.referenceData.id) {
-            const referenceData = await ReferenceData.findById(
-              field.referenceData.id
-            ).populate({
-              path: 'apiConfiguration',
-              model: 'ApiConfiguration',
-              select: { name: 1, endpoint: 1, graphQLEndpoint: 1 },
-            });
-            const referenceDataAggregation: any[] =
-              await buildReferenceDataAggregation(
-                referenceData,
-                field,
-                context
-              );
-            pipeline.push(...referenceDataAggregation);
-          }
-        }
-        pipeline.push({
-          $project: {
-            ...(aggregation.sourceFields as any[]).reduce(
-              (o, field) =>
-                Object.assign(o, {
-                  [field]: selectableDefaultRecordFieldsFlat.includes(field)
-                    ? 1
-                    : `$data.${field}`,
-                }),
-              {}
-            ),
-          },
-        });
-      } else {
+      if (!aggregation.sourceFields || !aggregation.sourceFields.length) {
         throw new GraphQLError(
           context.i18next.t(
             'query.records.aggregation.errors.invalidAggregation'
           )
         );
       }
+      // Build the source fields step
+      // If we have user fields
+      if (
+        aggregation.sourceFields.some((x) =>
+          defaultRecordFields.some(
+            (y) =>
+              (x === y.field && y.type === UserType) ||
+              ['form', 'lastUpdateForm'].includes(y.field)
+          )
+        )
+      ) {
+        // Form
+        if (aggregation.sourceFields.includes('form')) {
+          const relatedForms = await Form.find({
+            resource: args.resource,
+          }).select('id name');
+          resource.fields.push({
+            name: 'form',
+            choices: relatedForms.map((x) => {
+              return { value: x.id, text: x.name };
+            }),
+          });
+        }
+        // Created By
+        if (aggregation.sourceFields.includes('createdBy')) {
+          pipeline = pipeline.concat(CREATED_BY_STAGES);
+        }
+        // Last updated by
+        if (aggregation.sourceFields.includes('lastUpdatedBy')) {
+          if (!aggregation.sourceFields.includes('createdBy')) {
+            pipeline = pipeline.concat(CREATED_BY_STAGES);
+          }
+          pipeline = pipeline.concat([
+            {
+              $addFields: {
+                lastVersion: {
+                  $last: '$versions',
+                },
+              },
+            },
+            {
+              $lookup: {
+                from: 'versions',
+                localField: 'lastVersion',
+                foreignField: '_id',
+                as: 'lastVersion',
+              },
+            },
+            {
+              $lookup: {
+                from: 'users',
+                localField: 'lastVersion.createdBy',
+                foreignField: '_id',
+                as: 'lastUpdatedBy',
+              },
+            },
+            {
+              $addFields: {
+                lastUpdatedBy: {
+                  $last: '$lastUpdatedBy',
+                },
+              },
+            },
+            {
+              $addFields: {
+                lastUpdatedBy: {
+                  $ifNull: ['$lastUpdatedBy', '$createdBy'],
+                },
+              },
+            },
+          ]);
+        }
+      }
+      // Fetch related fields from other forms
+      const relatedFields: any[] = await Form.aggregate([
+        {
+          $match: {
+            fields: {
+              $elemMatch: {
+                resource: String(args.resource),
+                $or: [
+                  {
+                    type: 'resource',
+                  },
+                  {
+                    type: 'resources',
+                  },
+                ],
+              },
+            },
+          },
+        },
+        {
+          $unwind: '$fields',
+        },
+        {
+          $match: {
+            'fields.resource': String(args.resource),
+            $or: [
+              {
+                'fields.type': 'resource',
+              },
+              {
+                'fields.type': 'resources',
+              },
+            ],
+          },
+        },
+        {
+          $addFields: {
+            'fields.form': '$_id',
+            'fields.relatedFieldResource': '$resource',
+          },
+        },
+        {
+          $replaceRoot: {
+            newRoot: '$fields',
+          },
+        },
+      ]);
+      pipeline.push({
+        $addFields: {
+          record_id: {
+            $toString: '$_id',
+          },
+        },
+      });
+      // Loop on fields to apply lookups for special fields
+      for (const fieldName of aggregation.sourceFields) {
+        const field = resource.fields.find((x) => x.name === fieldName);
+        // If field is a calculated field
+        if (field && field.isCalculated) {
+          pipeline.unshift(
+            ...buildCalculatedFieldPipeline(
+              field.expression,
+              field.name,
+              context.timeZone
+            )
+          );
+        }
+
+        // If we have resource(s) questions
+        if (
+          field &&
+          (field.type === 'resource' || field.type === 'resources')
+        ) {
+          if (field.type === 'resource') {
+            pipeline.push({
+              $addFields: {
+                [`data.${fieldName}`]: {
+                  $convert: {
+                    input: `$data.${fieldName}`,
+                    to: 'objectId',
+                    onError: null,
+                  },
+                },
+              },
+            });
+          } else {
+            pipeline.push({
+              $addFields: {
+                [`data.${fieldName}`]: {
+                  $map: {
+                    input: { $ifNull: [`$data.${fieldName}`, []] },
+                    in: {
+                      $convert: {
+                        input: '$$this',
+                        to: 'objectId',
+                        onError: null,
+                      },
+                    },
+                  },
+                },
+              },
+            });
+          }
+          pipeline.push({
+            $lookup: {
+              from: 'records',
+              localField: `data.${fieldName}`,
+              foreignField: '_id',
+              as: `data.${fieldName}`,
+            },
+          });
+          if (field.type === 'resource') {
+            pipeline.push({
+              $unwind: `$data.${fieldName}`,
+            });
+          }
+          pipeline.push({
+            $addFields: selectableDefaultRecordFieldsFlat.reduce(
+              (fields, selectableField) => {
+                if (selectableField === 'id' && field.type === 'resource') {
+                  // Special case for id
+                  return Object.assign(fields, {
+                    [`data.${fieldName}.data.id`]: {
+                      $toString: `$data.${fieldName}._id`,
+                    },
+                    [`data.${fieldName}.data.__ID__`]: {
+                      $toString: `$data.${fieldName}._id`,
+                    },
+                    [`data.${fieldName}.data._id`]: `$data.${fieldName}._id`,
+                  });
+                } else if (!selectableField.includes('By')) {
+                  return Object.assign(fields, {
+                    [`data.${fieldName}.data.${selectableField}`]: `$data.${fieldName}.${selectableField}`,
+                  });
+                } else {
+                  return Object.assign(fields, {
+                    [`data.${fieldName}.data.${selectableField}`]: `$data.${fieldName}._${selectableField}.user._id`,
+                  });
+                }
+              },
+              {}
+            ),
+          });
+          pipeline.push({
+            $addFields: {
+              [`data.${fieldName}`]: `$data.${fieldName}.data`,
+            },
+          });
+        }
+        // If we have a field referring to another form with a question targeting our source
+        if (!field) {
+          const relatedField = relatedFields.find(
+            (x: any) => x.relatedName === fieldName
+          );
+          if (relatedField) {
+            pipeline = pipeline.concat([
+              {
+                $lookup: {
+                  from: 'records',
+                  localField: 'record_id',
+                  foreignField: `data.${relatedField.name}`,
+                  as: `data.${fieldName}`,
+                },
+              },
+              {
+                $addFields: {
+                  [`data.${fieldName}`]: {
+                    $filter: {
+                      input: `$data.${fieldName}`,
+                      cond: {
+                        $eq: [
+                          '$$this.resource',
+                          relatedField.relatedFieldResource,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+              {
+                $addFields: selectableDefaultRecordFieldsFlat.reduce(
+                  (fields, selectableField) => {
+                    if (!selectableField.includes('By')) {
+                      return Object.assign(fields, {
+                        [`data.${fieldName}.data.${selectableField}`]: `$data.${fieldName}.${selectableField}`,
+                      });
+                    } else {
+                      return Object.assign(fields, {
+                        [`data.${fieldName}.data.${selectableField}`]: `$data.${fieldName}._${selectableField}.user._id`,
+                      });
+                    }
+                  },
+                  {}
+                ),
+              },
+              {
+                $addFields: {
+                  [`data.${fieldName}`]: `$data.${fieldName}.data`,
+                },
+              },
+            ]);
+          }
+        }
+        // If we have referenceData fields
+        if (field && field.referenceData && field.referenceData.id) {
+          const referenceData = await ReferenceData.findById(
+            field.referenceData.id
+          ).populate({
+            path: 'apiConfiguration',
+            model: 'ApiConfiguration',
+            select: { name: 1, endpoint: 1, graphQLEndpoint: 1 },
+          });
+          const { steps, items } = await buildReferenceDataAggregation(
+            referenceData,
+            field,
+            context
+          );
+
+          field.choices = items.map((i) => ({
+            value: i[referenceData.valueField],
+            text: i[field.referenceData.displayField],
+          }));
+
+          pipeline.push(...steps);
+        }
+      }
+      pipeline.push({
+        $project: {
+          ...(aggregation.sourceFields as any[]).reduce(
+            (o, field) =>
+              Object.assign(o, {
+                [field]: selectableDefaultRecordFieldsFlat.includes(field)
+                  ? 1
+                  : `$data.${field}`,
+              }),
+            {}
+          ),
+        },
+      });
+
       // Make sure that the resource filter is made at the beginning of the aggregation
       pipeline.unshift(
         ...[
