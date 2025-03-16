@@ -175,6 +175,7 @@ module.exports = {
   },
   logger: {
     keep: true,
+    verbose: false,
   },
   archive: {
     expires: 60 * 60 * 24 * 30, // Default archive time, in seconds. Set to 30 days

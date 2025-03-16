@@ -47,7 +47,7 @@ const launchServer = async () => {
 
 startDatabase();
 mongoose.connection.once('open', () => {
-  logger.log({ level: 'info', message: '📶 Connected to database' });
+  logger.info('📶 Connected to database');
   launchServer();
   // subscriberSafe();
   pullJobScheduler();

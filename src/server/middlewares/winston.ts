@@ -25,7 +25,25 @@ const customFormat = format.printf((info) => {
   const { timestamp, level, message, meta } = info;
   const statusCode = meta.res.statusCode;
   const responseTime = meta.responseTime;
-  return `${timestamp} [${level}] [${statusCode}] in ${responseTime}ms : ${message}`;
+
+  const verbose = config.get('logger.verbose') ?? false;
+  let queryStr = '';
+  if (meta.req.url === '/graphql' && meta.req?.body?.operationName) {
+    const { operationName: op, variables } = meta.req.body;
+    queryStr = op ? ` ${op}` : '';
+
+    if (variables && verbose) {
+      const vars = Object.entries(variables)
+        .filter(([, value]) => value !== null)
+        .map(([key, value]) => `$${key}: ${JSON.stringify(value)}`);
+
+      if (vars.length) {
+        queryStr += `(${vars.join(', ')})`;
+      }
+    }
+  }
+
+  return `${timestamp} [${level}] [${statusCode}] in ${responseTime}ms: ${message}${queryStr}`;
 });
 
 /**
@@ -83,5 +101,6 @@ export const winstonLogger = expressWinston.logger({
     format.timestamp(),
     customFormat
   ),
+  requestWhitelist: ['body', 'url', 'headers'],
   transports: loggerTransports,
 });
