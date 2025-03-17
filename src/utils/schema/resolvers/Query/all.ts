@@ -211,6 +211,18 @@ const isSortField = (sortFields: any[], fieldName: string): boolean =>
   sortFields?.includes((item: any) => item.field === fieldName);
 
 /**
+ * Check if field is used in filter
+ *
+ * @param filter filter object
+ * @param field field to check
+ * @returns true if field is used in filter
+ */
+const isFieldInFilter = (filter: any, field: any): boolean => {
+  if (filter.field) return filter.field === field.name;
+  return filter?.filters?.some((f) => isFieldInFilter(f, field)) ?? false;
+};
+
+/**
  * Returns a resolver that fetches records from resources/forms
  *
  * @param entityName Structure name
@@ -369,7 +381,8 @@ export default (entityName: string, fieldsByName: any, idsByName: any) =>
       const queryFields = getQueryFields(info);
 
       // Build aggregation for calculated fields
-      const calculatedFieldsAggregation: any[] = [];
+      const calculatedFieldsBeforeMatchAggregation: any[] = [];
+      const calculatedFieldsAfterMatchAggregation: any[] = [];
 
       // only add calculated fields that are in the query
       // in order to decrease the pipeline size
@@ -384,18 +397,13 @@ export default (entityName: string, fieldsByName: any, idsByName: any) =>
           return true;
         }
 
-        const isUsedInFilter = (qFilter: any) => {
-          if (qFilter.field) return qFilter.field === field.name;
-          return qFilter?.filters?.some((f) => isUsedInFilter(f)) ?? false;
-        };
-
         // Check if the field is used in the filter
-        if (isUsedInFilter(filter)) {
+        if (isFieldInFilter(filter, field)) {
           return true;
         }
 
         // Check if the field is used in any styles' filters
-        if (styles?.some((s) => isUsedInFilter(s.filter))) {
+        if (styles?.some((s) => isFieldInFilter(s.filter, field))) {
           return true;
         }
 
@@ -405,15 +413,23 @@ export default (entityName: string, fieldsByName: any, idsByName: any) =>
 
       fields
         .filter((f) => f.isCalculated && shouldAddCalculatedFieldToPipeline(f))
-        .forEach((f) =>
-          calculatedFieldsAggregation.push(
+        .forEach((f) => {
+          const fieldInStyles = styles.some((s) =>
+            isFieldInFilter(s.filter, f)
+          );
+          const array =
+            isFieldInFilter(filter, f) || fieldInStyles
+              ? calculatedFieldsBeforeMatchAggregation
+              : calculatedFieldsAfterMatchAggregation;
+
+          array.push(
             ...buildCalculatedFieldPipeline(
               f.expression,
               f.name,
               context.timeZone
             )
-          )
-        );
+          );
+        });
 
       // Build linked records aggregations
       const linkedReferenceDataAggregation = flatten(
@@ -456,7 +472,6 @@ export default (entityName: string, fieldsByName: any, idsByName: any) =>
       const filters = {
         $and: [mongooseFilter, permissionFilters],
       };
-
       // === RUN AGGREGATION TO FETCH ITEMS ===
       let items: Record[] = [];
       let totalCount = 0;
@@ -469,8 +484,9 @@ export default (entityName: string, fieldsByName: any, idsByName: any) =>
           ...linkedRecordsAggregation,
           ...linkedReferenceDataAggregation,
           ...defaultRecordAggregation,
-          ...calculatedFieldsAggregation,
+          ...calculatedFieldsBeforeMatchAggregation,
           { $match: filters },
+          ...calculatedFieldsAfterMatchAggregation,
           ...projectAggregation,
           ...(await getSortAggregation(sort, fields, context)),
           {
@@ -700,7 +716,7 @@ export default (entityName: string, fieldsByName: any, idsByName: any) =>
                 },
               },
             },
-            ...calculatedFieldsAggregation,
+            ...calculatedFieldsBeforeMatchAggregation,
             { $match: styleFilter },
             { $addFields: { id: '$_id' } },
           ]);
