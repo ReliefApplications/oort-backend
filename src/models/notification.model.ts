@@ -1,5 +1,6 @@
 import { AccessibleRecordModel, accessibleRecordsPlugin } from '@casl/mongoose';
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
+import { User } from './user.model';
 
 /** Mongoose notification schema declaration */
 const notificationSchema = new Schema(
@@ -9,7 +10,12 @@ const notificationSchema = new Schema(
     channel: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Channel',
-      required: true,
+      default: [],
+    },
+    users: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: 'User',
+      default: [],
     },
     seenBy: {
       type: [mongoose.Schema.Types.ObjectId],
@@ -32,8 +38,9 @@ export interface Notification extends Document {
   action: string;
   content: any;
   createdAt: Date;
-  channel: any;
-  seenBy: any[];
+  channel: any[];
+  users: (User | Types.ObjectId)[];
+  seenBy: (User | Types.ObjectId)[];
 }
 
 notificationSchema.plugin(accessibleRecordsPlugin);

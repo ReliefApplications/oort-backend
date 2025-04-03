@@ -324,6 +324,11 @@ export default function defineUserAbility(user: User | Client): AppAbility {
     seenBy: { $ne: user._id },
   });
 
+  can(['read', 'update'], 'Notification', {
+    users: { $all: [user._id] },
+    seenBy: { $ne: user._id },
+  });
+
   /* ===
     Creation / Access / Edition / Deletion of API configurations, PullJobs and ReferenceData
   === */
