@@ -127,6 +127,9 @@ class SafeServer {
 
     // Watch records creation and updates to see if should emit trigger notification
     Record.watch().on('change', async (data) => {
+      if (!(config.get('notificationsLeader') == 'true')) {
+        return;
+      }
       const recordId = data.documentKey._id;
       const record = await Record.findById(recordId);
 
