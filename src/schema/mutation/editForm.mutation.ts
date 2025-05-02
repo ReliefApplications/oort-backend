@@ -78,6 +78,7 @@ type EditFormArgs = {
   cronSchedule?: string;
   permissions?: any;
   dataFromDeployedVersion?: boolean;
+  disableCascadingUpdates?: boolean;
 };
 
 /**
@@ -94,6 +95,7 @@ export default {
     cronSchedule: { type: GraphQLString },
     permissions: { type: GraphQLJSON },
     dataFromDeployedVersion: { type: GraphQLBoolean },
+    disableCascadingUpdates: { type: GraphQLBoolean },
   },
   async resolve(parent, args: EditFormArgs, context: Context) {
     graphQLAuthCheck(context);
@@ -225,6 +227,12 @@ export default {
         };
       }
 
+      // Update disableCascadingUpdates setting
+      if (args.disableCascadingUpdates !== undefined) {
+        // When true, this form will not receive updates from sibling forms, but will still receive updates from parent forms
+        update.disableCascadingUpdates = args.disableCascadingUpdates;
+      }
+
       // Update fields and structure, check that structure is different
       if (args.structure && !isEqual(form.structure, args.structure)) {
         update.structure = args.structure;
@@ -300,7 +308,7 @@ export default {
           const templates = await Form.find({
             resource: form.resource,
             _id: { $ne: new mongoose.Types.ObjectId(args.id) },
-          }).select('_id structure fields');
+          }).select('_id structure fields disableCascadingUpdates');
           const oldFields: any[] = resource.fields
             ? JSON.parse(JSON.stringify(resource.fields))
             : [];
@@ -347,6 +355,11 @@ export default {
                 }
                 for (const template of templates) {
                   // For each form that inherits from the same resource
+                  // Skip updates only for non-core forms when disableCascadingUpdates=true
+                  // If this is a core form (parent) updating child forms, always apply updates regardless of flag
+                  if (!form.core && template.disableCascadingUpdates === true) {
+                    continue;
+                  }
                   if (storedFieldChanged) {
                     template.fields = template.fields.map((x) => {
                       // For each field of the childForm
@@ -443,6 +456,12 @@ export default {
 
             // Loop on templates
             for (const template of templates) {
+              // Skip updates only for non-core forms when disableCascadingUpdates=true
+              // If this is a core form (parent) updating child forms, always apply updates regardless of flag
+              if (!form.core && template.disableCascadingUpdates === true) {
+                continue;
+              }
+
               // === REFLECT DELETION ===
               // For each old field from core form which is not anymore in the current core form fields
               for (const field of deletedFields) {

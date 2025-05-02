@@ -75,6 +75,12 @@ export const FormType = new GraphQLObjectType({
         return parent.core ? parent.core : false;
       },
     },
+    disableCascadingUpdates: {
+      type: GraphQLBoolean,
+      resolve(parent) {
+        return parent.disableCascadingUpdates || false;
+      },
+    },
     records: {
       type: RecordConnectionType,
       args: {
