@@ -145,7 +145,7 @@ export const extractFields = async (
                 }),
               };
             }),
-            choices: element.choices.map((x) => {
+            choices: (element.choices ?? []).map((x) => {
               return {
                 value: x.value ? x.value : x,
                 text: x.text ? x.text : x,
