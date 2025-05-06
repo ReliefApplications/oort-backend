@@ -8,9 +8,9 @@ import {
 import GraphQLJSON from 'graphql-type-json';
 import { Form, Resource, Version, Channel, ReferenceData } from '@models';
 import {
-  removeField,
-  addField,
-  replaceField,
+  // removeField,
+  // addField,
+  // replaceField,
   findDuplicateFields,
   extractFields,
 } from '@utils/form';
@@ -20,26 +20,27 @@ import mongoose from 'mongoose';
 import { AppAbility } from '@security/defineUserAbility';
 import { status, StatusEnumType, StatusType } from '@const/enumTypes';
 import isEqual from 'lodash/isEqual';
-import differenceWith from 'lodash/differenceWith';
-import unionWith from 'lodash/unionWith';
+// import differenceWith from 'lodash/differenceWith';
+// import unionWith from 'lodash/unionWith';
 import i18next from 'i18next';
-import { get, isArray, isNil } from 'lodash';
+import { isArray, isNil } from 'lodash';
+// import { get, isArray, isNil } from 'lodash';
 import { logger } from '@lib/logger';
 import checkDefaultFields from '@utils/form/checkDefaultFields';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Context } from '@server/apollo/context';
 import { scheduleKoboSync } from '@server/koboSyncScheduler';
 
-/**
- * List of keys of the structure's object which we want to inherit to the children forms when they are modified on the core form
- * If a trigger is removed from the core form, we will remove it from the children forms, same for the calculatedValues.
- * Other keys can be added here
- */
-const INHERITED_PROPERTIES = [
-  'triggers',
-  'calculatedValues',
-  'onCompleteExpression',
-];
+// /**
+//  * List of keys of the structure's object which we want to inherit to the children forms when they are modified on the core form
+//  * If a trigger is removed from the core form, we will remove it from the children forms, same for the calculatedValues.
+//  * Other keys can be added here
+//  */
+// const INHERITED_PROPERTIES = [
+//   'triggers',
+//   'calculatedValues',
+//   'onCompleteExpression',
+// ];
 
 /** Simple form permission change type */
 type SimplePermissionChange =
