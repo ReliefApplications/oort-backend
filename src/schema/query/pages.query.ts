@@ -7,6 +7,24 @@ import { logger } from '@lib/logger';
 import { accessibleBy } from '@casl/mongoose';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Context } from '@server/apollo/context';
+import GraphQLJSON from 'graphql-type-json';
+import getFilter from '@utils/filter/getFilter';
+
+/** Default filter fields */
+const FILTER_FIELDS: { name: string; type: string }[] = [
+  {
+    name: 'name',
+    type: 'text',
+  },
+  {
+    name: 'type',
+    type: 'text',
+  },
+  {
+    name: 'visible',
+    type: 'boolean',
+  },
+];
 
 /**
  * List all pages available for the logged user.
@@ -14,6 +32,9 @@ import { Context } from '@server/apollo/context';
  */
 export default {
   type: new GraphQLList(PageType),
+  args: {
+    filter: { type: GraphQLJSON },
+  },
   async resolve(parent, args, context: Context) {
     graphQLAuthCheck(context);
     try {
@@ -27,8 +48,12 @@ export default {
         ability = await extendAbilityForPage(user, application, ability);
       }
 
-      // return the pages
-      return await Page.find(accessibleBy(ability, 'read'));
+      const abilityFilters = Page.find(accessibleBy(ability, 'read')).getFilter();
+      const queryFilters = getFilter(args.filter, FILTER_FIELDS);
+      const filters = [queryFilters, abilityFilters];
+
+      // return the pages with filters applied
+      return await Page.find({ $and: filters });
     } catch (err) {
       logger.error(err.message, { stack: err.stack });
       if (err instanceof GraphQLError) {

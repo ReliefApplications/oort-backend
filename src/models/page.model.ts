@@ -53,6 +53,7 @@ export interface Page extends Document {
   visible: boolean;
   archived: boolean;
   archivedAt?: Date;
+  redirectTo?: string;
 }
 
 /** Mongoose page schema declaration */
@@ -122,6 +123,7 @@ const pageSchema = new Schema<Page>(
       type: Date,
       expires: 2592000,
     },
+    redirectTo: { type: String, default: null },
   },
   {
     timestamps: { createdAt: 'createdAt', updatedAt: 'modifiedAt' },

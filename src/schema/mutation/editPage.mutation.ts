@@ -38,6 +38,7 @@ type EditPageArgs = {
   permissions?: any;
   icon?: string;
   visible?: boolean;
+  redirectTo?: string;
 };
 
 /**
@@ -51,6 +52,7 @@ export default {
     id: { type: new GraphQLNonNull(GraphQLID) },
     name: { type: GraphQLString },
     icon: { type: GraphQLString },
+    redirectTo: { type: GraphQLString },
     permissions: { type: GraphQLJSON },
     visible: { type: GraphQLBoolean },
   },
@@ -83,9 +85,11 @@ export default {
       }
 
       // Create update
-      const update = {
+      const update: any = {
         ...(args.name && { name: args.name }),
         ...(!isNil(args.icon) && { icon: args.icon }),
+        ...(!isNil(args.redirectTo) && { redirectTo: args.redirectTo }),
+        ...(!isNil(args.visible) && { visible: args.visible }),
       };
 
       // Updating permissions
@@ -122,12 +126,9 @@ export default {
         }
       }
 
-      // Update visibility
-      Object.assign(update, !isNil(args.visible) && { visible: args.visible });
-
       // apply the update
       page = await Page.findByIdAndUpdate(
-        page._id,
+        args.id,
         { ...update, ...permissionsUpdate },
         { new: true }
       );

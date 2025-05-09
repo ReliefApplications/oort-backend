@@ -97,6 +97,7 @@ export const PageType = new GraphQLObjectType({
         return ability.can('delete', parent);
       },
     },
+    redirectTo: { type: GraphQLString },
     autoDeletedAt: {
       type: GraphQLDate,
       resolve(parent: Page) {
