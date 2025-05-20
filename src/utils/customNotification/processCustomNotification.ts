@@ -134,9 +134,7 @@ export default async (
 
       if (records.length) {
         const redirectToRecords =
-          notification.redirect &&
-          notification.redirect.active &&
-          notification.redirect.type === 'recordIds';
+          notification.redirect && notification.redirect.active;
         const recordsIds = [];
         const recordListArr = [];
         for (const record of records) {

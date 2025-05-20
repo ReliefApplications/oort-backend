@@ -266,11 +266,13 @@ export const ResourceType = new GraphQLObjectType({
             path: 'customNotifications',
             model: 'CustomNotification',
           });
-          const filteredNotifications = application.customNotifications.filter(
-            (notification) =>
-              notification.applicationTrigger === true &&
-              notification.resource.equals(parent._id)
-          );
+          const filteredNotifications = application.customNotifications
+            .filter(
+              (notification) =>
+                notification.applicationTrigger === true &&
+                notification.resource.equals(parent._id)
+            )
+            .sort((a, b) => a.name.localeCompare(b.name));
           return filteredNotifications ?? [];
         }
         return [];
