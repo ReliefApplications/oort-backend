@@ -492,6 +492,11 @@ export const ApplicationType = new GraphQLObjectType({
     },
     templates: {
       type: new GraphQLList(TemplateType),
+      resolve(parent) {
+        return (parent.templates || []).sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
+      },
     },
     distributionLists: {
       type: new GraphQLList(DistributionListType),
