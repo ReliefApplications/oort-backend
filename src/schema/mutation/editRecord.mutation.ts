@@ -129,7 +129,12 @@ export default {
       // Check permissions with two layers
       const ability = await extendAbilityForRecords(user, parentForm);
       const errorFields = inaccessibleFields(oldRecord, args.data, ability);
-      if (ability.cannot('update', oldRecord) || errorFields.length > 0) {
+      if (ability.cannot('update', oldRecord)) {
+        throw new GraphQLError(
+          context.i18next.t('common.errors.permissionNotGranted')
+        );
+      }
+      if (errorFields.length > 0) {
         throw new GraphQLError(
           context.i18next.t('common.errors.permissionNotGranted') +
             errorFields.join(', ')
