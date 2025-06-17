@@ -299,31 +299,35 @@ export default {
         checkDefaultFields(fields);
 
         // get permissions from resource or fallback to old fields
-        async function getInheritedPermissions(form: any): Promise<{ canSee: any[], canUpdate: any[] }> {
+        async function getInheritedPermissions(
+          formData: any
+        ): Promise<{ canSee: any[]; canUpdate: any[] }> {
           // Get permissions from current resource state
-          if (form?.resource) {
-            const resource = await Resource.findById(form.resource);
+          if (formData?.resource) {
+            const resource = await Resource.findById(formData.resource);
             if (resource?.fields?.length > 0) {
-              return resource.fields[0].permissions || { canSee: [], canUpdate: [] };
+              return (
+                resource.fields[0].permissions || { canSee: [], canUpdate: [] }
+              );
             }
           }
           // Fallback to existing form field permissions or default empty
-          const oldFields = form?.fields || [];
-          return oldFields.length > 0 
-            ? (oldFields[0]?.permissions || { canSee: [], canUpdate: [] })
+          const existingFields = formData?.fields || [];
+          return existingFields.length > 0
+            ? existingFields[0]?.permissions || { canSee: [], canUpdate: [] }
             : { canSee: [], canUpdate: [] };
         }
         // Main permission inheritance logic
-        const oldFields = form?.fields || [];
-        const oldFieldNames = oldFields.map((f: any) => f.name);
+        const existingFields = form?.fields || [];
+        const oldFieldNames = existingFields.map((f: any) => f.name);
         const currentFieldPermissions = await getInheritedPermissions(form);
         // Apply permissions to new fields that don't have valid permissions
         for (const field of fields) {
           const isNew = !oldFieldNames.includes(field.name);
           const perms = (field as any).permissions;
-          const hasValidPermissions = perms && (
-            Array.isArray(perms.canSee) || Array.isArray(perms.canUpdate)
-          );
+          const hasValidPermissions =
+            perms &&
+            (Array.isArray(perms.canSee) || Array.isArray(perms.canUpdate));
           if (isNew && !hasValidPermissions) {
             (field as any).permissions = { ...currentFieldPermissions };
           }
