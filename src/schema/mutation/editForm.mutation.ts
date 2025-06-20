@@ -32,8 +32,7 @@ import { scheduleKoboSync } from '@server/koboSyncScheduler';
 // /**
 //  * List of keys of the structure's object which we want to inherit to the children forms when they are modified on the core form
 //  * If a trigger is removed from the core form, we will remove it from the children forms, same for the calculatedValues.
-/** Other keys can be added here
- */
+/** Other keys can be added here */
 const INHERITED_PROPERTIES = [
   'triggers',
   'calculatedValues',
@@ -308,6 +307,12 @@ export default {
             .flat()
             .concat(fields);
           // Check fields against the resource to add new ones or edit old ones
+
+          const permissions = resource.fields?.[0]?.permissions ?? {
+            canSee: [],
+            canUpdate: [],
+          }; // Get the first field permissions
+
           for (const field of fields) {
             // For each field in the form being saved
             const oldField = oldFields.find((x) => x.name === field.name); // Find the equivalent field in the resource's fields
@@ -316,6 +321,7 @@ export default {
               const newField: any = Object.assign({}, field); // Create a copy of the form's field
               newField.isRequired =
                 form.core && field.isRequired ? true : false; // If it's a core form and the field isRequired, copy this property
+              newField.permissions = permissions; //Avoids to have to edit manually permissions each time we add a new field
               oldFields.push(newField); // Add this field to the list of the resource's fields
             } else {
               // Check if field can be updated
