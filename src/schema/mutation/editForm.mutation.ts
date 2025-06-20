@@ -32,8 +32,7 @@ import { scheduleKoboSync } from '@server/koboSyncScheduler';
 // /**
 //  * List of keys of the structure's object which we want to inherit to the children forms when they are modified on the core form
 //  * If a trigger is removed from the core form, we will remove it from the children forms, same for the calculatedValues.
-/** Other keys can be added here
- */
+/** Other keys can be added here */
 const INHERITED_PROPERTIES = [
   'triggers',
   'calculatedValues',
@@ -288,39 +287,7 @@ export default {
         }
         // Check if default fields are used
         checkDefaultFields(fields);
-      // get permissions from resource or fallback to old fields
-        async function getInheritedPermissions(
-          formData: any
-        ): Promise<{ canSee: any[]; canUpdate: any[] }> {
-          // Get permissions from current resource state
-          if (formData?.resource) {
-            const resource = await Resource.findById(formData.resource);
-            if (resource?.fields?.length > 0) {
-              return (
-                resource.fields[0].permissions || { canSee: [], canUpdate: [] }
-              );
-            }
-          }
-          // going back to existing form field permissions or default empty
-          const existingFields = formData?.fields || [];
-          return existingFields.length > 0
-            ? existingFields[0]?.permissions || { canSee: [], canUpdate: [] }
-            : { canSee: [], canUpdate: [] };
-        }
-        const existingFields = form?.fields || [];
-        const oldFieldNames = existingFields.map((f: any) => f.name);
-        const currentFieldPermissions = await getInheritedPermissions(form);
-        // Apply permissions to new fields that don't have valid permissions
-        for (const field of fields) {
-          const isNew = !oldFieldNames.includes(field.name);
-          const perms = (field as any).permissions;
-          const hasValidPermissions =
-            perms &&
-            (Array.isArray(perms.canSee) || Array.isArray(perms.canUpdate));
-          if (isNew && !hasValidPermissions) {
-            (field as any).permissions = { ...currentFieldPermissions };
-          }
-        }
+
         // === Resource inheritance management ===
         const prevStructure = JSON.parse(
           form.structure ? form.structure : '{}'
@@ -340,6 +307,12 @@ export default {
             .flat()
             .concat(fields);
           // Check fields against the resource to add new ones or edit old ones
+
+          const permissions = resource.fields?.[0]?.permissions ?? {
+            canSee: [],
+            canUpdate: [],
+          }; // Get the first field permissions
+
           for (const field of fields) {
             // For each field in the form being saved
             const oldField = oldFields.find((x) => x.name === field.name); // Find the equivalent field in the resource's fields
@@ -348,6 +321,7 @@ export default {
               const newField: any = Object.assign({}, field); // Create a copy of the form's field
               newField.isRequired =
                 form.core && field.isRequired ? true : false; // If it's a core form and the field isRequired, copy this property
+              newField.permissions = permissions; //Avoids to have to edit manually permissions each time we add a new field
               oldFields.push(newField); // Add this field to the list of the resource's fields
             } else {
               // Check if field can be updated
