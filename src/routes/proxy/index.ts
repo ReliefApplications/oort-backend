@@ -1,6 +1,5 @@
 import express, { Request, Response } from 'express';
 import { ApiConfiguration } from '@models';
-import { getToken } from '@utils/proxy';
 import { get, isEmpty, lowerCase } from 'lodash';
 import i18next from 'i18next';
 import { logger } from '@lib/logger';
@@ -61,7 +60,9 @@ const proxyAPIRequest = async (
       logger.info(`REDIS: get key : ${url}`);
       res.status(200).send(JSON.parse(cacheData));
     } else {
-      const token = await getToken(api, req.headers.accesstoken, ping);
+      const token =
+        'Bearer 534a59050269fa9d8b7479a08e9d747ab9b76e2a255e28511c0f9e8eaea7474b90431c16f935660cd53649a7e093f836be90e6a97ad8245e5c6bc8b788fcc2642dd3b93caa68c786b4e48c27adfc9f7fe0db2f643af7e58c4c88dbd293c63d495cf889e103f47b35cd4ecff902f2af6c3f9316a5557dc6eb41de8e7c171e2b4f'; //await getToken(api, req.headers.accesstoken, ping);
+      console.log(token, url);
       await axios({
         url,
         method: req.method,

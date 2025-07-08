@@ -67,4 +67,5 @@ module.exports = {
     token: 'UNESCO_COUNTRIES_API_TOKEN',
     endpoint: 'UNESCO_COUNTRIES_API_ENDPOINT',
   },
+  notificationsLeader: 'NOTIFICATIONS_LEADER',
 };

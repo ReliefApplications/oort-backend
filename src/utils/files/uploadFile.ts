@@ -46,6 +46,8 @@ const ALLOWED_EXTENSIONS = [
   'xml',
   'css',
   'scss',
+  'eps',
+  'ai',
 ];
 
 /**

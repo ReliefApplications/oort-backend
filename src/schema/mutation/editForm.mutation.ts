@@ -21,7 +21,6 @@ import { AppAbility } from '@security/defineUserAbility';
 import { status, StatusEnumType, StatusType } from '@const/enumTypes';
 import isEqual from 'lodash/isEqual';
 import differenceWith from 'lodash/differenceWith';
-import unionWith from 'lodash/unionWith';
 import i18next from 'i18next';
 import { get, isArray, isNil } from 'lodash';
 import { logger } from '@lib/logger';
@@ -30,11 +29,10 @@ import { graphQLAuthCheck } from '@schema/shared';
 import { Context } from '@server/apollo/context';
 import { scheduleKoboSync } from '@server/koboSyncScheduler';
 
-/**
- * List of keys of the structure's object which we want to inherit to the children forms when they are modified on the core form
- * If a trigger is removed from the core form, we will remove it from the children forms, same for the calculatedValues.
- * Other keys can be added here
- */
+// /**
+//  * List of keys of the structure's object which we want to inherit to the children forms when they are modified on the core form
+//  * If a trigger is removed from the core form, we will remove it from the children forms, same for the calculatedValues.
+/** Other keys can be added here */
 const INHERITED_PROPERTIES = [
   'triggers',
   'calculatedValues',
@@ -309,6 +307,12 @@ export default {
             .flat()
             .concat(fields);
           // Check fields against the resource to add new ones or edit old ones
+
+          const permissions = resource.fields?.[0]?.permissions ?? {
+            canSee: [],
+            canUpdate: [],
+          }; // Get the first field permissions
+
           for (const field of fields) {
             // For each field in the form being saved
             const oldField = oldFields.find((x) => x.name === field.name); // Find the equivalent field in the resource's fields
@@ -317,6 +321,7 @@ export default {
               const newField: any = Object.assign({}, field); // Create a copy of the form's field
               newField.isRequired =
                 form.core && field.isRequired ? true : false; // If it's a core form and the field isRequired, copy this property
+              newField.permissions = permissions; //Avoids to have to edit manually permissions each time we add a new field
               oldFields.push(newField); // Add this field to the list of the resource's fields
             } else {
               // Check if field can be updated
@@ -478,39 +483,39 @@ export default {
                 }
               }
 
-              // REFLECT STRUCTURE CHANGES ===
-              const templateStructure = JSON.parse(template.structure);
-              for (const objectKey in structureUpdate) {
-                // In a childForm's structure, if there are property's objects that have been deleted from the core form, delete them there too
-                if (
-                  templateStructure[objectKey] &&
-                  templateStructure[objectKey].length &&
-                  structureUpdate[objectKey] &&
-                  structureUpdate[objectKey].length
-                ) {
-                  templateStructure[objectKey] = differenceWith(
-                    templateStructure[objectKey],
-                    structureUpdate[objectKey],
-                    isEqual
-                  );
-                }
-                // Merge the new property's objects to the children
-                templateStructure[objectKey] = templateStructure[objectKey]
-                  ? unionWith(
-                      templateStructure[objectKey],
-                      newStructure[objectKey],
-                      isEqual
-                    )
-                  : newStructure[objectKey];
-                // If the property is null, undefined or empty, directly remove the entry from the structure
-                if (
-                  !templateStructure[objectKey] ||
-                  !templateStructure[objectKey].length
-                ) {
-                  delete templateStructure[objectKey];
-                }
-              }
-              template.structure = JSON.stringify(templateStructure);
+              // // REFLECT STRUCTURE CHANGES ===
+              // const templateStructure = JSON.parse(template.structure);
+              // for (const objectKey in structureUpdate) {
+              //   // In a childForm's structure, if there are property's objects that have been deleted from the core form, delete them there too
+              //   if (
+              //     templateStructure[objectKey] &&
+              //     templateStructure[objectKey].length &&
+              //     structureUpdate[objectKey] &&
+              //     structureUpdate[objectKey].length
+              //   ) {
+              //     templateStructure[objectKey] = differenceWith(
+              //       templateStructure[objectKey],
+              //       structureUpdate[objectKey],
+              //       isEqual
+              //     );
+              //   }
+              //   // Merge the new property's objects to the children
+              //   templateStructure[objectKey] = templateStructure[objectKey]
+              //     ? unionWith(
+              //         templateStructure[objectKey],
+              //         newStructure[objectKey],
+              //         isEqual
+              //       )
+              //     : newStructure[objectKey];
+              //   // If the property is null, undefined or empty, directly remove the entry from the structure
+              //   if (
+              //     !templateStructure[objectKey] ||
+              //     !templateStructure[objectKey].length
+              //   ) {
+              //     delete templateStructure[objectKey];
+              //   }
+              // }
+              // template.structure = JSON.stringify(templateStructure);
             }
 
             for (const field of deletedFields) {

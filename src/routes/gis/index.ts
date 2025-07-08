@@ -20,6 +20,10 @@ import * as shapefile from 'shapefile';
 import path from 'path';
 import fs from 'fs';
 import AdmZip from 'adm-zip';
+import {
+  FilterDescriptor,
+  CompositeFilterDescriptor,
+} from '@const/compositeFilter';
 
 /**
  * Endpoint for custom feature layers
@@ -65,6 +69,7 @@ const parseToSingleFeature = (feature: Feature) => {
  * @param mapping.latitudeField latitude field ( not used if geoField )
  * @param mapping.longitudeField longitude field ( not used if geoField )
  * @param mapping.adminField admin field ( mapping with polygons coming from common services )
+ * @param mapping.propertyFilters any filters to be applies on the feature properties
  * @param geoFilter geo filter ( polygon )
  */
 const getFeatureFromItem = (
@@ -76,9 +81,21 @@ const getFeatureFromItem = (
     latitudeField?: string;
     longitudeField?: string;
     adminField?: string;
+    propertyFilters?: { prop: string; value: unknown }[];
   },
   geoFilter?: turf.Polygon
 ) => {
+  const filterAndPush = (f: any) => {
+    const hasFilters =
+      mapping.propertyFilters && mapping.propertyFilters.length > 0;
+    const allFiltersMet = mapping?.propertyFilters.every((propF) => {
+      return f.properties?.[propF.prop] === propF.value;
+    });
+
+    if (!hasFilters || allFiltersMet) {
+      features.push(f);
+    }
+  };
   if (mapping.geoField) {
     // removed the toLowerCase there, which may cause an issue
     const geo = get(item, mapping.geoField);
@@ -92,30 +109,39 @@ const getFeatureFromItem = (
             geometry: geo,
             properties: { ...omit(item, mapping.geoField) },
           };
-          features.push(feature);
+          filterAndPush(feature);
         } else {
           const feature = {
             ...(typeof geo === 'string' ? JSON.parse(geo) : geo),
             properties: { ...omit(item, mapping.geoField) },
           };
-          const getFeature = (f: Feature) => {
-            // Only push if feature is of the same type as layer
-            // Get from feature, as geo can be stored as string for some models ( ref data )
-            const geoType = get(f, 'geometry.type');
-            if (f.type === 'Feature' && geoType === layerType) {
-              features.push(f);
-            } else if (
-              f.type === 'Feature' &&
-              `Multi${layerType}` === geoType
-            ) {
-              features.push(...parseToSingleFeature(f));
+          // Only push if feature is of the same type as layer
+          // Get from feature, as geo can be stored as string for some models ( ref data )
+          // Helper function, uses layerType and filterAndPush from the outer scope
+          const processSingleGeoJSONFeature = (feat: any) => {
+            if (!feat || feat.type !== 'Feature') {
+              return;
+            }
+
+            const featGeoType = get(feat, 'geometry.type');
+
+            if (featGeoType === layerType) {
+              filterAndPush(feat);
+            } else if (featGeoType && `Multi${layerType}` === featGeoType) {
+              parseToSingleFeature(feat as Feature).forEach(filterAndPush);
             }
           };
 
-          if (feature.type === 'FeatureCollection') {
-            feature.features.forEach((f: Feature) => getFeature(f));
-          } else {
-            getFeature(feature);
+          if (feature.type === 'Feature') {
+            processSingleGeoJSONFeature(feature);
+          } else if (
+            feature.type === 'FeatureCollection' &&
+            feature.features &&
+            Array.isArray(feature.features)
+          ) {
+            feature.features.forEach((f: any) => {
+              processSingleGeoJSONFeature(f);
+            });
           }
         }
       }
@@ -144,7 +170,7 @@ const getFeatureFromItem = (
           ...geo,
           properties: { ...item },
         };
-        features.push(feature);
+        filterAndPush(feature);
       }
     }
   }
@@ -256,10 +282,26 @@ router.get('/feature', async (req, res) => {
     const adminField = get(req, 'query.adminField');
     const layerType = (get(req, 'query.type') ||
       GeometryType.POINT) as GeometryType;
-    const contextFilters = JSON.parse(get(req, 'query.contextFilters', null));
+    const contextFilters: CompositeFilterDescriptor = JSON.parse(
+      get(req, 'query.contextFilters', null)
+    );
     const graphQLVariables = JSON.parse(
       get(req, 'query.graphQLVariables', null)
     );
+
+    // used to filter features by property values only
+    const propertyFilters: { prop: string; value: unknown }[] = [];
+
+    // @TODO: Add a proper way of defining the feature filters instead of using the context filters
+    contextFilters?.filters.forEach((f: FilterDescriptor) => {
+      const prop = (f.field || '').split('__FEATURE__.')[1];
+      if (prop) {
+        propertyFilters.push({
+          prop,
+          value: f.value,
+        });
+      }
+    });
     const at = get(req, 'query.at') as string | undefined;
     if (!geoField && !(latitudeField && longitudeField)) {
       return res
@@ -279,6 +321,7 @@ router.get('/feature', async (req, res) => {
       longitudeField,
       latitudeField,
       adminField,
+      propertyFilters,
     };
     // Fetch resource to populate layer
     if (get(req, 'query.resource')) {

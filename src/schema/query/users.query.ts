@@ -12,6 +12,8 @@ import getSortOrder from '@utils/schema/resolvers/Query/getSortOrder';
 import checkPageSize from '@utils/schema/errors/checkPageSize.util';
 import { accessibleBy } from '@casl/mongoose';
 import getFilter from '@utils/filter/getFilter';
+import { omit } from 'lodash';
+import config from 'config';
 
 /** Default page size */
 const DEFAULT_FIRST = 10;
@@ -79,8 +81,19 @@ export default {
         const abilityFilters = User.find(
           accessibleBy(ability, 'read').User
         ).getFilter();
+        const filter = omit(args.filter, 'attributes');
+        const availableAttributes: { value: string; text: string }[] =
+          config.get('user.attributes.list') || [];
         // Get filters for the searched value
-        const queryFilters = getFilter(args.filter, FILTER_FIELDS);
+        const queryFilters = getFilter(
+          filter,
+          FILTER_FIELDS.concat(
+            availableAttributes.map((attribute) => {
+              return { name: `attributes.${attribute.value}`, type: 'text' };
+            })
+          )
+        );
+
         const filters: any[] = [queryFilters, abilityFilters];
         const afterCursor = args.afterCursor;
 

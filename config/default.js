@@ -3,6 +3,7 @@
  * Use https://www.npmjs.com/package/config package.
  */
 module.exports = {
+  notificationsLeader: false,
   server: {
     port: 3000,
     allowedOrigins: [],

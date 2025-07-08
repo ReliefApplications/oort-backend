@@ -145,7 +145,7 @@ export const extractFields = async (
                 }),
               };
             }),
-            choices: element.choices.map((x) => {
+            choices: (element.choices ?? []).map((x) => {
               return {
                 value: x.value ? x.value : x,
                 text: x.text ? x.text : x,
@@ -192,7 +192,7 @@ export const extractFields = async (
             const choices = element.choices.map((x) => {
               return {
                 value: x.value || x,
-                text: x.text || x,
+                text: x.text || x.value || x,
               };
             });
             if (element.hasOther) {
