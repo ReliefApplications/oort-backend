@@ -8,9 +8,9 @@ import {
 } from '../inputs/customNotification.input';
 import extendAbilityForApplications from '@security/extendAbilityForApplication';
 import {
-  scheduleCustomNotificationJob,
-  unscheduleCustomNotificationJob,
-} from '../../server/customNotificationScheduler';
+  scheduleNotification,
+  unscheduleNotification,
+} from '../../server/components/notification/notification-scheduler';
 import { customNotificationStatus } from '@const/enumTypes';
 import { logger } from '@lib/logger';
 import { graphQLAuthCheck } from '@schema/shared';
@@ -111,9 +111,9 @@ export default {
         (args.triggersFilters &&
           notificationDetail.status === customNotificationStatus.active)
       ) {
-        scheduleCustomNotificationJob(notificationDetail, application);
+        scheduleNotification(notificationDetail, application);
       } else {
-        unscheduleCustomNotificationJob(notificationDetail);
+        unscheduleNotification(notificationDetail);
       }
 
       return notificationDetail;

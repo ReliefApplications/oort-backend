@@ -7,7 +7,7 @@ import {
   CustomNotificationArgs,
 } from '../inputs/customNotification.input';
 import extendAbilityForApplications from '@security/extendAbilityForApplication';
-import { scheduleCustomNotificationJob } from '../../server/customNotificationScheduler';
+import { scheduleNotification } from '../../server/components/notification/notification-scheduler';
 import { customNotificationStatus } from '@const/enumTypes';
 import { logger } from '@lib/logger';
 import { graphQLAuthCheck } from '@schema/shared';
@@ -85,7 +85,7 @@ export default {
         args.notification.schedule &&
         args.notification.status === customNotificationStatus.active
       ) {
-        scheduleCustomNotificationJob(notificationDetail, application);
+        scheduleNotification(notificationDetail, application);
       }
       return notificationDetail;
     } catch (err) {

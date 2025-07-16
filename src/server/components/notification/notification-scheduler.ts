@@ -17,7 +17,7 @@ const customNotificationMap: Record<string, CronJob> = {};
 /**
  * Global function called on server start to initialize all the custom notification.
  */
-const customNotificationScheduler = async () => {
+export const setupNotificationScheduler = async () => {
   const applications = await Application.find({
     customNotifications: { $elemMatch: { status: 'active' } },
   });
@@ -25,13 +25,11 @@ const customNotificationScheduler = async () => {
     if (!!application.customNotifications) {
       for await (const notification of application.customNotifications) {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        scheduleCustomNotificationJob(notification, application);
+        scheduleNotification(notification, application);
       }
     }
   }
 };
-
-export default customNotificationScheduler;
 
 /**
  * Schedule or re-schedule a custom notification.
@@ -39,7 +37,7 @@ export default customNotificationScheduler;
  * @param notification custom notification to schedule
  * @param application application's custom notification to schedule
  */
-export const scheduleCustomNotificationJob = async (
+export const scheduleNotification = async (
   notification: CustomNotification,
   application: Application
 ) => {
@@ -101,7 +99,7 @@ export const scheduleCustomNotificationJob = async (
       }
     } else if (task) {
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      unscheduleCustomNotificationJob(notification);
+      unscheduleNotification(notification);
     }
   } catch (err) {
     logger.error(err.message);
@@ -113,7 +111,7 @@ export const scheduleCustomNotificationJob = async (
  *
  * @param customNotification custom notification to unschedule
  */
-export const unscheduleCustomNotificationJob = (
+export const unscheduleNotification = (
   customNotification: CustomNotification
 ): void => {
   const task = customNotificationMap[customNotification.id];
