@@ -384,8 +384,6 @@ const duplicateApplication = async () => {
     substituteMap.set(baseRole.id, newRole.id);
   }
 
-  console.log(substituteMap);
-
   logger.info('Executing form callbacks...');
 
   // Execute form callbacks

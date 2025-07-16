@@ -25,6 +25,7 @@ const TRANSPORT_OPTIONS = {
     pass: config.get('email.pass'),
   },
 } as any;
+
 /** Reusable email definition */
 const email = new Email({
   transport: nodemailer.createTransport(TRANSPORT_OPTIONS),

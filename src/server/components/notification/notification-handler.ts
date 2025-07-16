@@ -22,33 +22,108 @@ import mongoose from 'mongoose';
  * @param notificationType notification type
  * @param fields fields to process
  * @param rows data of records rows
+ * @param user optional user object
+ * @param user.firstName User first name
+ * @param user.lastName User last name
+ * @param user.email User email
  */
 const preprocessNotificationTemplate = async (
   content,
   notificationType,
   fields,
-  rows
+  rows,
+  user?: {
+    firstName?: string;
+    lastName?: string;
+    email: string;
+  }
 ) => {
   if (notificationType === customNotificationType.email) {
-    content.body = preprocess(content.body, {
-      fields,
-      rows,
-    });
-    content.subject = preprocess(content.subject, {
-      fields,
-      rows,
-    });
+    content.body = preprocess(
+      content.body,
+      {
+        fields,
+        rows,
+      },
+      user
+    );
+    content.subject = preprocess(
+      content.subject,
+      {
+        fields,
+        rows,
+      },
+      user
+    );
   } else {
-    content.title = preprocess(content.title, {
-      fields,
-      rows,
-    });
-    content.description = preprocess(content.description, {
-      fields,
-      rows,
-    });
+    content.title = preprocess(
+      content.title,
+      {
+        fields,
+        rows,
+      },
+      user
+    );
+    content.description = preprocess(
+      content.description,
+      {
+        fields,
+        rows,
+      },
+      user
+    );
   }
   return content;
+};
+
+/**
+ * Resolves email recipients to User objects when possible, falls back to email strings
+ *
+ * @param emails array of email addresses
+ * @returns object containing resolved users and email-only recipients
+ */
+const resolveRecipientsFromEmails = async (emails: string[]) => {
+  // Find users where username matches any of the provided emails
+  const foundUsers = await User.find(
+    {
+      username: { $in: emails },
+    },
+    'username id firstName lastName'
+  );
+
+  // Create a map of email -> user for quick lookup
+  const userMap = new Map();
+  foundUsers.forEach((user) => {
+    userMap.set(user.username, user);
+  });
+
+  // Separate users from email-only recipients
+  const resolvedUsers = [];
+  const emailOnlyRecipients: string[] = [];
+
+  emails.forEach((email) => {
+    const user = userMap.get(email);
+    if (user) {
+      resolvedUsers.push({
+        id: user.id,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.username,
+      });
+    } else {
+      console.log('not found', email);
+      emailOnlyRecipients.push(email);
+    }
+  });
+
+  return {
+    users: resolvedUsers,
+    emails: emailOnlyRecipients,
+    allRecipients: [
+      ...resolvedUsers.map((u) => u.username),
+      ...emailOnlyRecipients,
+    ],
+  };
 };
 
 /**
@@ -66,16 +141,19 @@ export const handleNotification = async (
   records?: Record[]
 ) => {
   try {
+    // Get template from notification
     const template = application.templates.find(
       (x) => x._id.toString() === notification.template.toString()
     );
 
     const notificationType = get(notification, 'notificationType', 'email');
 
-    let sent = false;
+    let success = false;
     let recipients: string[] = [];
     let userField = '';
     let emailField = '';
+
+    // Based on recipients type, set list of recipients
     switch (notification.recipientsType) {
       // Use single email as recipients
       case customNotificationRecipientsType.email: {
@@ -108,18 +186,19 @@ export const handleNotification = async (
     }
 
     if (resource) {
+      // Find associated layout
       const layout = resource.layouts.find(
         (x) => x._id.toString() === notification.layout.toString()
       );
 
-      const fieldArr = [];
+      // Build list of fields, associated with layout
+      const fields = [];
       for (const field of resource.fields) {
         const layoutField = layout.query.fields.find(
-          (fieldDetail) => fieldDetail.name == field.name
+          (f) => f.name == field.name
         );
-
         if (field.type != 'users') {
-          const obj = {
+          fields.push({
             name: field.name,
             field: field.name,
             type: field.type,
@@ -127,8 +206,7 @@ export const handleNotification = async (
               field: field,
             },
             title: layoutField?.label || layoutField?.name,
-          };
-          fieldArr.push(obj);
+          });
         }
       }
 
@@ -156,6 +234,7 @@ export const handleNotification = async (
           }
         }
 
+        // Extract recipients from field values of records
         if (!!userField || !!emailField) {
           const field = userField || emailField;
           const groupRecordArr = [];
@@ -178,7 +257,7 @@ export const handleNotification = async (
               template.content = await preprocessNotificationTemplate(
                 template.content,
                 notificationType,
-                fieldArr,
+                fields,
                 groupRecord
               );
             }
@@ -199,7 +278,7 @@ export const handleNotification = async (
                   // If email type, should get user email
                   recipients = userDetails.map((details) => details.username);
                   await sendNotification(template, recipients, notification);
-                  sent = true;
+                  success = true;
                 } else {
                   // If notification type, should get user id
                   recipients = userDetails.map((details) => details.id);
@@ -209,39 +288,64 @@ export const handleNotification = async (
                     notification,
                     recordsIds
                   );
-                  sent = true;
+                  success = true;
                 }
               }
             } else {
               // If using emailField, get the email saved in the record data
               recipients = groupValArr[d];
               await sendNotification(template, recipients, notification);
-              sent = true;
+              success = true;
             }
             d++;
           }
         } else {
-          template.content = await preprocessNotificationTemplate(
-            template.content,
-            notificationType,
-            fieldArr,
-            recordListArr
+          const { users, emails } = await resolveRecipientsFromEmails(
+            recipients
           );
-          await sendNotification(
-            template,
-            recipients,
-            notification,
-            recordsIds
-          );
-          sent = true;
+          // Send one notification per user
+          for (const user of users) {
+            console.log('user', user);
+            template.content = await preprocessNotificationTemplate(
+              template.content,
+              notificationType,
+              fields,
+              recordListArr,
+              user
+            );
+            console.log('will send');
+            await sendNotification(
+              template,
+              [user.email],
+              notification,
+              recordsIds
+            );
+          }
+          // Send one notification per email (not associated with a user)
+          for (const email of emails) {
+            console.log('email', email);
+            template.content = await preprocessNotificationTemplate(
+              template.content,
+              notificationType,
+              fields,
+              recordListArr,
+              {
+                email,
+              }
+            );
+            await sendNotification(template, [email], notification, recordsIds);
+          }
+
+          success = true;
         }
       }
     } else {
       await sendNotification(template, recipients, notification);
-      sent = true;
+      success = true;
     }
 
-    if (sent) {
+    // On success, update last execution status
+    if (success) {
       const update = {
         $set: {
           'customNotifications.$.lastExecutionStatus': 'success',

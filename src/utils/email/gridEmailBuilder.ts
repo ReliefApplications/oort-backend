@@ -196,6 +196,10 @@ const recordExpression = (rows: any[]) => {
  *
  * @param text text to preprocess.
  * @param dataset optional dataset settings.
+ * @param user optional user object.
+ * @param user.firstName User first name
+ * @param user.lastName User last name
+ * @param user.email User email
  * @returns preprocessed string.
  */
 export const preprocess = (
@@ -203,7 +207,12 @@ export const preprocess = (
   dataset: {
     fields: any[];
     rows: any[];
-  } | null = null
+  } | null = null,
+  user?: {
+    firstName?: string;
+    lastName?: string;
+    email: string;
+  }
 ): string => {
   const template = Handlebars.compile(text);
 
@@ -216,5 +225,6 @@ export const preprocess = (
     recordId: recordExpression(dataset?.rows || []),
     dataset: datasetExpression(dataset?.fields || [], dataset?.rows || []),
     data: (dataset && dataset.rows[0]) || {},
+    user,
   });
 };

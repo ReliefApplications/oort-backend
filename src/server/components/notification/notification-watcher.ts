@@ -10,7 +10,6 @@ import { handleNotification } from '@server/components/notification/notification
 export function setupRecordWatcher(): void {
   // Watch records creation and updates to see if should emit trigger notification
   Record.watch().on('change', async (data) => {
-    console.log('Record change detected:', data);
     if (!(config.get('notificationsLeader') == 'true')) {
       return;
     }
