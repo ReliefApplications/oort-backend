@@ -2,7 +2,7 @@ import { Application, Record, Resource } from '@models';
 import config from 'config';
 import { isEqual } from 'lodash';
 import { buildNotificationFilter } from '@server/components/notification/notification-filter';
-import processCustomNotification from '@utils/customNotification/processCustomNotification';
+import { handleNotification } from '@server/components/notification/notification-handler';
 
 /**
  * Sets up record watching for custom notifications
@@ -57,12 +57,7 @@ export function setupRecordWatcher(): void {
             $and: [mongooseFilter, { _id: recordId }],
           });
           if (recordFiltered.length) {
-            processCustomNotification(
-              trigger,
-              application,
-              resource,
-              recordFiltered
-            );
+            handleNotification(trigger, application, resource, recordFiltered);
           }
         }
       }

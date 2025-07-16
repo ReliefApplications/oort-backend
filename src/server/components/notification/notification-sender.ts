@@ -8,13 +8,13 @@ import { Address, sendEmail } from '@utils/email';
 import { get, isArray } from 'lodash';
 
 /**
- * Send email for custom notification
+ * Send notification by email
  *
  * @param template processed email template
  * @param recipients custom notification recipients
  * @param notification custom notification
  */
-const customNotificationMailSend = async (
+const sendAsMail = async (
   template: Template,
   recipients: Address[],
   notification: CustomNotification
@@ -36,14 +36,14 @@ const customNotificationMailSend = async (
 };
 
 /**
- * Send email for custom notification
+ * Send notification as in-app notification
  *
  * @param template processed email template
  * @param recipients custom notification recipients (form id or users from user field)
  * @param notification custom notification
  * @param recordsIds records ids list (if any)
  */
-const notificationSend = async (
+const sendAsInApp = async (
   template: Template,
   recipients: string | string[],
   notification: CustomNotification,
@@ -117,7 +117,7 @@ const notificationSend = async (
  * @param notification custom notification
  * @param recordsIds records ids list
  */
-export default async (
+export const sendNotification = async (
   template: Template,
   recipients: Address[] | string,
   notification: CustomNotification,
@@ -127,14 +127,10 @@ export default async (
     const notificationType = get(notification, 'notificationType', 'email');
     if (notificationType === customNotificationType.email) {
       // If custom notification type is email
-      await customNotificationMailSend(
-        template,
-        recipients as Address[],
-        notification
-      );
+      await sendAsMail(template, recipients as Address[], notification);
     } else {
       // If custom notification type is notification
-      await notificationSend(
+      await sendAsInApp(
         template,
         recipients as string,
         notification,

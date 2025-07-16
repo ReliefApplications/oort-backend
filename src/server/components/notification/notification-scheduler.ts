@@ -9,7 +9,7 @@ import logger from '@lib/logger';
 import * as cronValidator from 'cron-validator';
 import get from 'lodash/get';
 import { buildNotificationFilter } from '@server/components/notification/notification-filter';
-import processCustomNotification from '@utils/customNotification/processCustomNotification';
+import { handleNotification } from '@server/components/notification/notification-handler';
 
 /** A map with the custom notification ids as keys and the scheduled custom notification as values */
 const customNotificationMap: Record<string, CronJob> = {};
@@ -75,7 +75,7 @@ export const scheduleNotification = async (
                   },
                 ]);
                 if (records.length) {
-                  await processCustomNotification(
+                  await handleNotification(
                     notification,
                     application,
                     resource,
@@ -83,7 +83,7 @@ export const scheduleNotification = async (
                   );
                 }
               } else {
-                await processCustomNotification(notification, application);
+                await handleNotification(notification, application);
               }
             } catch (error) {
               logger.error(error.message, { stack: error.stack });

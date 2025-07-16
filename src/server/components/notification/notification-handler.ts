@@ -10,7 +10,7 @@ import {
   User,
 } from '@models';
 import { get } from 'lodash';
-import customNotificationSend from './customNotificationSend';
+import { sendNotification } from './notification-sender';
 import { logger } from '@lib/logger';
 import { preprocess } from '@utils/email';
 import mongoose from 'mongoose';
@@ -23,27 +23,27 @@ import mongoose from 'mongoose';
  * @param fields fields to process
  * @param rows data of records rows
  */
-const processTemplateContent = async (
+const preprocessNotificationTemplate = async (
   content,
   notificationType,
   fields,
   rows
 ) => {
   if (notificationType === customNotificationType.email) {
-    content.body = await preprocess(content.body, {
+    content.body = preprocess(content.body, {
       fields,
       rows,
     });
-    content.subject = await preprocess(content.subject, {
+    content.subject = preprocess(content.subject, {
       fields,
       rows,
     });
   } else {
-    content.title = await preprocess(content.title, {
+    content.title = preprocess(content.title, {
       fields,
       rows,
     });
-    content.description = await preprocess(content.description, {
+    content.description = preprocess(content.description, {
       fields,
       rows,
     });
@@ -59,7 +59,7 @@ const processTemplateContent = async (
  * @param resource resource object
  * @param records records object
  */
-export default async (
+export const handleNotification = async (
   notification: CustomNotification,
   application: Application,
   resource?: Resource,
@@ -175,7 +175,7 @@ export default async (
           let d = 0;
           for await (const groupRecord of groupRecordArr) {
             if (groupRecord.length > 0) {
-              template.content = await processTemplateContent(
+              template.content = await preprocessNotificationTemplate(
                 template.content,
                 notificationType,
                 fieldArr,
@@ -198,16 +198,12 @@ export default async (
                 if (notificationType === customNotificationType.email) {
                   // If email type, should get user email
                   recipients = userDetails.map((details) => details.username);
-                  await customNotificationSend(
-                    template,
-                    recipients,
-                    notification
-                  );
+                  await sendNotification(template, recipients, notification);
                   sent = true;
                 } else {
                   // If notification type, should get user id
                   recipients = userDetails.map((details) => details.id);
-                  await customNotificationSend(
+                  await sendNotification(
                     template,
                     recipients,
                     notification,
@@ -219,19 +215,19 @@ export default async (
             } else {
               // If using emailField, get the email saved in the record data
               recipients = groupValArr[d];
-              await customNotificationSend(template, recipients, notification);
+              await sendNotification(template, recipients, notification);
               sent = true;
             }
             d++;
           }
         } else {
-          template.content = await processTemplateContent(
+          template.content = await preprocessNotificationTemplate(
             template.content,
             notificationType,
             fieldArr,
             recordListArr
           );
-          await customNotificationSend(
+          await sendNotification(
             template,
             recipients,
             notification,
@@ -241,7 +237,7 @@ export default async (
         }
       }
     } else {
-      await customNotificationSend(template, recipients, notification);
+      await sendNotification(template, recipients, notification);
       sent = true;
     }
 
