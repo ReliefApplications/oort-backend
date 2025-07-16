@@ -1,13 +1,45 @@
 import get from 'lodash/get';
 import Handlebars from 'handlebars';
+import moment from 'moment';
 
 Handlebars.registerHelper('html', function (value) {
   return new Handlebars.SafeString(value);
 });
 
+/**
+ * Automatically transforms {{dataset}} to {{{dataset}}} so handlebars does not escape HTML
+ * Example: {{dataset}}
+ */
 Handlebars.registerHelper('dataset', function () {
-  // Automatically transforms {{dataset}} to {{{dataset}}} so handlebars does not escape HTML
   return new Handlebars.SafeString(this.dataset || '');
+});
+
+/**
+ * Formats date to a specific format, using moment.js
+ * Example: {{dateFormat today "YYYY"}}
+ */
+Handlebars.registerHelper('dateFormat', function (date, format) {
+  return moment(date).format(format);
+});
+
+/**
+ * Allows date manipulation with moment.js, adding a specified amount of time to a date.
+ * Example: {{dateAdd today 1 "days"}}
+ * Can be combined with dateFormat to format the result.
+ * Example: {{dateFormat (dateAdd today 1 "days") "YYYY-MM-DD"}}
+ */
+Handlebars.registerHelper('dateAdd', function (date, amount, unit) {
+  return moment(date).add(amount, unit);
+});
+
+/**
+ * Allows date manipulation with moment.js, subtracting a specified amount of time from a date.
+ * Example: {{dateSubtract today 1 "days"}}
+ * Can be combined with dateFormat to format the result.
+ * Example: {{dateFormat (dateSubtract today 1 "days") "YYYY-MM-DD"}}
+ */
+Handlebars.registerHelper('dateSubtract', function (date, amount, unit) {
+  return moment(date).subtract(amount, unit);
 });
 
 /**

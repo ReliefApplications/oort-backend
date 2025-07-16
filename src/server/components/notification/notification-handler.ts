@@ -111,7 +111,6 @@ const resolveRecipientsFromEmails = async (emails: string[]) => {
         email: user.username,
       });
     } else {
-      console.log('not found', email);
       emailOnlyRecipients.push(email);
     }
   });
@@ -305,7 +304,6 @@ export const handleNotification = async (
           );
           // Send one notification per user
           for (const user of users) {
-            console.log('user', user);
             template.content = await preprocessNotificationTemplate(
               template.content,
               notificationType,
@@ -313,7 +311,6 @@ export const handleNotification = async (
               recordListArr,
               user
             );
-            console.log('will send');
             await sendNotification(
               template,
               [user.email],
@@ -323,7 +320,6 @@ export const handleNotification = async (
           }
           // Send one notification per email (not associated with a user)
           for (const email of emails) {
-            console.log('email', email);
             template.content = await preprocessNotificationTemplate(
               template.content,
               notificationType,
