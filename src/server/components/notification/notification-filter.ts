@@ -8,7 +8,10 @@ import getFilter from '@utils/schema/resolvers/Query/getFilter';
  * @param resource resource object
  * @returns mongoose filter or empty object
  */
-export default (notification: CustomNotification, resource: Resource) => {
+export const buildNotificationFilter = (
+  notification: CustomNotification,
+  resource: Resource
+) => {
   let mongooseFilter = {};
   // If triggers check if has filters
   if (notification.applicationTrigger && notification.filter?.filters?.length) {

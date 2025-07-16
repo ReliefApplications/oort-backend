@@ -1,7 +1,7 @@
 import { Application, Record, Resource } from '@models';
 import config from 'config';
 import { isEqual } from 'lodash';
-import getTriggerFilter from '@utils/customNotification/getTriggerFilter';
+import { buildNotificationFilter } from '@server/components/notification/notification-filter';
 import processCustomNotification from '@utils/customNotification/processCustomNotification';
 
 /**
@@ -51,7 +51,7 @@ export function setupRecordWatcher(): void {
         );
         for (const trigger of triggers) {
           // For each triggers, get trigger filter
-          const mongooseFilter = getTriggerFilter(trigger, resource);
+          const mongooseFilter = buildNotificationFilter(trigger, resource);
           // And see if record that triggered watch() should emit notification
           const recordFiltered = await Record.find({
             $and: [mongooseFilter, { _id: recordId }],

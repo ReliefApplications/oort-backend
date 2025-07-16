@@ -8,7 +8,7 @@ import { CronJob } from 'cron';
 import logger from '@lib/logger';
 import * as cronValidator from 'cron-validator';
 import get from 'lodash/get';
-import getTriggerFilter from '@utils/customNotification/getTriggerFilter';
+import { buildNotificationFilter } from '@server/components/notification/notification-filter';
 import processCustomNotification from '@utils/customNotification/processCustomNotification';
 
 /** A map with the custom notification ids as keys and the scheduled custom notification as values */
@@ -58,7 +58,10 @@ export const scheduleNotification = async (
               });
               if (resource) {
                 // If triggers check if has filters
-                const mongooseFilter = getTriggerFilter(notification, resource);
+                const mongooseFilter = buildNotificationFilter(
+                  notification,
+                  resource
+                );
                 const records = await RecordModel.aggregate([
                   {
                     $match: {
