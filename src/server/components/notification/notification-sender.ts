@@ -2,7 +2,7 @@ import {
   customNotificationRecipientsType,
   customNotificationType,
 } from '@const/enumTypes';
-import { Channel, CustomNotification, Notification, Template } from '@models';
+import { Channel, CustomNotification, Notification } from '@models';
 import pubsub from '@server/pubsub';
 import { Address, sendEmail } from '@utils/email';
 import { get, isArray } from 'lodash';
@@ -10,21 +10,21 @@ import { get, isArray } from 'lodash';
 /**
  * Send notification by email
  *
- * @param template processed email template
+ * @param content Template email content
  * @param recipients custom notification recipients
  * @param notification custom notification
  */
 const sendAsMail = async (
-  template: Template,
+  content: any,
   recipients: Address[],
   notification: CustomNotification
 ) => {
-  if (!!template && recipients.length > 0) {
+  if (!!content && recipients.length > 0) {
     await sendEmail({
       message: {
         to: recipients,
-        subject: template.content.subject,
-        html: template.content.body,
+        subject: content.subject,
+        html: content.body,
         attachments: [],
       },
     });
@@ -38,18 +38,18 @@ const sendAsMail = async (
 /**
  * Send notification as in-app notification
  *
- * @param template processed email template
+ * @param content Template email content
  * @param recipients custom notification recipients (form id or users from user field)
  * @param notification custom notification
  * @param recordsIds records ids list (if any)
  */
 const sendAsInApp = async (
-  template: Template,
+  content: any,
   recipients: string | string[],
   notification: CustomNotification,
   recordsIds: string[]
 ) => {
-  if (!!template && !!recipients) {
+  if (!!content && !!recipients) {
     const redirect =
       notification.redirect && notification.redirect.active
         ? {
@@ -66,9 +66,8 @@ const sendAsInApp = async (
       const channel = await Channel.findById(recipients[0]);
       if (channel) {
         const notificationInstance = new Notification({
-          action: template.content.title,
-          content: template.content.description,
-          //createdAt: new Date(),
+          action: content.title,
+          content: content.description,
           channel: channel.id,
           seenBy: [],
           redirect,
@@ -84,9 +83,8 @@ const sendAsInApp = async (
       const sendToUser = async (recipient: string) => {
         // Send notification to a user
         const notificationInstance = new Notification({
-          action: template.content.title,
-          content: template.content.description,
-          //createdAt: new Date(),
+          action: content.title,
+          content: content.description,
           user: recipient,
           seenBy: [],
           redirect,
@@ -111,27 +109,27 @@ const sendAsInApp = async (
 /**
  * Prepare custom notification to be sent by type (email or notification)
  *
- * @param template processed email template
+ * @param content processed email content
  * @param recipients custom notification recipients (always a array)
  * (can be a single email, a list of emails, a channel id or users from a user field)
  * @param notification custom notification
  * @param recordsIds records ids list
  */
 export const sendNotification = async (
-  template: Template,
+  content: any,
   recipients: Address[] | string,
   notification: CustomNotification,
   recordsIds?: string[]
 ) => {
-  if (!!template && recipients.length > 0) {
+  if (!!content && recipients.length > 0) {
     const notificationType = get(notification, 'notificationType', 'email');
     if (notificationType === customNotificationType.email) {
       // If custom notification type is email
-      await sendAsMail(template, recipients as Address[], notification);
+      await sendAsMail(content, recipients as Address[], notification);
     } else {
       // If custom notification type is notification
       await sendAsInApp(
-        template,
+        content,
         recipients as string,
         notification,
         recordsIds
