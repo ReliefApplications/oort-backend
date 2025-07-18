@@ -1,13 +1,13 @@
 import { SafeServer } from './server';
 import mongoose from 'mongoose';
 import pullJobScheduler from './server/pullJobScheduler';
-import customNotificationScheduler from './server/customNotificationScheduler';
 import { startDatabase } from './server/database';
 import config from 'config';
 import logger from '@lib/logger';
 import { checkConfig } from '@utils/server/checkConfig.util';
 import buildSchema from '@utils/schema/buildSchema';
 import koboSyncScheduler from './server/koboSyncScheduler';
+import { setupNotificationScheduler } from '@server/components/notification/notification-scheduler';
 
 // Needed for survey.model, as xmlhttprequest is not defined in servers
 global.XMLHttpRequest = require('xhr2');
@@ -52,5 +52,5 @@ mongoose.connection.once('open', () => {
   // subscriberSafe();
   pullJobScheduler();
   koboSyncScheduler();
-  customNotificationScheduler();
+  setupNotificationScheduler();
 });

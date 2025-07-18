@@ -3,7 +3,7 @@ import { Application } from '@models';
 import { CustomNotificationType } from '../types';
 import { AppAbility } from '@security/defineUserAbility';
 import extendAbilityForApplications from '@security/extendAbilityForApplication';
-import { unscheduleCustomNotificationJob } from '../../server/customNotificationScheduler';
+import { unscheduleNotification } from '../../server/components/notification/notification-scheduler';
 import { logger } from '@lib/logger';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
@@ -51,7 +51,7 @@ export default {
         (x) => x.id.toString() === args.id
       );
 
-      unscheduleCustomNotificationJob(notificationDetail);
+      unscheduleNotification(notificationDetail);
 
       return notificationDetail;
     } catch (err) {

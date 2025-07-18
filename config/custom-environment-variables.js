@@ -63,5 +63,9 @@ module.exports = {
     clientSecret: 'COMMON_SERVICES_CLIENT_SECRET',
     scope: 'COMMON_SERVICES_SCOPE',
   },
-  notificationsLeader: 'NOTIFICATIONS_LEADER',
+  notifications: {
+    leader: 'NOTIFICATIONS_LEADER',
+    clientId: 'NOTIFICATIONS_CLIENT_ID',
+    clientSecret: 'NOTIFICATIONS_CLIENT_SECRET',
+  },
 };

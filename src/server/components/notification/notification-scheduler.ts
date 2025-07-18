@@ -8,8 +8,9 @@ import { CronJob } from 'cron';
 import logger from '@lib/logger';
 import * as cronValidator from 'cron-validator';
 import get from 'lodash/get';
-import getTriggerFilter from '@utils/customNotification/getTriggerFilter';
-import processCustomNotification from '@utils/customNotification/processCustomNotification';
+import { buildNotificationFilter } from '@server/components/notification/notification-filter';
+import { handleNotification } from '@server/components/notification/notification-handler';
+import config from 'config';
 
 /** A map with the custom notification ids as keys and the scheduled custom notification as values */
 const customNotificationMap: Record<string, CronJob> = {};
@@ -17,7 +18,10 @@ const customNotificationMap: Record<string, CronJob> = {};
 /**
  * Global function called on server start to initialize all the custom notification.
  */
-const customNotificationScheduler = async () => {
+export const setupNotificationScheduler = async () => {
+  if (!(config.get('notifications.leader') == 'true')) {
+    return;
+  }
   const applications = await Application.find({
     customNotifications: { $elemMatch: { status: 'active' } },
   });
@@ -25,13 +29,11 @@ const customNotificationScheduler = async () => {
     if (!!application.customNotifications) {
       for await (const notification of application.customNotifications) {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        scheduleCustomNotificationJob(notification, application);
+        scheduleNotification(notification, application);
       }
     }
   }
 };
-
-export default customNotificationScheduler;
 
 /**
  * Schedule or re-schedule a custom notification.
@@ -39,7 +41,7 @@ export default customNotificationScheduler;
  * @param notification custom notification to schedule
  * @param application application's custom notification to schedule
  */
-export const scheduleCustomNotificationJob = async (
+export const scheduleNotification = async (
   notification: CustomNotification,
   application: Application
 ) => {
@@ -60,7 +62,10 @@ export const scheduleCustomNotificationJob = async (
               });
               if (resource) {
                 // If triggers check if has filters
-                const mongooseFilter = getTriggerFilter(notification, resource);
+                const mongooseFilter = buildNotificationFilter(
+                  notification,
+                  resource
+                );
                 const records = await RecordModel.aggregate([
                   {
                     $match: {
@@ -74,7 +79,7 @@ export const scheduleCustomNotificationJob = async (
                   },
                 ]);
                 if (records.length) {
-                  await processCustomNotification(
+                  await handleNotification(
                     notification,
                     application,
                     resource,
@@ -82,7 +87,7 @@ export const scheduleCustomNotificationJob = async (
                   );
                 }
               } else {
-                await processCustomNotification(notification, application);
+                await handleNotification(notification, application);
               }
             } catch (error) {
               logger.error(error.message, { stack: error.stack });
@@ -101,7 +106,7 @@ export const scheduleCustomNotificationJob = async (
       }
     } else if (task) {
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      unscheduleCustomNotificationJob(notification);
+      unscheduleNotification(notification);
     }
   } catch (err) {
     logger.error(err.message);
@@ -113,7 +118,7 @@ export const scheduleCustomNotificationJob = async (
  *
  * @param customNotification custom notification to unschedule
  */
-export const unscheduleCustomNotificationJob = (
+export const unscheduleNotification = (
   customNotification: CustomNotification
 ): void => {
   const task = customNotificationMap[customNotification.id];

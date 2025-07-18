@@ -13,8 +13,6 @@ export const createEventForm = async () => {
     return oldForm;
   }
 
-  console.log('Creating event form...');
-
   // define default permission lists
   const globalRoles = (
     await Role.find({ application: null }).select('_id')
@@ -56,7 +54,6 @@ export const createEventForm = async () => {
     channels: [channel._id],
   });
   await form.save();
-  console.log('Form created');
   return form;
 };
 

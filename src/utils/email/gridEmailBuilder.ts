@@ -1,5 +1,47 @@
-import { Placeholder } from '@const/placeholders';
 import get from 'lodash/get';
+import Handlebars from 'handlebars';
+import moment from 'moment';
+import { getRowsFromMeta } from '@utils/files';
+
+Handlebars.registerHelper('html', function (value) {
+  return new Handlebars.SafeString(value);
+});
+
+/**
+ * Automatically transforms {{dataset}} to {{{dataset}}} so handlebars does not escape HTML
+ * Example: {{dataset}}
+ */
+Handlebars.registerHelper('dataset', function () {
+  return new Handlebars.SafeString(this.dataset || '');
+});
+
+/**
+ * Formats date to a specific format, using moment.js
+ * Example: {{dateFormat today "YYYY"}}
+ */
+Handlebars.registerHelper('dateFormat', function (date, format) {
+  return moment(date).format(format);
+});
+
+/**
+ * Allows date manipulation with moment.js, adding a specified amount of time to a date.
+ * Example: {{dateAdd today 1 "days"}}
+ * Can be combined with dateFormat to format the result.
+ * Example: {{dateFormat (dateAdd today 1 "days") "YYYY-MM-DD"}}
+ */
+Handlebars.registerHelper('dateAdd', function (date, amount, unit) {
+  return moment(date).add(amount, unit);
+});
+
+/**
+ * Allows date manipulation with moment.js, subtracting a specified amount of time from a date.
+ * Example: {{dateSubtract today 1 "days"}}
+ * Can be combined with dateFormat to format the result.
+ * Example: {{dateFormat (dateSubtract today 1 "days") "YYYY-MM-DD"}}
+ */
+Handlebars.registerHelper('dateSubtract', function (date, amount, unit) {
+  return moment(date).subtract(amount, unit);
+});
 
 /**
  * Transforms stored dates into readable dates.
@@ -151,10 +193,46 @@ const datasetToHTML = (columns: any[], rows: any[]): string => {
 };
 
 /**
+ * Converts dataset to HTML format for template processing.
+ *
+ * @param fields fields to convert.
+ * @param rows rows to convert.
+ * @returns HTML string representation of the dataset.
+ */
+const datasetExpression = (fields: any[], rows: any[]): string => {
+  if (fields.length === 0 || rows.length === 0) {
+    return '';
+  }
+  convertDateFields(fields, rows);
+  return datasetToHTML(fields, rows);
+};
+
+/**
+ * Converts record IDs to a comma-separated string.
+ *
+ * @param rows records to convert.
+ * @returns comma-separated string of record IDs.
+ */
+const recordExpression = (rows: any[]) => {
+  if (rows) {
+    return rows
+      .map((record: any) => record.id)
+      .filter((x) => x)
+      .join(', ');
+  } else {
+    return '';
+  }
+};
+
+/**
  * Preprocesses text to replace keyword with corresponding data
  *
  * @param text text to preprocess.
  * @param dataset optional dataset settings.
+ * @param user optional user object.
+ * @param user.firstName User first name
+ * @param user.lastName User last name
+ * @param user.email User email
  * @returns preprocessed string.
  */
 export const preprocess = (
@@ -162,59 +240,30 @@ export const preprocess = (
   dataset: {
     fields: any[];
     rows: any[];
-  } | null = null
+  } | null = null,
+  user?: {
+    firstName?: string;
+    lastName?: string;
+    email: string;
+  }
 ): string => {
-  // === TODAY ===
-  if (text.includes(Placeholder.TODAY)) {
-    const todayToString = new Date().toDateString();
-    text = text.split(Placeholder.TODAY).join(todayToString);
+  const template = Handlebars.compile(text);
+
+  // Convert data to a format that can be used in the template
+  let data = {};
+  if (dataset && dataset.rows[0]) {
+    data = getRowsFromMeta(dataset.fields, [dataset.rows[0]])[0];
   }
 
-  // === NOW ===
-  if (text.includes(Placeholder.NOW)) {
-    const nowToString = new Date().toLocaleTimeString('en-US', {
+  return template({
+    today: new Date().toDateString(),
+    now: new Date().toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
-    });
-    text = text.split(Placeholder.NOW).join(nowToString);
-  }
-
-  // === NOW ===
-  if (text.includes(Placeholder.RECORD_ID)) {
-    const textArray: string[] = [];
-    dataset.rows.forEach((record: any) => textArray.push(record.id));
-    text = text
-      .split(Placeholder.RECORD_ID)
-      .join(textArray.filter((x) => x).join(', '));
-  }
-
-  // === DATASET ===
-  if (text.includes(Placeholder.DATASET) && dataset) {
-    if (dataset.fields.length > 0 && dataset.rows.length > 0) {
-      const items: any = [...dataset.rows];
-      convertDateFields(dataset.fields, items);
-      const formattedDataSet = datasetToHTML(dataset.fields, items) || '';
-      text =
-        '<br>' +
-        text.split(Placeholder.DATASET).join(formattedDataSet) +
-        '<br>';
-    } else {
-      text = text.split(Placeholder.DATASET).join('');
-    }
-  }
-
-  // === INLINE TEMPLATE ===
-  if (dataset.rows.length === 1) {
-    const data = dataset.rows[0];
-    const regex = /{{data\..*?}}/g;
-    const matches = text.match(regex);
-    if (matches) {
-      matches.forEach((match) => {
-        const field = match.replace('{{data.', '').replace('}}', '');
-        const value = get(data, field, '');
-        text = text.replace(match, value);
-      });
-    }
-  }
-  return text;
+    }),
+    recordId: recordExpression(dataset?.rows || []),
+    dataset: datasetExpression(dataset?.fields || [], dataset?.rows || []),
+    data,
+    user,
+  });
 };

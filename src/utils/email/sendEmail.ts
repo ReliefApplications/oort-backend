@@ -25,6 +25,7 @@ const TRANSPORT_OPTIONS = {
     pass: config.get('email.pass'),
   },
 } as any;
+
 /** Reusable email definition */
 const email = new Email({
   transport: nodemailer.createTransport(TRANSPORT_OPTIONS),
@@ -47,6 +48,7 @@ const email = new Email({
     directory: path.resolve('src/assets/emails/i18n'),
     defaultLocale: 'en',
   },
+  preview: false,
 });
 
 /** Address type for nodemailer */

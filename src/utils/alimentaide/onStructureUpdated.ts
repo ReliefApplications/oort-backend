@@ -26,7 +26,6 @@ const MANAGE_STRUCTURES_ROLE_ID = new Types.ObjectId(
  * @param rec The record of the family
  */
 const onStructureUpdated = async (rec: RecordModel) => {
-  console.log('Updating structure', rec.data.name_struct);
   let {
     user_users: users,
     user_plus_users: usersPlus,
