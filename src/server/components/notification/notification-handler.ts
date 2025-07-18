@@ -20,6 +20,12 @@ import Exporter from '@utils/files/resourceExporter';
 import { restMiddleware } from '@server/middlewares';
 import config from 'config';
 
+/**
+ * Flattens a nested array
+ *
+ * @param arr The array to flatten
+ * @returns A new flattened array
+ */
 const flatDeep = (arr: any[]): any[] => {
   return arr.reduce(
     (acc, val) => acc.concat(Array.isArray(val) ? flatDeep(val) : val),
@@ -27,12 +33,25 @@ const flatDeep = (arr: any[]): any[] => {
   );
 };
 
+/**
+ * Prettifies a label by replacing underscores and camel case
+ *
+ * @param label The label to prettify
+ * @returns The prettified label
+ */
 const prettifyLabel = (label: string): string => {
   label = label.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
   label = label.charAt(0).toUpperCase() + label.slice(1);
   return label;
 };
 
+/**
+ * Gets the fields from a given array of field definitions
+ *
+ * @param fields The array of field definitions
+ * @param prefix An optional prefix for the field names
+ * @returns An array of processed field definitions
+ */
 const getFields = (fields: any[], prefix?: string): any[] => {
   return flatDeep(
     fields.map((f) => {
@@ -174,6 +193,12 @@ const resolveRecipientsFromEmails = async (emails: string[]) => {
   };
 };
 
+/**
+ * Fetches a client token from the authentication server
+ * Enables the handler to call the server itself to build the fields from the metadata query
+ *
+ * @returns The client token
+ */
 const getClientToken = async () => {
   const tokenUrl = `https://id-mab.unesco.oortcloud.tech/realms/${config.get(
     'auth.realm'
