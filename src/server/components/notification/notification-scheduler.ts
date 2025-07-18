@@ -10,6 +10,7 @@ import * as cronValidator from 'cron-validator';
 import get from 'lodash/get';
 import { buildNotificationFilter } from '@server/components/notification/notification-filter';
 import { handleNotification } from '@server/components/notification/notification-handler';
+import config from 'config';
 
 /** A map with the custom notification ids as keys and the scheduled custom notification as values */
 const customNotificationMap: Record<string, CronJob> = {};
@@ -18,6 +19,9 @@ const customNotificationMap: Record<string, CronJob> = {};
  * Global function called on server start to initialize all the custom notification.
  */
 export const setupNotificationScheduler = async () => {
+  if (!(config.get('notifications.leader') == 'true')) {
+    return;
+  }
   const applications = await Application.find({
     customNotifications: { $elemMatch: { status: 'active' } },
   });
