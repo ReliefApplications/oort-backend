@@ -51,7 +51,7 @@ export default class Exporter {
 
   private params: ExportBatchParams;
 
-  private columns: any[];
+  public columns: any[];
 
   /**
    * Resource exporter class.
@@ -149,7 +149,7 @@ export default class Exporter {
    *
    * @returns columns as promise
    */
-  private getColumns = (): Promise<void> => {
+  public getColumns = (): Promise<void> => {
     const metaQuery = buildMetaQuery(this.params.query);
     return new Promise((resolve) => {
       axios({
@@ -211,7 +211,7 @@ export default class Exporter {
    *
    * @returns list of data
    */
-  private getRecords = async () => {
+  public getRecords = async () => {
     const ability = await extendAbilityForRecords(this.req.context.user);
     set(this.req.context.user, 'ability', ability);
     const contextDataSources = (

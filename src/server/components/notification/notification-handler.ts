@@ -14,6 +14,55 @@ import { sendNotification } from './notification-sender';
 import { logger } from '@lib/logger';
 import { preprocess } from '@utils/email';
 import mongoose from 'mongoose';
+import axios from 'axios';
+import qs from 'qs';
+import Exporter from '@utils/files/resourceExporter';
+import { restMiddleware } from '@server/middlewares';
+import config from 'config';
+
+const flatDeep = (arr: any[]): any[] => {
+  return arr.reduce(
+    (acc, val) => acc.concat(Array.isArray(val) ? flatDeep(val) : val),
+    []
+  );
+};
+
+const prettifyLabel = (label: string): string => {
+  label = label.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
+  label = label.charAt(0).toUpperCase() + label.slice(1);
+  return label;
+};
+
+const getFields = (fields: any[], prefix?: string): any[] => {
+  return flatDeep(
+    fields.map((f) => {
+      const fullName: string = prefix ? `${prefix}.${f.name}` : f.name;
+      switch (f.kind) {
+        case 'OBJECT': {
+          return getFields(f.fields, fullName);
+        }
+        case 'LIST': {
+          const title = f.label ? f.label : prettifyLabel(f.name);
+          const subFields = getFields(f.fields, fullName);
+          return {
+            name: fullName,
+            title,
+            subFields,
+            width: f.width,
+          };
+        }
+        default: {
+          const title = f.label ? f.label : prettifyLabel(f.name);
+          return {
+            name: fullName,
+            title,
+            width: f.width,
+          };
+        }
+      }
+    })
+  );
+};
 
 /**
  * Depending on  notification type,  for custom notification
@@ -125,6 +174,31 @@ const resolveRecipientsFromEmails = async (emails: string[]) => {
   };
 };
 
+const getClientToken = async () => {
+  const tokenUrl = `https://id-mab.unesco.oortcloud.tech/realms/${config.get(
+    'auth.realm'
+  )}/protocol/openid-connect/token`;
+
+  const data = qs.stringify({
+    grant_type: 'client_credentials',
+    client_id: config.get('notifications.clientId'),
+    client_secret: config.get('notifications.clientSecret'),
+  });
+
+  try {
+    const response = await axios.post(tokenUrl, data, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+    const accessToken = response.data.access_token;
+    return accessToken;
+  } catch (err) {
+    console.error('Error fetching token:', err.response?.data || err.message);
+    throw err;
+  }
+};
+
 /**
  * Check if trigger has filters, if so return mongoose filter
  *
@@ -189,6 +263,53 @@ export const handleNotification = async (
       const layout = resource.layouts.find(
         (x) => x._id.toString() === notification.layout.toString()
       );
+
+      const token = await getClientToken();
+      const request = {
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      };
+      const mockRes = {
+        status: () => mockRes,
+        json: () => mockRes,
+        send: () => mockRes,
+        // Add other required response methods
+      };
+
+      // Attach context to request based on token
+      const authenticateUser = () => {
+        return new Promise<void>((resolve, reject) => {
+          restMiddleware(request, mockRes, (err) => {
+            if (err) {
+              reject(err);
+            }
+            resolve();
+          });
+        });
+      };
+
+      await authenticateUser();
+
+      const exporter = new Exporter(request, null, resource, {
+        query: layout.query,
+        format: 'csv',
+        fileName: 'test',
+        timeZone: 'Europe/Paris',
+        fields: getFields(layout.query.fields),
+        filter: {
+          logic: 'and',
+          filters: [
+            {
+              value: records.map((r) => r._id.toString()),
+              operator: 'eq',
+              field: 'ids',
+            },
+          ],
+        },
+      });
+      await exporter.getColumns();
+      const newRecords = await exporter.getRecords();
 
       // Build list of fields, associated with layout
       const fields = [];
@@ -307,8 +428,8 @@ export const handleNotification = async (
             template.content = await preprocessNotificationTemplate(
               template.content,
               notificationType,
-              fields,
-              recordListArr,
+              exporter.columns,
+              newRecords,
               user
             );
             await sendNotification(

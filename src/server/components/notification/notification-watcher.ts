@@ -8,11 +8,11 @@ import { handleNotification } from '@server/components/notification/notification
  * Sets up record watching for custom notifications
  */
 export function setupRecordWatcher(): void {
+  if (!(config.get('notifications.leader') == 'true')) {
+    return;
+  }
   // Watch records creation and updates to see if should emit trigger notification
   Record.watch().on('change', async (data) => {
-    if (!(config.get('notificationsLeader') == 'true')) {
-      return;
-    }
     const recordId = data.documentKey._id;
     const record = await Record.findById(recordId);
 
