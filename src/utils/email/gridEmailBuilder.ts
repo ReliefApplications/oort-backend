@@ -1,6 +1,7 @@
 import get from 'lodash/get';
 import Handlebars from 'handlebars';
 import moment from 'moment';
+import { getRowsFromMeta } from '@utils/files';
 
 Handlebars.registerHelper('html', function (value) {
   return new Handlebars.SafeString(value);
@@ -248,6 +249,12 @@ export const preprocess = (
 ): string => {
   const template = Handlebars.compile(text);
 
+  // Convert data to a format that can be used in the template
+  let data = {};
+  if (dataset && dataset.rows[0]) {
+    data = getRowsFromMeta(dataset.fields, [dataset.rows[0]])[0];
+  }
+
   return template({
     today: new Date().toDateString(),
     now: new Date().toLocaleTimeString('en-US', {
@@ -256,7 +263,7 @@ export const preprocess = (
     }),
     recordId: recordExpression(dataset?.rows || []),
     dataset: datasetExpression(dataset?.fields || [], dataset?.rows || []),
-    data: (dataset && dataset.rows[0]) || {},
+    data,
     user,
   });
 };
