@@ -158,7 +158,12 @@ const resolveRecipientsFromIds = async (ids: string[]) => {
     'username id firstName lastName'
   );
 
-  return foundUsers;
+  return foundUsers.map((user) => ({
+    id: user.id,
+    firstName: user.firstName || '',
+    lastName: user.lastName || '',
+    email: user.username,
+  }));
 };
 
 /**

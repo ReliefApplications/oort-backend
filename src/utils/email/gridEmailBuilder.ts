@@ -216,7 +216,7 @@ const datasetExpression = (fields: any[], rows: any[]): string => {
 const recordExpression = (rows: any[]) => {
   if (rows) {
     return rows
-      .map((record: any) => record.id)
+      .map((record: any) => record._id)
       .filter((x) => x)
       .join(', ');
   } else {
