@@ -1,6 +1,6 @@
 import { Application, Record, Resource } from '@models';
 import config from 'config';
-import { isEqual } from 'lodash';
+import { isEmpty, isEqual } from 'lodash';
 import { buildNotificationFilter } from '@server/components/notification/notification-filter';
 import { handleNotification } from '@server/components/notification/notification-handler';
 import logger from '@lib/logger';
@@ -62,8 +62,9 @@ export function setupRecordWatcher(): void {
               $and: [mongooseFilter, { _id: recordId }],
             });
             if (recordFiltered.length) {
-              if (type === 'onRecordUpdate') {
+              if (type === 'onRecordUpdate' && !isEmpty(mongooseFilter)) {
                 // If record is updated, check if pre-image matches filter
+                // Only applies if filter is not empty
                 if (
                   sift({
                     $and: [mongooseFilter, { _id: recordId }],
