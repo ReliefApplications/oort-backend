@@ -4,6 +4,7 @@ import { isEqual } from 'lodash';
 import { buildNotificationFilter } from '@server/components/notification/notification-filter';
 import { handleNotification } from '@server/components/notification/notification-handler';
 import logger from '@lib/logger';
+import sift from 'sift';
 
 /**
  * Sets up record watching for custom notifications
@@ -13,7 +14,10 @@ export function setupRecordWatcher(): void {
     return;
   }
   // Watch records creation and updates to see if should emit trigger notification
-  Record.watch().on('change', async (data) => {
+  Record.watch([], {
+    fullDocument: 'updateLookup',
+    fullDocumentBeforeChange: 'whenAvailable',
+  }).on('change', async (data) => {
     try {
       const recordId = data.documentKey._id;
       const record = await Record.findById(recordId);
@@ -58,6 +62,18 @@ export function setupRecordWatcher(): void {
               $and: [mongooseFilter, { _id: recordId }],
             });
             if (recordFiltered.length) {
+              if (type === 'onRecordUpdate') {
+                // If record is updated, check if pre-image matches filter
+                if (
+                  sift({
+                    $and: [mongooseFilter, { _id: recordId }],
+                  })(data.fullDocumentBeforeChange)
+                ) {
+                  // Previous version was already matching the filter, skip
+                  // This enables updates to only trigger when changes re done on conditions matching the filter
+                  continue;
+                }
+              }
               handleNotification(
                 trigger,
                 application,
