@@ -8,6 +8,10 @@ const permissionSchema = new Schema({
     required: true,
   },
   global: Boolean,
+  application: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Application',
+  },
 });
 
 permissionSchema.index({ type: 1, global: 1 }, { unique: true });
@@ -17,6 +21,7 @@ export interface Permission extends Document {
   kind: 'Permission';
   type?: string;
   global?: boolean;
+  application?: any;
 }
 
 permissionSchema.plugin(accessibleRecordsPlugin);

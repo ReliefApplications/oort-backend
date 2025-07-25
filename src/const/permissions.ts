@@ -18,6 +18,7 @@ const permissions = {
   canManageDistributionLists: 'can_manage_distribution_lists',
   canManageLayer: 'can_manage_layer',
   canSeeLayer: 'can_see_layer',
+  canAddUsers: 'can_add_users',
 };
 
 export default permissions;
