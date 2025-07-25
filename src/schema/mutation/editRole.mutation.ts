@@ -7,7 +7,7 @@ import {
 } from 'graphql';
 import GraphQLJSON from 'graphql-type-json';
 import { get, has } from 'lodash';
-import { Role } from '@models';
+import { Permission, Role } from '@models';
 import { AppAbility } from '@security/defineUserAbility';
 import { RoleType } from '../types';
 import { logger } from '@lib/logger';
@@ -15,6 +15,7 @@ import { accessibleBy } from '@casl/mongoose';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
+import permissions from '@const/permissions';
 
 /** Arguments for the editRole mutation */
 type EditRoleArgs = {
@@ -24,6 +25,44 @@ type EditRoleArgs = {
   title?: string;
   description?: string;
   autoAssignment?: any;
+};
+
+/**
+ * Check if permissions exist for target role
+ *
+ * @param roleId Role id
+ * @param applicationId Application id
+ */
+const checkPermissions = async (
+  roleId: Types.ObjectId,
+  applicationId?: string | Types.ObjectId
+) => {
+  try {
+    // Define the permission type that should exist for this role
+    const permissionType = `${permissions.canAddUsers}.${roleId.toString()}`;
+
+    // Check if the permission already exists
+    const existingPermission = await Permission.findOne({
+      type: permissionType,
+      global: false,
+      ...(applicationId && { application: applicationId }),
+    });
+
+    // If it doesn't exist, create it
+    if (!existingPermission) {
+      await Permission.create({
+        type: permissionType,
+        global: false,
+        ...(applicationId && { application: applicationId }),
+      });
+    }
+  } catch (error) {
+    logger.error(
+      `Failed to check/create permissions for role ${roleId}:`,
+      error
+    );
+    throw error;
+  }
 };
 
 /**
@@ -97,6 +136,9 @@ export default {
           context.i18next.t('common.errors.permissionNotGranted')
         );
       }
+
+      // Last check
+      await checkPermissions(role._id, role.application);
       return role;
     } catch (err) {
       logger.error(err.message, { stack: err.stack });

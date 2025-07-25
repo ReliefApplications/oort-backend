@@ -4,18 +4,36 @@ import {
   GraphQLID,
   GraphQLError,
 } from 'graphql';
-import { Role, Application, Channel } from '@models';
+import { Role, Application, Channel, Permission } from '@models';
 import { AppAbility } from '@security/defineUserAbility';
 import { RoleType } from '../types';
 import { logger } from '@lib/logger';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
+import permissions from '@const/permissions';
 
 /** Arguments for the addRole mutation */
 type AddRoleArgs = {
   title: string;
   application?: string | Types.ObjectId;
+};
+
+/**
+ * Create permissions associated with target role
+ *
+ * @param roleId Role id
+ * @param applicationId Application id
+ */
+const createPermissions = async (
+  roleId: Types.ObjectId,
+  applicationId?: string | Types.ObjectId
+) => {
+  await Permission.create({
+    type: `${permissions.canAddUsers}.${roleId.toString()}`,
+    global: false,
+    ...(applicationId && { application: applicationId }),
+  });
 };
 
 /**
@@ -56,6 +74,9 @@ export default {
         role.application = args.application;
         if (ability.can('create', role)) {
           await channel.save();
+          if (args.application) {
+            await createPermissions(role._id, args.application);
+          }
           return await role.save();
         }
       } else {

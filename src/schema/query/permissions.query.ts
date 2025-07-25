@@ -1,5 +1,5 @@
-import { GraphQLList, GraphQLBoolean, GraphQLError } from 'graphql';
-import { Permission } from '@models';
+import { GraphQLList, GraphQLError, GraphQLID } from 'graphql';
+import { Application, Permission } from '@models';
 import { PermissionType } from '../types';
 import { logger } from '@lib/logger';
 import { graphQLAuthCheck } from '@schema/shared';
@@ -17,20 +17,34 @@ type PermissionsArgs = {
 export default {
   type: new GraphQLList(PermissionType),
   args: {
-    application: { type: GraphQLBoolean },
+    application: { type: GraphQLID },
   },
   async resolve(parent, args: PermissionsArgs, context: Context) {
     // Check that user is authenticated
     graphQLAuthCheck(context);
     try {
       if (args.application) {
+        const application = await Application.findById(args.application, 'id');
+        if (!application) {
+          throw new GraphQLError(
+            context.i18next.t('common.errors.dataNotFound')
+          );
+        }
+
         // Query application scoped permissions
-        const permissions = await Permission.find({ global: false });
-        return permissions;
+        const appPermissions = await Permission.find({
+          global: false,
+          $or: [
+            { application: { $exists: false } },
+            { application: null },
+            { application: args.application },
+          ],
+        });
+        return appPermissions;
       }
       // Query admin permissions
-      const permissions = await Permission.find({ global: true });
-      return permissions;
+      const backOfficePermissions = await Permission.find({ global: true });
+      return backOfficePermissions;
     } catch (err) {
       logger.error(err.message, { stack: err.stack });
       if (err instanceof GraphQLError) {

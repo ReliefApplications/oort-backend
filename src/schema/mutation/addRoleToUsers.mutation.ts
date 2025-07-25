@@ -47,16 +47,30 @@ export default {
       // Check permissions depending if it's an application's user or a global user
       if (ability.cannot('update', 'User')) {
         if (role.application) {
-          const canUpdate = user.roles
+          // Check if user has global canSeeUsers permission for this application
+          const hasGlobalPermission = user.roles
             .filter((x) =>
               x.application ? x.application.equals(role.application) : false
             )
             .flatMap((x) => x.permissions)
             .some((x) => x.type === permissions.canSeeUsers);
-          if (!canUpdate) {
-            throw new GraphQLError(
-              context.i18next.t('common.errors.permissionNotGranted')
-            );
+
+          // If no global permission, check granular canAddUsers permission
+          if (!hasGlobalPermission) {
+            const hasAddUserPermission = user.roles
+              .filter((x) =>
+                x.application ? x.application.equals(role.application) : false
+              )
+              .flatMap((x) => x.permissions)
+              .some(
+                (x) => x.type === `${permissions.canAddUsers}.${args.role}`
+              );
+
+            if (!hasAddUserPermission) {
+              throw new GraphQLError(
+                context.i18next.t('common.errors.permissionNotGranted')
+              );
+            }
           }
         } else {
           throw new GraphQLError(
