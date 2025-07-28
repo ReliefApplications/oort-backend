@@ -24,6 +24,7 @@ import {
   FilterDescriptor,
   CompositeFilterDescriptor,
 } from '@const/compositeFilter';
+import proj4 from 'proj4';
 
 /**
  * Endpoint for custom feature layers
@@ -71,6 +72,66 @@ const cleanProperties = (props) =>
       typeof value === 'string' ? value.replace(/\u0000/g, '').trim() : value,
     ])
   );
+
+/**
+ * Transform geometry coordinates using proj4 transformation function
+ *
+ * @param geometry geometry to transform
+ * @param transformFn transformation function
+ * @returns transformed geometry
+ */
+function transformGeometry(geometry: any, transformFn: any): any {
+  if (!geometry || !transformFn) return geometry;
+
+  const transformCoordinate = (coord: number[]): number[] => {
+    try {
+      if (coord.length >= 2) {
+        const [x, y] = transformFn.forward([coord[0], coord[1]]);
+        return [x, y, ...coord.slice(2)]; // Preserve any additional dimensions (z, m)
+      }
+      return coord;
+    } catch (error) {
+      console.warn('Error transforming coordinate:', coord, error.message);
+      return coord; // Return original if transformation fails
+    }
+  };
+
+  const transformedGeometry = { ...geometry };
+
+  switch (geometry.type) {
+    case 'Point':
+      transformedGeometry.coordinates = transformCoordinate(
+        geometry.coordinates
+      );
+      break;
+
+    case 'LineString':
+    case 'MultiPoint':
+      transformedGeometry.coordinates =
+        geometry.coordinates.map(transformCoordinate);
+      break;
+
+    case 'Polygon':
+    case 'MultiLineString':
+      transformedGeometry.coordinates = geometry.coordinates.map(
+        (ring: number[][]) => ring.map(transformCoordinate)
+      );
+      break;
+
+    case 'MultiPolygon':
+      transformedGeometry.coordinates = geometry.coordinates.map(
+        (polygon: number[][][]) =>
+          polygon.map((ring: number[][]) => ring.map(transformCoordinate))
+      );
+      break;
+
+    default:
+      console.warn(`Unsupported geometry type: ${geometry.type}`);
+      return geometry;
+  }
+
+  return transformedGeometry;
+}
 
 /**
  * Get feature from item and add it to collection
@@ -544,8 +605,9 @@ router.post('/shapefile-to-geojson', async (req, res) => {
     // Find required files inside the extracted folder
     const shpFile = fs.readdirSync(tempDir).find((f) => f.endsWith('.shp'));
     const dbfFile = fs.readdirSync(tempDir).find((f) => f.endsWith('.dbf'));
+    const prjFile = fs.readdirSync(tempDir).find((f) => f.endsWith('.prj'));
 
-    if (!shpFile || !dbfFile) {
+    if (!shpFile || !dbfFile || !prjFile) {
       // Cleanup: Delete the extracted folder
       fs.rmSync(tempDir, { recursive: true, force: true });
       return res
@@ -558,15 +620,37 @@ router.post('/shapefile-to-geojson', async (req, res) => {
     // Read and parse the shapefile
     const shpPath = path.join(tempDir, shpFile);
     const dbfPath = path.join(tempDir, dbfFile);
+    const prjPath = path.join(tempDir, prjFile);
 
     const source = await shapefile.open(shpPath, dbfPath);
+
+    // Read projection information if available
+    let transformFunction = null;
+    if (prjPath && fs.existsSync(prjPath)) {
+      try {
+        const prjContent = fs.readFileSync(prjPath, 'utf-8');
+        transformFunction = proj4(prjContent.trim(), 'EPSG:4326');
+      } catch (err) {
+        console.warn(
+          'Could not create projection transformation:',
+          err.message
+        );
+      }
+    }
 
     const features = [];
     let result;
     while (!(result = await source.read()).done) {
+      let geometry = result.value.geometry;
+
+      // Transform geometry if we have a transformation function
+      if (transformFunction && geometry) {
+        geometry = transformGeometry(geometry, transformFunction);
+      }
+
       features.push({
         type: 'Feature',
-        geometry: result.value.geometry,
+        geometry,
         properties: cleanProperties(result.value.properties),
       });
     }
