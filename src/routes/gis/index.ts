@@ -59,6 +59,20 @@ const parseToSingleFeature = (feature: Feature) => {
 };
 
 /**
+ * Clean properties of a feature, in order to remove whitespaces.
+ *
+ * @param props properties to clean
+ * @returns cleaned properties
+ */
+const cleanProperties = (props) =>
+  Object.fromEntries(
+    Object.entries(props).map(([key, value]) => [
+      key,
+      typeof value === 'string' ? value.replace(/\u0000/g, '').trim() : value,
+    ])
+  );
+
+/**
  * Get feature from item and add it to collection
  *
  * @param features collection of features
@@ -553,7 +567,7 @@ router.post('/shapefile-to-geojson', async (req, res) => {
       features.push({
         type: 'Feature',
         geometry: result.value.geometry,
-        properties: result.value.properties,
+        properties: cleanProperties(result.value.properties),
       });
     }
 
@@ -572,7 +586,7 @@ router.post('/shapefile-to-geojson', async (req, res) => {
     ) {
       return res
         .status(400)
-        .send('routes.gis.shapefile.errors.featuresNotCorrect');
+        .send(i18next.t('routes.gis.shapefile.errors.featuresNotCorrect'));
     }
 
     res.send({ geojson: { type: 'FeatureCollection', features } });
