@@ -120,6 +120,56 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
             }
           })
           .catch((err) => done(err));
+      } else if (token.azp) {
+        // === CLIENT ===
+        // Checks if client already exists in the DB
+        Client.findOne({
+          $or: [{ oid: token.oid }, { clientId: token.azp }],
+        })
+          .populate({
+            // Add to the context all roles / permissions the client has
+            path: 'roles',
+            model: 'Role',
+            populate: {
+              path: 'permissions',
+              model: 'Permission',
+            },
+          })
+          .populate({
+            // Add to the context all positionAttributes with corresponding categories
+            path: 'positionAttributes.category',
+            model: 'PositionAttributeCategory',
+          })
+          .then((client) => {
+            if (client) {
+              // Returns the client if found and add more information if first connection
+              if (!client.oid || !client.clientId) {
+                client.oid = token.oid;
+                client.clientId = token.azp;
+                client
+                  .save()
+                  .then((res) => done(null, res, token))
+                  .catch((error) => done(error));
+              } else {
+                return done(null, client, token);
+              }
+            } else {
+              // Creates the client from azure oid if not found
+              client = new Client({
+                name: token.azp,
+                clientId: token.azp,
+                oid: token.oid,
+                roles: [],
+                positionAttributes: [],
+              });
+              client
+                .save()
+                .then((res) => done(null, res, token))
+                .catch((error) => done(error));
+            }
+          });
+      } else {
+        return done('error');
       }
     }) as Strategy
   );
