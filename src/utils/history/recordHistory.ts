@@ -402,14 +402,14 @@ export class RecordHistory {
       name: string,
       array: { name: string; title: string }[]
     ) => {
-      return array.find((c) => c.name === name).title;
+      return array.find((c) => c.name === name)?.title;
     };
 
     const getLabelFromName = (
       name: string,
       array: { name: string; label: string }[]
     ) => {
-      return array.find((c) => c.name === name).label;
+      return array.find((c) => c.name === name)?.label;
     };
 
     const getResourcesIncrementalID = async (ids: string[]) => {
