@@ -25,4 +25,7 @@ module.exports = {
       ],
     },
   },
+  admin0: {
+    referenceData: '67605fdc851e937cd9b21be8',
+  },
 };
