@@ -134,6 +134,23 @@ function transformGeometry(geometry: any, transformFn: any): any {
 }
 
 /**
+ * Check if the provided .prj file content is using the WGS84 coordinate reference system.
+ *
+ * @param prjContent - The content of the .prj file.
+ * @returns True if the .prj file is using WGS84, false otherwise.
+ */
+const isWGS84 = (prjContent: string): boolean => {
+  if (!prjContent) return false;
+  const prj = prjContent.toUpperCase();
+  return (
+    prj.includes('WGS_1984') ||
+    prj.includes('GEOGCS["WGS 84"') ||
+    prj.includes('GEOGCS["WGS_1984"') ||
+    prj.includes('EPSG:4326')
+  );
+};
+
+/**
  * Get feature from item and add it to collection
  *
  * @param features collection of features
@@ -604,17 +621,16 @@ router.post('/shapefile-to-geojson', async (req, res) => {
 
     // Find required files inside the extracted folder
     const shpFile = fs.readdirSync(tempDir).find((f) => f.endsWith('.shp'));
+    const shxFile = fs.readdirSync(tempDir).find((f) => f.endsWith('.shx'));
     const dbfFile = fs.readdirSync(tempDir).find((f) => f.endsWith('.dbf'));
     const prjFile = fs.readdirSync(tempDir).find((f) => f.endsWith('.prj'));
 
-    if (!shpFile || !dbfFile || !prjFile) {
+    if (!shpFile || !shxFile || !dbfFile || !prjFile) {
       // Cleanup: Delete the extracted folder
       fs.rmSync(tempDir, { recursive: true, force: true });
       return res
         .status(400)
-        .send(
-          i18next.t('routes.gis.shapefile.errors.incorrectShapefileFormat')
-        );
+        .send(i18next.t('routes.gis.shapefile.errors.format.shapefile'));
     }
 
     // Read and parse the shapefile
@@ -629,12 +645,16 @@ router.post('/shapefile-to-geojson', async (req, res) => {
     if (prjPath && fs.existsSync(prjPath)) {
       try {
         const prjContent = fs.readFileSync(prjPath, 'utf-8');
+        if (!isWGS84(prjContent)) {
+          throw new Error('Unsupported projection: WGS84');
+        }
         transformFunction = proj4(prjContent.trim(), 'EPSG:4326');
       } catch (err) {
-        console.warn(
-          'Could not create projection transformation:',
-          err.message
-        );
+        return res
+          .status(400)
+          .send(
+            i18next.t('routes.gis.shapefile.errors.format.missingPolygons')
+          );
       }
     }
 
@@ -659,24 +679,32 @@ router.post('/shapefile-to-geojson', async (req, res) => {
     fs.rmSync(tempDir, { recursive: true, force: true });
 
     const zonations = features.map((f) => f.properties.Zonation);
+
+    // Missing polygons
+    if (features.length !== 3) {
+      return res
+        .status(400)
+        .send(i18next.t('routes.gis.shapefile.errors.format.missingPolygons'));
+    }
+
+    // Missing zonations
     if (
-      !(features.length === 3) ||
-      !(
-        zonations.length === 3 &&
-        ['Buffer', 'Core', 'Transition'].every((z) =>
-          features.some((f) => f.properties.Zonation === z)
-        )
+      zonations.length !== 3 ||
+      !['Buffer', 'Core', 'Transition'].every((z) =>
+        features.some((f) => f.properties.Zonation === z)
       )
     ) {
       return res
         .status(400)
-        .send(i18next.t('routes.gis.shapefile.errors.featuresNotCorrect'));
+        .send(i18next.t('routes.gis.shapefile.errors.format.missingZonations'));
     }
 
     res.send({ geojson: { type: 'FeatureCollection', features } });
   } catch (err) {
     console.error(err);
-    res.status(500).send({ error: 'Error processing shapefile' });
+    res.status(500).send({
+      error: i18next.t('routes.gis.shapefile.errors.processing'),
+    });
   }
 });
 
