@@ -311,8 +311,13 @@
 			},
 			"shapefile": {
 				"errors": {
-					"featuresNotCorrect": "******",
-					"incorrectShapefileFormat": "******"
+					"format": {
+						"crs": "******",
+						"missingPolygons": "******",
+						"missingZonations": "******",
+						"shapefile": "******"
+					},
+					"processing": "******"
 				}
 			}
 		},
