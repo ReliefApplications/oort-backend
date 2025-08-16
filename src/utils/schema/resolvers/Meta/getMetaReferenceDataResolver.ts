@@ -47,7 +47,8 @@ const getMetaReferenceDataResolver =
                 text: String(item[x.name]),
               })),
               permissions: get(fieldMeta, 'permissions', {
-                canSee: false,
+                // todo: ust do a better check there
+                canSee: true,
                 canUpdate: false,
               }),
             },
