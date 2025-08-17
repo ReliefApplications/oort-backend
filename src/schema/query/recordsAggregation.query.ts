@@ -1,4 +1,5 @@
 import {
+  GraphQLBoolean,
   GraphQLError,
   GraphQLID,
   GraphQLInt,
@@ -82,6 +83,7 @@ type RecordsAggregationArgs = {
   sortField?: string;
   sortOrder?: string;
   contextFilters?: CompositeFilterDescriptor;
+  skipPagination?: boolean;
 };
 
 /**
@@ -219,11 +221,12 @@ export default {
     sortField: { type: GraphQLString },
     sortOrder: { type: GraphQLString },
     at: { type: GraphQLDate },
+    skipPagination: { type: GraphQLBoolean },
   },
   async resolve(parent, args: RecordsAggregationArgs, context: Context) {
     graphQLAuthCheck(context);
     // Make sure that the page size is not too important
-    const first = args.first || DEFAULT_FIRST;
+    const first = args.first || (args.skipPagination ? 0 : DEFAULT_FIRST);
     // If first equal to -1, no need for page size check, that means we want to fetch all records
     if (first > 0) {
       checkPageSize(first);
