@@ -182,6 +182,9 @@ export const getNextId = async (structureId: string | Form) => {
     return { incID: id, incrementalId };
   }
 
+  /**
+   * Promise to find the next id for the resource
+   */
   const nextIdPromise = new Promise<number>(async (resolve) => {
     /** Gets the last id added to the form */
     const getLastID = async () => {
@@ -231,13 +234,28 @@ export const getNextId = async (structureId: string | Form) => {
     10
   );
 
-  const incID = await nextIdPromise;
-  const incrementalId = buildIncrementalId(idShape, {
+  let incID = await nextIdPromise;
+  let incrementalId = buildIncrementalId(idShape, {
     incremental: incID.toString(),
     year: new Date().getFullYear().toString(),
     resourceInitial: name?.charAt(0).toUpperCase() || '',
     resourceName: name?.toUpperCase() || '',
   });
+
+  while (
+    await Record.exists({
+      resource: resource._id,
+      incrementalId,
+    })
+  ) {
+    incID += 1;
+    incrementalId = buildIncrementalId(idShape, {
+      incremental: incID.toString(),
+      year: new Date().getFullYear().toString(),
+      resourceInitial: name?.charAt(0).toUpperCase() || '',
+      resourceName: name?.toUpperCase() || '',
+    });
+  }
 
   return { incID, incrementalId };
 };
