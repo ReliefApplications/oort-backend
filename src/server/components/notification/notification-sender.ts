@@ -2,11 +2,12 @@ import {
   customNotificationRecipientsType,
   customNotificationType,
 } from '@const/enumTypes';
-import { Channel, CustomNotification, Notification } from '@models';
+import { Channel, CustomNotification, Notification, User } from '@models';
 // import pubsub from '@server/pubsub';
 import { Address, sendEmail } from '@utils/email';
 import { PubSub } from 'graphql-subscriptions';
 import { get, isArray } from 'lodash';
+import mongoose from 'mongoose';
 
 /**
  * Send notification by email
@@ -85,15 +86,23 @@ const sendAsInApp = async (
       // const publisher = await pubsub();
       const sendToUser = async (recipient: string) => {
         // Send notification to a user
-        const notificationInstance = new Notification({
-          action: content.title,
-          content: content.description,
-          user: recipient,
-          seenBy: [],
-          redirect,
-        });
-        await notificationInstance.save();
-        pubsub.publish(recipient, { notification: notificationInstance });
+        const isValidObjectId = mongoose.Types.ObjectId.isValid(recipient);
+        const query = isValidObjectId
+          ? { $or: [{ _id: recipient }, { username: recipient }] }
+          : { username: recipient };
+
+        const user = await User.findOne(query);
+        if (user) {
+          const notificationInstance = new Notification({
+            action: content.title,
+            content: content.description,
+            user: user._id.toString(),
+            seenBy: [],
+            redirect,
+          });
+          await notificationInstance.save();
+          pubsub.publish(recipient, { notification: notificationInstance });
+        }
       };
 
       if (isArray(recipients))
