@@ -16,7 +16,10 @@ const notification = (pubsub: PubSub) => ({
     // Subscribe to channels available in user's roles
     const user: User = context.user;
     return pubsub.asyncIterator(
-      user.roles.map((role) => role.channels.map((x) => String(x._id))).flat()
+      user.roles
+        .map((role) => role.channels.map((x) => String(x._id)))
+        .flat()
+        .concat([user._id.toString()])
     );
   },
 });

@@ -77,7 +77,7 @@ const sendAsInApp = async (
         });
         await notificationInstance.save();
         // const publisher = await pubsub();
-        pubsub.publish(channel.id, { notificationInstance });
+        pubsub.publish(channel.id, { notification: notificationInstance });
       }
     } else if (
       notification.recipientsType === customNotificationRecipientsType.userField
@@ -93,7 +93,7 @@ const sendAsInApp = async (
           redirect,
         });
         await notificationInstance.save();
-        pubsub.publish(recipient, { notificationInstance });
+        pubsub.publish(recipient, { notification: notificationInstance });
       };
 
       if (isArray(recipients))
