@@ -2,15 +2,13 @@ import {
   GraphQLObjectType,
   GraphQLString,
   GraphQLID,
-  GraphQLList,
+  GraphQLBoolean,
 } from 'graphql';
 import GraphQLJSON from 'graphql-type-json';
-import { AppAbility } from 'security/defineUserAbility';
-import { Channel, User } from '@models';
+import { Channel } from '@models';
 import { ChannelType } from './channel.type';
 import { UserType } from './user.type';
 import { Connection } from './pagination.type';
-import { accessibleBy } from '@casl/mongoose';
 
 /** GraphQL notification type definition */
 export const NotificationType = new GraphQLObjectType({
@@ -32,14 +30,10 @@ export const NotificationType = new GraphQLObjectType({
         return channel;
       },
     },
-    seenBy: {
-      type: new GraphQLList(UserType),
+    read: {
+      type: GraphQLBoolean,
       async resolve(parent, args, context) {
-        const ability: AppAbility = context?.user.ability;
-        const users = await User.find(accessibleBy(ability, 'read').User)
-          .where('_id')
-          .in(parent.seenBy);
-        return users;
+        return parent.seenBy.includes(context?.user._id.toString());
       },
     },
     user: { type: UserType },
