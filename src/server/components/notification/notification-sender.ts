@@ -101,7 +101,9 @@ const sendAsInApp = async (
             redirect,
           });
           await notificationInstance.save();
-          pubsub.publish(recipient, { notification: notificationInstance });
+          pubsub.publish(user._id.toString(), {
+            notification: notificationInstance,
+          });
         }
       };
 
