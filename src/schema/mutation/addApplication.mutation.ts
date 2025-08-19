@@ -1,7 +1,6 @@
 import { GraphQLError } from 'graphql';
 import channels from '@const/channels';
 import { Application, Role, Notification, Channel } from '@models';
-import pubsub from '../../server/pubsub';
 import { ApplicationType } from '../types';
 import { AppAbility } from '@security/defineUserAbility';
 import { status } from '@const/enumTypes';
@@ -9,6 +8,7 @@ import permissions from '@const/permissions';
 import { logger } from '@lib/logger';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Context } from '@server/apollo/context';
+import { PubSub } from 'graphql-subscriptions';
 
 /** Arguments for the addApplication mutation */
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -17,8 +17,11 @@ type AddApplicationArgs = {};
 /**
  * Create a new application.
  * Throw an error if not logged or authorized, or arguments are invalid.
+ *
+ * @param pubsub PubSub
+ * @returns GraphQL Mutation
  */
-export default {
+const addApplication = (pubsub: PubSub) => ({
   type: ApplicationType,
   args: {},
   async resolve(parent, args: AddApplicationArgs, context: Context) {
@@ -82,8 +85,7 @@ export default {
           seenBy: [],
         });
         await notification.save();
-        const publisher = await pubsub();
-        publisher.publish(channel.id, { notification });
+        pubsub.publish(channel.id, { notification });
         // Create main channel
         const mainChannel = new Channel({
           title: 'main',
@@ -116,4 +118,6 @@ export default {
       );
     }
   },
-};
+});
+
+export default addApplication;

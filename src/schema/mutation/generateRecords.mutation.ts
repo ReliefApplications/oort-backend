@@ -10,11 +10,11 @@ import { RecordType } from '../types';
 import { Form, Record, Notification, Channel } from '@models';
 import { getNextId, generateData, FieldsConfig } from '@utils/form';
 import extendAbilityForRecords from '@security/extendAbilityForRecords';
-import pubsub from '../../server/pubsub';
 import { logger } from '@lib/logger';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
+import { PubSub } from 'graphql-subscriptions';
 
 /** Arguments for the generateRecords mutation */
 type GenerateRecordArgs = {
@@ -25,8 +25,11 @@ type GenerateRecordArgs = {
 
 /**
  * Generate up to 50 records using user input or random data
+ *
+ * @param pubsub PubSub
+ * @returns GraphQL Mutation
  */
-export default {
+const generateRecords = (pubsub: PubSub) => ({
   type: new GraphQLList(RecordType),
   args: {
     form: { type: new GraphQLNonNull(GraphQLID) },
@@ -107,8 +110,7 @@ export default {
           seenBy: [],
         });
         await notification.save();
-        const publisher = await pubsub();
-        publisher.publish(channel.id, { notification });
+        pubsub.publish(channel.id, { notification });
       }
       return records;
     } catch (err) {
@@ -121,4 +123,6 @@ export default {
       );
     }
   },
-};
+});
+
+export default generateRecords;

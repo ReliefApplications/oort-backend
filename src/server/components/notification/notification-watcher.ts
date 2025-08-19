@@ -5,11 +5,14 @@ import { buildNotificationFilter } from '@server/components/notification/notific
 import { handleNotification } from '@server/components/notification/notification-handler';
 import logger from '@lib/logger';
 import sift from 'sift';
+import { PubSub } from 'graphql-subscriptions';
 
 /**
  * Sets up record watching for custom notifications
+ *
+ * @param pubsub PubSub
  */
-export function setupRecordWatcher(): void {
+export function setupRecordWatcher(pubsub: PubSub): void {
   if (!(config.get('notifications.leader') == 'true')) {
     return;
   }
@@ -76,6 +79,7 @@ export function setupRecordWatcher(): void {
                 }
               }
               handleNotification(
+                pubsub,
                 trigger,
                 application,
                 resource,

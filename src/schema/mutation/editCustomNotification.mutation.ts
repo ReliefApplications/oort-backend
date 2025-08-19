@@ -17,6 +17,7 @@ import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
 import GraphQLJSON from 'graphql-type-json';
+import { PubSub } from 'graphql-subscriptions';
 
 /** Arguments for the editCustomNotification mutation */
 type EditCustomNotificationArgs = {
@@ -28,8 +29,11 @@ type EditCustomNotificationArgs = {
 
 /**
  * Mutation to edit custom notification.
+ *
+ * @param pubsub PubSub
+ * @returns GraphQL Mutation
  */
-export default {
+const editCustomNotification = (pubsub: PubSub) => ({
   type: CustomNotificationType,
   args: {
     id: { type: new GraphQLNonNull(GraphQLID) },
@@ -111,7 +115,7 @@ export default {
         (args.triggersFilters &&
           notificationDetail.status === customNotificationStatus.active)
       ) {
-        scheduleNotification(notificationDetail, application);
+        scheduleNotification(pubsub, notificationDetail, application);
       } else {
         unscheduleNotification(notificationDetail);
       }
@@ -127,4 +131,6 @@ export default {
       );
     }
   },
-};
+});
+
+export default editCustomNotification;

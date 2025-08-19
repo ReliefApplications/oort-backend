@@ -1,7 +1,5 @@
 import { GraphQLID } from 'graphql';
-import { RedisPubSub } from 'graphql-redis-subscriptions';
-import { withFilter } from 'graphql-subscriptions';
-import pubsub from '../../server/pubsub';
+import { PubSub, withFilter } from 'graphql-subscriptions';
 import { ApplicationType } from '../types';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
@@ -14,21 +12,19 @@ type ApplicationUnlockedArgs = {
 
 /**
  * Subscription to detect if application is unlocked.
+ *
+ * @param pubsub PubSub
+ * @returns GraphQL Subscription
  */
-export default {
+const applicationUnlocked = (pubsub: PubSub) => ({
   type: ApplicationType,
   args: {
     id: { type: GraphQLID },
   },
-  subscribe: async (
-    parent,
-    args: ApplicationUnlockedArgs,
-    context: Context
-  ) => {
+  subscribe: (parent, args: ApplicationUnlockedArgs, context: Context) => {
     graphQLAuthCheck(context);
-    const subscriber: RedisPubSub = await pubsub();
     return withFilter(
-      () => subscriber.asyncIterator('app_lock'),
+      () => pubsub.asyncIterator('app_lock'),
       (payload, variables) => {
         if (variables.id) {
           return payload.application._id === variables.id;
@@ -40,4 +36,6 @@ export default {
   resolve: (payload) => {
     return payload.application;
   },
-};
+});
+
+export default applicationUnlocked;

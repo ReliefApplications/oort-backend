@@ -12,6 +12,7 @@ import { customNotificationStatus } from '@const/enumTypes';
 import { logger } from '@lib/logger';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Context } from '@server/apollo/context';
+import { PubSub } from 'graphql-subscriptions';
 
 /** Arguments for the addCustomNotification mutation */
 type AddCustomNotificationArgs = {
@@ -21,8 +22,11 @@ type AddCustomNotificationArgs = {
 
 /**
  * Mutation to add a new custom notification.
+ *
+ * @param pubsub PubSub
+ * @returns GraphQL Mutation
  */
-export default {
+const addCustomNotification = (pubsub: PubSub) => ({
   type: CustomNotificationType,
   args: {
     application: { type: new GraphQLNonNull(GraphQLID) },
@@ -85,7 +89,7 @@ export default {
         args.notification.schedule &&
         args.notification.status === customNotificationStatus.active
       ) {
-        scheduleNotification(notificationDetail, application);
+        scheduleNotification(pubsub, notificationDetail, application);
       }
       return notificationDetail;
     } catch (err) {
@@ -98,4 +102,6 @@ export default {
       );
     }
   },
-};
+});
+
+export default addCustomNotification;

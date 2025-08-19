@@ -30,6 +30,7 @@ import {
 import { pluralize } from 'inflection';
 import config from 'config';
 import { setupRecordWatcher } from './components/notification/notification-watcher';
+import { PubSub } from 'graphql-subscriptions';
 
 /** List of user fields */
 const USER_FIELDS = ['id', 'name', 'username'];
@@ -55,8 +56,15 @@ class SafeServer {
 
   public status = new EventEmitter();
 
-  /** Adds listeners to relevant collections in order to rebuild schema */
-  constructor() {
+  public pubsub: PubSub;
+
+  /**
+   * Adds listeners to relevant collections in order to rebuild schema
+   *
+   * @param pubsub PubSub
+   */
+  constructor(pubsub: PubSub) {
+    this.pubsub = pubsub;
     Form.watch().on('change', (data) => {
       if (data.operationType === 'insert' || data.operationType === 'delete') {
         // Reload schema on new form or form deletion
@@ -124,7 +132,7 @@ class SafeServer {
     });
 
     // Setup record watcher for custom notifications
-    setupRecordWatcher();
+    setupRecordWatcher(this.pubsub);
   }
 
   /**
@@ -254,7 +262,7 @@ class SafeServer {
 
   /** Re-launches the server with updated schema */
   private async update(): Promise<void> {
-    const schema = await buildSchema();
+    const schema = await buildSchema(this.pubsub);
     this.httpServer.removeListener('request', this.app);
     this.httpServer.close();
     logger.info('🛑 Stopping server');

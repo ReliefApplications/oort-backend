@@ -1,8 +1,6 @@
 import { GraphQLID } from 'graphql';
-import { withFilter } from 'graphql-subscriptions';
+import { PubSub, withFilter } from 'graphql-subscriptions';
 import { RecordType } from '../types';
-import pubsub from '../../server/pubsub';
-import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
 
@@ -13,17 +11,19 @@ type RecordAddedArgs = {
 };
 /**
  * Subscription to detect addition of record.
+ *
+ * @param pubsub PubSub
+ * @returns GraphQL Subscription
  */
-export default {
+const recordAdded = (pubsub: PubSub) => ({
   type: RecordType,
   args: {
     resource: { type: GraphQLID },
     form: { type: GraphQLID },
   },
-  subscribe: async (parent, args: RecordAddedArgs, context: Context) => {
-    const subscriber: RedisPubSub = await pubsub();
+  subscribe: (parent, args: RecordAddedArgs, context: Context) => {
     return withFilter(
-      () => subscriber.asyncIterator('record_added'),
+      () => pubsub.asyncIterator('record_added'),
       (payload, variables) => {
         if (variables.resource) {
           return payload.recordAdded.resource === variables.resource;
@@ -35,4 +35,6 @@ export default {
       }
     )(parent, args, context);
   },
-};
+});
+
+export default recordAdded;

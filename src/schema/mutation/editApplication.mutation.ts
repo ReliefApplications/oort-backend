@@ -7,7 +7,6 @@ import {
   GraphQLBoolean,
 } from 'graphql';
 import GraphQLJSON from 'graphql-type-json';
-import pubsub from '../../server/pubsub';
 import { ApplicationType } from '../types';
 import { Application } from '@models';
 import { AppAbility } from '@security/defineUserAbility';
@@ -18,6 +17,7 @@ import { accessibleBy } from '@casl/mongoose';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
+import { PubSub } from 'graphql-subscriptions';
 
 /** Arguments for the editApplication mutation */
 type EditApplicationArgs = {
@@ -35,8 +35,11 @@ type EditApplicationArgs = {
 /**
  * Find application from its id and update it, if user is authorized.
  * Throw an error if not logged or authorized, or arguments are invalid.
+ *
+ * @param pubsub PubSub
+ * @returns GraphQL Mutation
  */
-export default {
+const editApplication = (pubsub: PubSub) => ({
   type: ApplicationType,
   args: {
     id: { type: new GraphQLNonNull(GraphQLID) },
@@ -96,12 +99,11 @@ export default {
       application = await Application.findOneAndUpdate(filters, update, {
         new: true,
       });
-      const publisher = await pubsub();
-      publisher.publish('app_edited', {
+      pubsub.publish('app_edited', {
         application,
         user: user._id,
       });
-      publisher.publish('app_lock', {
+      pubsub.publish('app_lock', {
         application,
         user: user._id,
       });
@@ -116,4 +118,6 @@ export default {
       );
     }
   },
-};
+});
+
+export default editApplication;
