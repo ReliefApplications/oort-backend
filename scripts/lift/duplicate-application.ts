@@ -29,6 +29,11 @@ import { getGraphQLTypeName } from '@utils/validators';
  * --app ( optional ), shortcut: -a
  * --country ( required ), shortcut: -c
  * --token ( required ), shortcut: -t
+ *
+ * Important notes
+ * - In order to duplicate the style of the application, make sure your IP is whitelisted in the blob storage of LIFT.
+ * - The schema may be broken once the new application is generated. If that's the case, the logs should indicate which resource is causing an error. Go to that resource in the back-office,
+ *   edit the form, find the relatedName mentioned by the log, and change the last letter of it with a random one, and save the form. Schema should reload and work again.
  */
 
 /** Parsed command-line arguments, using minimist */
