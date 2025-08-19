@@ -96,7 +96,7 @@ const sendAsInApp = async (
           const notificationInstance = new Notification({
             action: content.title,
             content: content.description,
-            user: user._id.toString(),
+            user: user._id,
             seenBy: [],
             redirect,
           });
