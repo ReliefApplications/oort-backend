@@ -16,6 +16,9 @@ const getClient = () => {
     showFriendlyErrorStack: true,
     lazyConnect: true,
     maxRetriesPerRequest: 5,
+    retryStrategy: (times) => {
+      return Math.min(times * 50, 2000); // Retry every 50ms, up to 2 seconds
+    },
   });
   client.on('connect', () => {
     logger.info('Connected to redis instance');
@@ -39,10 +42,13 @@ const getClient = () => {
  */
 export default async () => {
   if (!pubsub) {
+    console.log('Creating new pub sub');
     pubsub = new RedisPubSub({
       publisher: getClient(),
       subscriber: getClient(),
     });
+  } else {
+    console.log('I already have a pubsub');
   }
   return pubsub;
 };

@@ -1,10 +1,21 @@
 import { GraphQLSchema } from 'graphql';
-import Mutation from './mutation';
 import Query from './query';
-import Subscription from './subscription';
+import subscription from './subscription';
+import { PubSub } from 'graphql-subscriptions';
+import mutation from './mutation';
 
-export default new GraphQLSchema({
-  query: Query,
-  mutation: Mutation,
-  subscription: Subscription,
-});
+/**
+ * Create the default GraphQL schema.
+ *
+ * @param pubsub PubSub
+ * @returns Schema
+ */
+const createSchema = (pubsub: PubSub) => {
+  return new GraphQLSchema({
+    query: Query,
+    mutation: mutation(pubsub),
+    subscription: subscription(pubsub),
+  });
+};
+
+export default createSchema;

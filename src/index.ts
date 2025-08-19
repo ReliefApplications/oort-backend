@@ -8,6 +8,7 @@ import { checkConfig } from '@utils/server/checkConfig.util';
 import buildSchema from '@utils/schema/buildSchema';
 import koboSyncScheduler from './server/koboSyncScheduler';
 import { setupNotificationScheduler } from '@server/components/notification/notification-scheduler';
+import { PubSub } from 'graphql-subscriptions';
 
 // Needed for survey.model, as xmlhttprequest is not defined in servers
 global.XMLHttpRequest = require('xhr2');
@@ -30,8 +31,9 @@ const PORT = config.get('server.port');
 
 /** Starts the server */
 const launchServer = async () => {
-  const schema = await buildSchema();
-  const safeServer = new SafeServer();
+  const pubsub = new PubSub();
+  const schema = await buildSchema(pubsub);
+  const safeServer = new SafeServer(pubsub);
   await safeServer.start(schema);
   safeServer.httpServer.listen(PORT, () => {
     logger.info(`🚀 Server ready at http://localhost:${PORT}/graphql`);
@@ -43,14 +45,13 @@ const launchServer = async () => {
       logger.info(`🚀 Server ready at ws://localhost:${PORT}/graphql`);
     });
   });
+  setupNotificationScheduler(safeServer.pubsub);
 };
 
 startDatabase();
 mongoose.connection.once('open', () => {
   logger.log({ level: 'info', message: '📶 Connected to database' });
   launchServer();
-  // subscriberSafe();
   pullJobScheduler();
   koboSyncScheduler();
-  setupNotificationScheduler();
 });

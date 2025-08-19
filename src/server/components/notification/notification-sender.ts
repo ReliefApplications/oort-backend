@@ -3,8 +3,9 @@ import {
   customNotificationType,
 } from '@const/enumTypes';
 import { Channel, CustomNotification, Notification } from '@models';
-import pubsub from '@server/pubsub';
+// import pubsub from '@server/pubsub';
 import { Address, sendEmail } from '@utils/email';
+import { PubSub } from 'graphql-subscriptions';
 import { get, isArray } from 'lodash';
 
 /**
@@ -38,12 +39,14 @@ const sendAsMail = async (
 /**
  * Send notification as in-app notification
  *
+ * @param pubsub PubSub
  * @param content Template email content
  * @param recipients custom notification recipients (form id or users from user field)
  * @param notification custom notification
  * @param recordsIds records ids list (if any)
  */
 const sendAsInApp = async (
+  pubsub: PubSub,
   content: any,
   recipients: string | string[],
   notification: CustomNotification,
@@ -73,13 +76,13 @@ const sendAsInApp = async (
           redirect,
         });
         await notificationInstance.save();
-        const publisher = await pubsub();
-        publisher.publish(channel.id, { notificationInstance });
+        // const publisher = await pubsub();
+        pubsub.publish(channel.id, { notificationInstance });
       }
     } else if (
       notification.recipientsType === customNotificationRecipientsType.userField
     ) {
-      const publisher = await pubsub();
+      // const publisher = await pubsub();
       const sendToUser = async (recipient: string) => {
         // Send notification to a user
         const notificationInstance = new Notification({
@@ -90,7 +93,7 @@ const sendAsInApp = async (
           redirect,
         });
         await notificationInstance.save();
-        publisher.publish(recipient, { notificationInstance });
+        pubsub.publish(recipient, { notificationInstance });
       };
 
       if (isArray(recipients))
@@ -109,6 +112,7 @@ const sendAsInApp = async (
 /**
  * Prepare custom notification to be sent by type (email or notification)
  *
+ * @param pubsub PubSub
  * @param content processed email content
  * @param recipients custom notification recipients (always a array)
  * (can be a single email, a list of emails, a channel id or users from a user field)
@@ -116,6 +120,7 @@ const sendAsInApp = async (
  * @param recordsIds records ids list
  */
 export const sendNotification = async (
+  pubsub: PubSub,
   content: any,
   recipients: Address[] | string,
   notification: CustomNotification,
@@ -129,6 +134,7 @@ export const sendNotification = async (
     } else {
       // If custom notification type is notification
       await sendAsInApp(
+        pubsub,
         content,
         recipients as string,
         notification,

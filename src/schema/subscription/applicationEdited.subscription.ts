@@ -1,7 +1,5 @@
 import { GraphQLID } from 'graphql';
-import { RedisPubSub } from 'graphql-redis-subscriptions';
-import { withFilter } from 'graphql-subscriptions';
-import pubsub from '../../server/pubsub';
+import { PubSub, withFilter } from 'graphql-subscriptions';
 import { ApplicationType } from '../types';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
@@ -14,18 +12,20 @@ type ApplicationEditedArgs = {
 
 /**
  * Subscription to detect if application is being edited.
+ *
+ * @param pubsub PubSub
+ * @returns GraphQL Subscription
  */
-export default {
+const applicationEdited = (pubsub: PubSub) => ({
   type: ApplicationType,
   args: {
     id: { type: GraphQLID },
   },
-  subscribe: async (parent, args: ApplicationEditedArgs, context: Context) => {
+  subscribe: (parent, args: ApplicationEditedArgs, context: Context) => {
     graphQLAuthCheck(context);
-    const subscriber: RedisPubSub = await pubsub();
     const user = context.user;
     return withFilter(
-      () => subscriber.asyncIterator('app_edited'),
+      () => pubsub.asyncIterator('app_edited'),
       (payload, variables) => {
         if (variables.id) {
           return (
@@ -40,4 +40,6 @@ export default {
   resolve: (payload) => {
     return payload.application;
   },
-};
+});
+
+export default applicationEdited;

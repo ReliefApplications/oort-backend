@@ -1,7 +1,6 @@
 import { GraphQLNonNull, GraphQLID, GraphQLError } from 'graphql';
 import { ApplicationType } from '../types';
 import { Application, Channel, Notification } from '@models';
-import pubsub from '../../server/pubsub';
 import channels from '@const/channels';
 import { AppAbility } from '@security/defineUserAbility';
 import { logger } from '@lib/logger';
@@ -9,6 +8,7 @@ import { accessibleBy } from '@casl/mongoose';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
+import { PubSub } from 'graphql-subscriptions';
 
 /** Arguments for the deleteApplication mutation */
 type DeleteApplicationArgs = {
@@ -19,8 +19,11 @@ type DeleteApplicationArgs = {
  * Deletes an application from its id.
  * Recursively delete associated pages and dashboards/workflows.
  * Throw GraphQLError if not authorized.
+ *
+ * @param pubsub PubSub
+ * @returns GraphQL Mutation
  */
-export default {
+const deleteApplication = (pubsub: PubSub) => ({
   type: ApplicationType,
   args: {
     id: { type: new GraphQLNonNull(GraphQLID) },
@@ -54,8 +57,7 @@ export default {
         seenBy: [],
       });
       await notification.save();
-      const publisher = await pubsub();
-      publisher.publish(channel.id, { notification });
+      pubsub.publish(channel.id, { notification });
       return application;
     } catch (err) {
       logger.error(err.message, { stack: err.stack });
@@ -67,4 +69,6 @@ export default {
       );
     }
   },
-};
+});
+
+export default deleteApplication;

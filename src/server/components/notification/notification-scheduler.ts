@@ -11,14 +11,17 @@ import get from 'lodash/get';
 import { buildNotificationFilter } from '@server/components/notification/notification-filter';
 import { handleNotification } from '@server/components/notification/notification-handler';
 import config from 'config';
+import { PubSub } from 'graphql-subscriptions';
 
 /** A map with the custom notification ids as keys and the scheduled custom notification as values */
 const customNotificationMap: Record<string, CronJob> = {};
 
 /**
  * Global function called on server start to initialize all the custom notification.
+ *
+ * @param pubsub PubSub
  */
-export const setupNotificationScheduler = async () => {
+export const setupNotificationScheduler = async (pubsub: PubSub) => {
   if (!(config.get('notifications.leader') == 'true')) {
     return;
   }
@@ -29,7 +32,7 @@ export const setupNotificationScheduler = async () => {
     if (!!application.customNotifications) {
       for await (const notification of application.customNotifications) {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        scheduleNotification(notification, application);
+        scheduleNotification(pubsub, notification, application);
       }
     }
   }
@@ -38,10 +41,12 @@ export const setupNotificationScheduler = async () => {
 /**
  * Schedule or re-schedule a custom notification.
  *
+ * @param pubsub PubSub
  * @param notification custom notification to schedule
  * @param application application's custom notification to schedule
  */
 export const scheduleNotification = async (
+  pubsub: PubSub,
   notification: CustomNotification,
   application: Application
 ) => {
@@ -80,6 +85,7 @@ export const scheduleNotification = async (
                 ]);
                 if (records.length) {
                   await handleNotification(
+                    pubsub,
                     notification,
                     application,
                     resource,
@@ -87,7 +93,7 @@ export const scheduleNotification = async (
                   );
                 }
               } else {
-                await handleNotification(notification, application);
+                await handleNotification(pubsub, notification, application);
               }
             } catch (error) {
               logger.error(error.message, { stack: error.stack });

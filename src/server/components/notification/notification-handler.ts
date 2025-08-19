@@ -18,6 +18,7 @@ import qs from 'qs';
 import Exporter from '@utils/files/resourceExporter';
 import { restMiddleware } from '@server/middlewares';
 import config from 'config';
+import { PubSub } from 'graphql-subscriptions';
 
 /**
  * Flattens a nested array
@@ -249,12 +250,14 @@ const getClientToken = async () => {
 /**
  * Check if trigger has filters, if so return mongoose filter
  *
+ * @param pubsub PubSub
  * @param notification custom notification
  * @param application custom notification's application
  * @param resource resource object
  * @param records records object
  */
 export const handleNotification = async (
+  pubsub: PubSub,
   notification: CustomNotification,
   application: Application,
   resource?: Resource,
@@ -391,6 +394,7 @@ export const handleNotification = async (
                 // Send one notification per user
                 for (const user of users) {
                   await sendNotification(
+                    pubsub,
                     preprocessNotificationTemplate(
                       template.content,
                       notificationType,
@@ -413,6 +417,7 @@ export const handleNotification = async (
                 // Send one notification per user
                 for (const user of users) {
                   await sendNotification(
+                    pubsub,
                     preprocessNotificationTemplate(
                       template.content,
                       notificationType,
@@ -428,6 +433,7 @@ export const handleNotification = async (
                 // Send one notification per email (not associated with a user)
                 for (const email of emails) {
                   await sendNotification(
+                    pubsub,
                     preprocessNotificationTemplate(
                       template.content,
                       notificationType,
@@ -461,6 +467,7 @@ export const handleNotification = async (
           // Send one notification per user
           for (const user of users) {
             await sendNotification(
+              pubsub,
               preprocessNotificationTemplate(
                 template.content,
                 notificationType,
@@ -476,6 +483,7 @@ export const handleNotification = async (
           // Send one notification per email (not associated with a user)
           for (const email of emails) {
             await sendNotification(
+              pubsub,
               preprocessNotificationTemplate(
                 template.content,
                 notificationType,
@@ -495,7 +503,7 @@ export const handleNotification = async (
         }
       }
     } else {
-      await sendNotification(template, recipients, notification);
+      await sendNotification(pubsub, template, recipients, notification);
       success = true;
     }
 
