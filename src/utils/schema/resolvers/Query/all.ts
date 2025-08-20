@@ -35,9 +35,15 @@ const DEFAULT_FIRST = 25;
  * Build a $project aggregation stage with static fields, but dynamic 'data' field from queryFields
  *
  * @param {Array} queryFields - The fields requested in the query for 'data'
+ * @param {Array} calculatedFields - The calculated fields to include in the projection
+ * @param {Array} sort - The sort fields to include in the projection
  * @returns {Array} Aggregation pipeline with $project
  */
-export const buildProjectAggregation = (queryFields) => {
+export const buildProjectAggregation = (
+  queryFields,
+  calculatedFields: any[],
+  sort: any[]
+) => {
   const staticProject: any = {
     id: 1,
     _id: 1,
@@ -71,13 +77,19 @@ export const buildProjectAggregation = (queryFields) => {
     },
     data: 0,
   };
+  const data = {};
   if (queryFields && Array.isArray(queryFields)) {
-    const data = {};
     queryFields.forEach((field) => {
       data[field.name] = 1;
     });
     staticProject.data = data;
   }
+  calculatedFields.forEach((field) => {
+    staticProject.data[field.name] = 1;
+  });
+  sort.forEach((item: any) => {
+    staticProject.data[item.name] = 1;
+  });
   return [{ $project: staticProject }];
 };
 
@@ -386,8 +398,6 @@ export default (entityName: string, fieldsByName: any, idsByName: any) =>
       // Check if we need to fetch any other record related to resource questions
       const queryFields = getQueryFields(info);
 
-      console.log(queryFields);
-
       // Build aggregation for calculated fields
       const calculatedFieldsAggregation: any[] = [];
 
@@ -423,17 +433,19 @@ export default (entityName: string, fieldsByName: any, idsByName: any) =>
         return false;
       };
 
-      fields
-        .filter((f) => f.isCalculated && shouldAddCalculatedFieldToPipeline(f))
-        .forEach((f) =>
-          calculatedFieldsAggregation.push(
-            ...buildCalculatedFieldPipeline(
-              f.expression,
-              f.name,
-              context.timeZone
-            )
+      const calculatedFields = fields.filter(
+        (f) => f.isCalculated && shouldAddCalculatedFieldToPipeline(f)
+      );
+
+      calculatedFields.forEach((f) =>
+        calculatedFieldsAggregation.push(
+          ...buildCalculatedFieldPipeline(
+            f.expression,
+            f.name,
+            context.timeZone
           )
-        );
+        )
+      );
 
       // Build linked records aggregations
       const linkedReferenceDataAggregation = flatten(
@@ -491,7 +503,7 @@ export default (entityName: string, fieldsByName: any, idsByName: any) =>
           ...defaultRecordAggregation,
           ...calculatedFieldsAggregation,
           { $match: filters },
-          ...buildProjectAggregation(queryFields),
+          ...buildProjectAggregation(queryFields, calculatedFields, sort),
           ...(await getSortAggregation(sort, fields, context)),
           {
             $facet: {
