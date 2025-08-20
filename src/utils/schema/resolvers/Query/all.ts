@@ -27,43 +27,59 @@ const DEFAULT_FIRST = 25;
  * Project aggregation.
  * Reduce the volume of data to fetch
  */
-const projectAggregation = [
-  {
-    $project: {
-      id: 1,
+/**
+ * Dynamically build a $project aggregation stage from queryFields
+ * Supports nested fields (with 'fields' array)
+ */
+/**
+ * Build a $project aggregation stage with static fields, but dynamic 'data' field from queryFields
+ *
+ * @param {Array} queryFields - The fields requested in the query for 'data'
+ * @returns {Array} Aggregation pipeline with $project
+ */
+export const buildProjectAggregation = (queryFields) => {
+  const staticProject: any = {
+    id: 1,
+    _id: 1,
+    incrementalId: 1,
+    _form: {
       _id: 1,
-      incrementalId: 1,
-      _form: {
-        _id: 1,
-        name: 1,
-      },
-      _lastUpdateForm: {
-        _id: 1,
-        name: 1,
-      },
-      resource: 1,
-      createdAt: 1,
-      _createdBy: {
-        user: {
-          id: 1,
-          _id: 1,
-          name: 1,
-          username: 1,
-        },
-      },
-      modifiedAt: 1,
-      _lastUpdatedBy: {
-        user: {
-          id: 1,
-          _id: 1,
-          name: 1,
-          username: 1,
-        },
-      },
-      data: 1,
+      name: 1,
     },
-  },
-];
+    _lastUpdateForm: {
+      _id: 1,
+      name: 1,
+    },
+    resource: 1,
+    createdAt: 1,
+    _createdBy: {
+      user: {
+        id: 1,
+        _id: 1,
+        name: 1,
+        username: 1,
+      },
+    },
+    modifiedAt: 1,
+    _lastUpdatedBy: {
+      user: {
+        id: 1,
+        _id: 1,
+        name: 1,
+        username: 1,
+      },
+    },
+    data: 0,
+  };
+  if (queryFields && Array.isArray(queryFields)) {
+    const data = {};
+    queryFields.forEach((field) => {
+      data[field.name] = 1;
+    });
+    staticProject.data = data;
+  }
+  return [{ $project: staticProject }];
+};
 
 /** Default aggregation common to all records to make lookups for default fields. */
 const defaultRecordAggregation = [
@@ -370,6 +386,8 @@ export default (entityName: string, fieldsByName: any, idsByName: any) =>
       // Check if we need to fetch any other record related to resource questions
       const queryFields = getQueryFields(info);
 
+      console.log(queryFields);
+
       // Build aggregation for calculated fields
       const calculatedFieldsAggregation: any[] = [];
 
@@ -473,7 +491,7 @@ export default (entityName: string, fieldsByName: any, idsByName: any) =>
           ...defaultRecordAggregation,
           ...calculatedFieldsAggregation,
           { $match: filters },
-          ...projectAggregation,
+          ...buildProjectAggregation(queryFields),
           ...(await getSortAggregation(sort, fields, context)),
           {
             $facet: {
