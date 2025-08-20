@@ -27,43 +27,71 @@ const DEFAULT_FIRST = 25;
  * Project aggregation.
  * Reduce the volume of data to fetch
  */
-const projectAggregation = [
-  {
-    $project: {
-      id: 1,
+/**
+ * Dynamically build a $project aggregation stage from queryFields
+ * Supports nested fields (with 'fields' array)
+ */
+/**
+ * Build a $project aggregation stage with static fields, but dynamic 'data' field from queryFields
+ *
+ * @param {Array} queryFields - The fields requested in the query for 'data'
+ * @param {Array} calculatedFields - The calculated fields to include in the projection
+ * @param {Array} sort - The sort fields to include in the projection
+ * @returns {Array} Aggregation pipeline with $project
+ */
+export const buildProjectAggregation = (
+  queryFields,
+  calculatedFields: any[],
+  sort: any[]
+) => {
+  const staticProject: any = {
+    id: 1,
+    _id: 1,
+    incrementalId: 1,
+    _form: {
       _id: 1,
-      incrementalId: 1,
-      _form: {
-        _id: 1,
-        name: 1,
-      },
-      _lastUpdateForm: {
-        _id: 1,
-        name: 1,
-      },
-      resource: 1,
-      createdAt: 1,
-      _createdBy: {
-        user: {
-          id: 1,
-          _id: 1,
-          name: 1,
-          username: 1,
-        },
-      },
-      modifiedAt: 1,
-      _lastUpdatedBy: {
-        user: {
-          id: 1,
-          _id: 1,
-          name: 1,
-          username: 1,
-        },
-      },
-      data: 1,
+      name: 1,
     },
-  },
-];
+    _lastUpdateForm: {
+      _id: 1,
+      name: 1,
+    },
+    resource: 1,
+    createdAt: 1,
+    _createdBy: {
+      user: {
+        id: 1,
+        _id: 1,
+        name: 1,
+        username: 1,
+      },
+    },
+    modifiedAt: 1,
+    _lastUpdatedBy: {
+      user: {
+        id: 1,
+        _id: 1,
+        name: 1,
+        username: 1,
+      },
+    },
+    data: 0,
+  };
+  const data = {};
+  if (queryFields && Array.isArray(queryFields)) {
+    queryFields.forEach((field) => {
+      data[field.name] = 1;
+    });
+    staticProject.data = data;
+  }
+  calculatedFields.forEach((field) => {
+    staticProject.data[field.name] = 1;
+  });
+  sort.forEach((item: any) => {
+    staticProject.data[item.name] = 1;
+  });
+  return [{ $project: staticProject }];
+};
 
 /** Default aggregation common to all records to make lookups for default fields. */
 const defaultRecordAggregation = [
@@ -405,17 +433,19 @@ export default (entityName: string, fieldsByName: any, idsByName: any) =>
         return false;
       };
 
-      fields
-        .filter((f) => f.isCalculated && shouldAddCalculatedFieldToPipeline(f))
-        .forEach((f) =>
-          calculatedFieldsAggregation.push(
-            ...buildCalculatedFieldPipeline(
-              f.expression,
-              f.name,
-              context.timeZone
-            )
+      const calculatedFields = fields.filter(
+        (f) => f.isCalculated && shouldAddCalculatedFieldToPipeline(f)
+      );
+
+      calculatedFields.forEach((f) =>
+        calculatedFieldsAggregation.push(
+          ...buildCalculatedFieldPipeline(
+            f.expression,
+            f.name,
+            context.timeZone
           )
-        );
+        )
+      );
 
       // Build linked records aggregations
       const linkedReferenceDataAggregation = flatten(
@@ -473,7 +503,7 @@ export default (entityName: string, fieldsByName: any, idsByName: any) =>
           ...defaultRecordAggregation,
           ...calculatedFieldsAggregation,
           { $match: filters },
-          ...projectAggregation,
+          ...buildProjectAggregation(queryFields, calculatedFields, sort),
           ...(await getSortAggregation(sort, fields, context)),
           {
             $facet: {
