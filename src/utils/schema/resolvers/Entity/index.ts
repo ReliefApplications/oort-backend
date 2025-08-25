@@ -11,8 +11,8 @@ import { NameExtension } from '../../introspection/getFieldName';
 import getReferenceDataResolver from './getReferenceDataResolver';
 import get from 'lodash/get';
 import { logger } from '@lib/logger';
-import { subject } from '@casl/ability';
 import { SortOrder } from 'mongoose';
+import { accessibleBy } from '@casl/mongoose';
 
 /**
  * Gets the resolvers for each field of the document for a given resource
@@ -211,17 +211,23 @@ export const getEntityResolver = (
 
   const canUpdateResolver = {
     canUpdate: async (entity, args, context) => {
-      // todo: check single resolver to have same project than in all resolver
       const ability = context.user.ability;
-      return ability.can('update', subject('Record', entity));
+      const query = Record.find(accessibleBy(ability, 'update').Record)
+        .where({ _id: entity._id, archived: { $ne: true } })
+        .getFilter();
+      const canUpdate = !!(await Record.exists(query));
+      return canUpdate;
     },
   };
 
   const canDeleteResolver = {
     canDelete: async (entity, args, context) => {
-      // todo: check single resolver to have same project than in all resolver
       const ability = context.user.ability;
-      return ability.can('delete', subject('Record', entity));
+      const query = Record.find(accessibleBy(ability, 'delete').Record)
+        .where({ _id: entity._id, archived: { $ne: true } })
+        .getFilter();
+      const canUpdate = !!(await Record.exists(query));
+      return canUpdate;
     },
   };
 
