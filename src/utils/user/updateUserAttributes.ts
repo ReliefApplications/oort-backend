@@ -45,7 +45,10 @@ export const updateUserAttributes = async (
     if (
       user.roles.find((x) => x._id.toString() === '677298832fc2a0c65c171418')
     ) {
-      countries = editableBRs.map((doc) => doc.country).filter((c) => c);
+      countries = [
+        ...editableBRs.map((doc) => doc.country).filter((c) => c),
+        ...[user.attributes.country].filter((c) => c),
+      ];
     }
     // National commission
     if (
