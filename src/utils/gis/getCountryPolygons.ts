@@ -14,7 +14,7 @@ export const getAdmin0Polygons = async () => {
   const client = await redis();
   const cacheData = client ? await client.get(cacheKey) : null;
   let admin0s: any[] = [];
-  if (cacheData) {
+  if (!cacheData) {
     const referenceDataId = config.get<string>('admin0.referenceData');
     if (!referenceDataId) {
       return [];
