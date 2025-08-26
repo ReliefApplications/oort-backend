@@ -637,6 +637,7 @@ export default {
       // Make sure that the resource filter is made at the beginning of the aggregation
       pipeline.unshift(
         ...[
+          { $addFields: { id: { $toString: '$_id' } } },
           {
             $match: {
               $and: [mongooseFilter, permissionFilters],

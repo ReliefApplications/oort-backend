@@ -4,10 +4,11 @@ import jsonpath from 'jsonpath';
 import fetch from 'node-fetch';
 import { isEmpty, set } from 'lodash';
 import { authType } from '@const/enumTypes';
-import { ApiConfiguration, User } from '@models';
+import { ApiConfiguration, Record, User } from '@models';
 import { logger } from '@lib/logger';
 import { getDelegatedToken } from '../proxy';
 import { AttributeSettings } from './userManagement';
+import { Types } from 'mongoose';
 
 /**
  * Check if we need to update user attributes and perform it when needed.
@@ -23,6 +24,62 @@ export const updateUserAttributes = async (
   try {
     // Get settings
     const settings: AttributeSettings = config.get('user.attributes');
+    // todo: not suitable at all as it will only work for MAB!
+    // Update profile with all BRs it can view
+    const editableBRs = await Record.aggregate([
+      {
+        $match: {
+          resource: new Types.ObjectId('682e1d63839fa743ca474aa0'),
+          'data.collaborators': user.id,
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          country: '$data.a_06_country',
+        },
+      },
+    ]);
+    let countries: string[] = [];
+    // Biosphere manager
+    if (
+      user.roles.find((x) => x._id.toString() === '677298832fc2a0c65c171418')
+    ) {
+      countries = editableBRs.map((doc) => doc.country).filter((c) => c);
+    }
+    // National commission
+    if (
+      user.roles.find((x) => x._id.toString() === '6772988c2fc2a0c65c171444')
+    ) {
+      countries = [user.attributes.country].filter((c) => c);
+    }
+    const viewableBRs = await Record.aggregate([
+      {
+        $match: {
+          resource: new Types.ObjectId('682e1d63839fa743ca474aa0'),
+          'data.a_06_country': {
+            $in: countries,
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+        },
+      },
+    ]);
+    set(
+      user,
+      'attributes._can_edit_brs',
+      editableBRs.map((doc) => doc._id.toString())
+    );
+    set(
+      user,
+      'attributes._can_view_brs',
+      viewableBRs.map((doc) => doc._id.toString())
+    );
+    user.markModified('attributes');
+    return true;
     // Check if we have correct settings to update user attributes from external system
     if (settings.local) return false;
     if (

@@ -1,7 +1,7 @@
 import { User } from '@models';
 import NodeCache from 'node-cache';
 import { updateUserAttributes } from './updateUserAttributes';
-import { updateUserGroups } from './updateUserGroups';
+// import { updateUserGroups } from './updateUserGroups';
 import { getAutoAssignedRoles } from './getAutoAssignedRoles';
 import { isNil } from 'lodash';
 
@@ -9,7 +9,7 @@ import { isNil } from 'lodash';
 const cache: NodeCache = new NodeCache({ checkperiod: 60 });
 
 /** Number of minutes spent before we're refreshing user attributes */
-const MINUTES_BEFORE_REFRESH = 2;
+const MINUTES_BEFORE_REFRESH = 0.25;
 
 /** Suffix to user ID for caching roles */
 const ROLES_KEY = '.roles';
@@ -97,7 +97,7 @@ export const updateUser = async (user: User, req: any): Promise<boolean> => {
   if (!userNeedsUpdate(user)) return false;
   const userChanges: boolean[] = await Promise.all([
     updateUserAttributes(user, req),
-    updateUserGroups(user, req),
+    // updateUserGroups(user, req),
   ]);
   for (const update of userChanges) {
     if (update) return true;

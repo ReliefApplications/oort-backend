@@ -22,6 +22,18 @@ module.exports = {
           text: 'Job Title',
           userCanEdit: true,
         },
+        {
+          value: '_can_edit_brs',
+          text: 'Editable BRs',
+          userCanEdit: false,
+          type: 'array',
+        },
+        {
+          value: '_can_view_brs',
+          text: 'Viewable BRs',
+          userCanEdit: false,
+          type: 'array',
+        },
       ],
     },
   },

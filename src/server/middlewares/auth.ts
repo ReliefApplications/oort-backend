@@ -30,9 +30,10 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
   const credentials = {
     realm: config.get('auth.realm') as string,
     url: config.get('auth.url') as string,
+    passReqToCallback: true,
   };
   passport.use(
-    new KeycloackBearerStrategy(credentials, (token, done) => {
+    new KeycloackBearerStrategy(credentials, (req, token, done) => {
       // === USER ===
       if (token.name) {
         // Checks if user already exists in the DB
@@ -65,22 +66,7 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
                 user.name = token.name;
                 user.oid = token.sub;
                 user.deleteAt = undefined; // deactivate the planned deletion
-                user
-                  .save()
-                  .then(() => {
-                    userAuthCallback(null, done, token, user);
-                  })
-                  .catch((err2) => {
-                    userAuthCallback(err2, done, token, user);
-                  });
-              } else {
-                if (!user.firstName || !user.lastName) {
-                  if (!user.firstName) {
-                    user.firstName = token.given_name;
-                  }
-                  if (!user.lastName) {
-                    user.lastName = token.family_name;
-                  }
+                updateUser(user, req).then(() => {
                   user
                     .save()
                     .then(() => {
@@ -89,9 +75,28 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
                     .catch((err2) => {
                       userAuthCallback(err2, done, token, user);
                     });
-                } else {
-                  userAuthCallback(null, done, token, user);
-                }
+                });
+              } else {
+                updateUser(user, req).then((changed) => {
+                  if (changed || !user.firstName || !user.lastName) {
+                    if (!user.firstName) {
+                      user.firstName = token.given_name;
+                    }
+                    if (!user.lastName) {
+                      user.lastName = token.family_name;
+                    }
+                    user
+                      .save()
+                      .then(() => {
+                        userAuthCallback(null, done, token, user);
+                      })
+                      .catch((err2) => {
+                        userAuthCallback(err2, done, token, user);
+                      });
+                  } else {
+                    userAuthCallback(null, done, token, user);
+                  }
+                });
               }
             } else {
               // Creates the user from azure oid if not found
@@ -104,14 +109,16 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
                 roles: [],
                 positionAttributes: [],
               });
-              user
-                .save()
-                .then(() => {
-                  userAuthCallback(null, done, token, user);
-                })
-                .catch((err2) => {
-                  userAuthCallback(err2, done, token, user);
-                });
+              updateUser(user, req).then(() => {
+                user
+                  .save()
+                  .then(() => {
+                    userAuthCallback(null, done, token, user);
+                  })
+                  .catch((err2) => {
+                    userAuthCallback(err2, done, token, user);
+                  });
+              });
             }
           })
           .catch((err) => done(err));
