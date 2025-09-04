@@ -20,7 +20,6 @@ import { getRowsFromMeta } from './getRowsFromMeta';
 import { Response } from 'express';
 import extendAbilityForRecords from '@security/extendAbilityForRecords';
 import { accessibleBy } from '@casl/mongoose';
-import getSearchFilter from '@utils/schema/resolvers/Query/getSearchFilter';
 import getSortAggregation from '@utils/schema/resolvers/Query/getSortAggregation';
 import dataSources from '@server/apollo/dataSources';
 
@@ -377,15 +376,7 @@ export default class Exporter {
     const filters = {
       $and: [basicFilters, mongooseFilter, permissionFilters],
     };
-    const searchFilter = getSearchFilter(
-      this.params.filter,
-      this.resource.fields,
-      context
-    );
-    const pipeline: any = [
-      ...(searchFilter ? [searchFilter] : []),
-      { $match: filters },
-    ];
+    const pipeline: any = [{ $match: filters }];
     this.columns
       .filter((col) => col.meta?.field?.isCalculated)
       .forEach((col) =>
@@ -397,6 +388,7 @@ export default class Exporter {
           ) as any)
         )
       );
+    console.log(JSON.stringify(pipeline));
     return pipeline;
   };
 
