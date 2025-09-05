@@ -6,26 +6,22 @@ import config from 'config';
  * Check if assignment rule works with user parameters
  *
  * @param filter assignment rule filter
- * @param groupIds list of group ids
- * @param userAttr object of user attributes
+ * @param user Current user
  * @returns true if filter matches
  */
-export const checkIfRoleIsAssigned = (
-  filter: any,
-  groupIds: string[],
-  userAttr: { [key: string]: string }
-): boolean => {
+export const checkIfRoleIsAssigned = (filter: any, user: User): boolean => {
+  const roles = get(user, 'roles', []);
+  const groupIds = get(user, 'groups', []);
+  const userAttr = user.attributes ?? {};
   if (filter.logic) {
     // Composite filter descriptor
     switch (filter.logic) {
       case 'or': {
-        return filter.filters.some((x) =>
-          checkIfRoleIsAssigned(x, groupIds, userAttr)
-        );
+        return filter.filters.some((x) => checkIfRoleIsAssigned(x, user));
       }
       case 'and': {
         return filter.filters
-          .map((x) => checkIfRoleIsAssigned(x, groupIds, userAttr))
+          .map((x) => checkIfRoleIsAssigned(x, user))
           .every((x) => x === true);
       }
       default: {
@@ -58,6 +54,21 @@ export const checkIfRoleIsAssigned = (
       }
     }
   }
+
+  if (filter.field === '{{roles}}') {
+    switch (filter.operator) {
+      case 'isempty': {
+        return roles.length === 0;
+      }
+      case 'isnotempty': {
+        return roles.length > 0;
+      }
+      default: {
+        return false;
+      }
+    }
+  }
+
   const attrs =
     (config.get('user.attributes.list') as {
       value: string;
@@ -98,11 +109,7 @@ export const getAutoAssignedRoles = async (user: User): Promise<Role[]> => {
     model: 'Permission',
   });
   return roles.reduce((arr, role) => {
-    if (
-      role.autoAssignment.some((x) =>
-        checkIfRoleIsAssigned(x, get(user, 'groups', []), user.attributes ?? {})
-      )
-    ) {
+    if (role.autoAssignment.some((x) => checkIfRoleIsAssigned(x, user))) {
       arr.push(role);
     }
     return arr;
@@ -120,7 +127,5 @@ export const checkIfRoleIsAssignedToUser = (
   user: User,
   role: Role
 ): boolean => {
-  return role.autoAssignment.some((x) =>
-    checkIfRoleIsAssigned(x, get(user, 'groups', []), user.attributes ?? {})
-  );
+  return role.autoAssignment.some((x) => checkIfRoleIsAssigned(x, user));
 };
