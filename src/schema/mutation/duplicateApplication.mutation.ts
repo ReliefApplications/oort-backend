@@ -322,6 +322,8 @@ export default {
               template: newTemplate,
               recipients: newRecipients,
               recipientsType: oldCustomNotification.recipientsType,
+              recipientsChannelFilter:
+                oldCustomNotification.recipientsChannelFilter,
               status: oldCustomNotification.status,
               lastExecutionStatus: 'pending',
             };

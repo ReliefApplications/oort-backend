@@ -48,6 +48,7 @@ export const customNotificationSchema = new Schema(
       default: customNotificationRecipientsType.email,
       required: true,
     },
+    recipientsChannelFilter: mongoose.Schema.Types.Mixed,
     status: {
       type: String,
       enum: Object.values(customNotificationStatus),
@@ -84,6 +85,7 @@ export interface CustomNotification extends Document {
   template: mongoose.Types.ObjectId;
   recipients: string;
   recipientsType: string;
+  recipientsChannelFilter?: any;
   status: string;
   lastExecution?: Date;
   lastExecutionStatus: string;

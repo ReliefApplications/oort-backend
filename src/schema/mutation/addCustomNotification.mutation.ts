@@ -71,6 +71,7 @@ const addCustomNotification = (pubsub: PubSub) => ({
             recipients: args.notification.recipients,
             status: args.notification.status,
             recipientsType: args.notification.recipientsType,
+            recipientsChannelFilter: args.notification.recipientsChannelFilter,
             onRecordCreation: args.notification.onRecordCreation,
             onRecordUpdate: args.notification.onRecordUpdate,
             applicationTrigger: args.notification.applicationTrigger,

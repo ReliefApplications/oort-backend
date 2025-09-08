@@ -19,6 +19,7 @@ export type CustomNotificationArgs = {
   template: string | Types.ObjectId;
   recipients: string;
   recipientsType: string;
+  recipientsChannelFilter: any;
   onRecordCreation?: boolean;
   onRecordUpdate?: boolean;
   applicationTrigger?: boolean;
@@ -45,6 +46,7 @@ export const CustomNotificationInputType = new GraphQLInputObjectType({
     template: { type: new GraphQLNonNull(GraphQLID) },
     recipients: { type: new GraphQLNonNull(GraphQLString) },
     recipientsType: { type: new GraphQLNonNull(GraphQLString) },
+    recipientsChannelFilter: { type: GraphQLJSON },
     onRecordCreation: { type: GraphQLBoolean },
     onRecordUpdate: { type: GraphQLBoolean },
     applicationTrigger: { type: GraphQLBoolean },

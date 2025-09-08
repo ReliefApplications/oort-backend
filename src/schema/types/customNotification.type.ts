@@ -33,6 +33,7 @@ export const CustomNotificationType = new GraphQLObjectType({
     modifiedAt: { type: GraphQLString },
     status: { type: GraphQLString },
     recipientsType: { type: GraphQLString },
+    recipientsChannelFilter: { type: GraphQLJSON },
     onRecordCreation: { type: GraphQLBoolean },
     onRecordUpdate: { type: GraphQLBoolean },
     applicationTrigger: { type: GraphQLBoolean },

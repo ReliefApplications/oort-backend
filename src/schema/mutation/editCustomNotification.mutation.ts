@@ -89,6 +89,8 @@ const editCustomNotification = (pubsub: PubSub) => ({
             'customNotifications.$.status': args.notification.status,
             'customNotifications.$.recipientsType':
               args.notification.recipientsType,
+            'customNotifications.$.recipientsChannelFilter':
+              args.notification.recipientsChannelFilter,
             'customNotifications.$.onRecordCreation':
               args.notification.onRecordCreation,
             'customNotifications.$.onRecordUpdate':
