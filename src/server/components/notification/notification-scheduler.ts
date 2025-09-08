@@ -84,13 +84,15 @@ export const scheduleNotification = async (
                   },
                 ]);
                 if (records.length) {
-                  await handleNotification(
-                    pubsub,
-                    notification,
-                    application,
-                    resource,
-                    records
-                  );
+                  for (const record of records) {
+                    await handleNotification(
+                      pubsub,
+                      notification,
+                      application,
+                      resource,
+                      [record]
+                    );
+                  }
                 }
               } else {
                 await handleNotification(pubsub, notification, application);
