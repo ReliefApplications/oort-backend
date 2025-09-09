@@ -605,7 +605,7 @@ router.get('/admin0', async (req, res) => {
   }
 });
 
-router.post('/shapefile-to-geojson', async (req, res) => {
+router.post('/validate-shapefile', async (req, res) => {
   try {
     const file = Array.isArray(req.files.file)
       ? req.files.file[0]
@@ -699,7 +699,7 @@ router.post('/shapefile-to-geojson', async (req, res) => {
         .send(i18next.t('routes.gis.shapefile.errors.format.missingZonations'));
     }
 
-    res.send({ geojson: { type: 'FeatureCollection', features } });
+    res.send({ success: true });
   } catch (err) {
     console.error(err);
     res.status(500).send({
