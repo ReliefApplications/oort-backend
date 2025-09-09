@@ -25,6 +25,7 @@ import {
   CompositeFilterDescriptor,
 } from '@const/compositeFilter';
 import proj4 from 'proj4';
+import { generateBlobSasUrl } from '@utils/files/generateBlobSasUrl';
 
 /**
  * Endpoint for custom feature layers
@@ -299,6 +300,7 @@ const getFeatures = async (
  * @param variables parameters of the gql query
  * @param req original query
  * @param featureCollection Feature collection to populate
+ * @param blobNames list of blob names to populate
  * @param layerType Type of layer we are getting
  * @param mapping mapping used in aggregations
  * @returns error if fails, otherwise populates feature collection
@@ -308,6 +310,7 @@ const gqlQuery = (
   variables: any,
   req: any,
   featureCollection: any,
+  blobNames: string[],
   layerType: GeometryType,
   mapping: any
 ) =>
@@ -333,21 +336,49 @@ const gqlQuery = (
       for (const field in data.data) {
         if (Object.prototype.hasOwnProperty.call(data.data, field)) {
           if (data.data[field].items?.length > 0) {
-            // Aggregation
-            await getFeatures(
-              featureCollection.features,
-              layerType,
-              data.data[field].items,
-              mapping
-            );
+            if (layerType === GeometryType.SHAPEFILE) {
+              data.data[field].items.forEach((item) => {
+                if (mapping.geoField) {
+                  const geo = get(item, mapping.geoField);
+                  if (Array.isArray(geo) && geo.length) {
+                    if ('content' in geo[0]) {
+                      blobNames.push(geo[0].content);
+                    }
+                  }
+                }
+              });
+            } else {
+              // Aggregation
+              await getFeatures(
+                featureCollection.features,
+                layerType,
+                data.data[field].items,
+                mapping
+              );
+            }
           } else if (data.data[field].edges?.length > 0) {
-            // Query
-            await getFeatures(
-              featureCollection.features,
-              layerType,
-              data.data[field].edges.map((x) => x.node),
-              mapping
-            );
+            if (layerType === GeometryType.SHAPEFILE) {
+              data.data[field].edges
+                .map((x) => x.node)
+                .forEach((item) => {
+                  if (mapping.geoField) {
+                    const geo = get(item, mapping.geoField);
+                    if (Array.isArray(geo) && geo.length) {
+                      if ('content' in geo[0]) {
+                        blobNames.push(geo[0].content);
+                      }
+                    }
+                  }
+                });
+            } else {
+              // Query
+              await getFeatures(
+                featureCollection.features,
+                layerType,
+                data.data[field].edges.map((x) => x.node),
+                mapping
+              );
+            }
           }
         }
       }
@@ -365,10 +396,13 @@ const gqlQuery = (
  */
 router.get('/feature', async (req, res) => {
   try {
+    // For point & polygons
     const featureCollection = {
       type: 'FeatureCollection',
       features: [],
     };
+    // For shapefiles
+    const blobNames: string[] = [];
     const latitudeField = get(req, 'query.latitudeField');
     const longitudeField = get(req, 'query.longitudeField');
     const geoField = get(req, 'query.geoField');
@@ -488,7 +522,15 @@ router.get('/feature', async (req, res) => {
         return res.status(404).send(i18next.t('common.errors.dataNotFound'));
       }
       await Promise.all([
-        gqlQuery(query, variables, req, featureCollection, layerType, mapping),
+        gqlQuery(
+          query,
+          variables,
+          req,
+          featureCollection,
+          blobNames,
+          layerType,
+          mapping
+        ),
       ]).catch((err) => {
         throw new Error(err);
       });
@@ -531,6 +573,7 @@ router.get('/feature', async (req, res) => {
               variables,
               req,
               featureCollection,
+              blobNames,
               layerType,
               mapping
             ),
@@ -584,7 +627,20 @@ router.get('/feature', async (req, res) => {
     } else {
       return res.status(404).send(i18next.t('common.errors.dataNotFound'));
     }
-    return res.send(featureCollection);
+    if (layerType === GeometryType.SHAPEFILE) {
+      const sasUrls: string[] = [];
+      for (const url of blobNames) {
+        try {
+          const sasUrl = await generateBlobSasUrl('forms', url);
+          sasUrls.push(sasUrl);
+        } catch {
+          // logger.error(err.message);
+        }
+      }
+      return res.send(sasUrls);
+    } else {
+      return res.send(featureCollection);
+    }
   } catch (err) {
     logger.error(err.message, { stack: err.stack });
     return res
@@ -605,7 +661,7 @@ router.get('/admin0', async (req, res) => {
   }
 });
 
-router.post('/shapefile-to-geojson', async (req, res) => {
+router.post('/validate-shapefile', async (req, res) => {
   try {
     const file = Array.isArray(req.files.file)
       ? req.files.file[0]
@@ -699,7 +755,7 @@ router.post('/shapefile-to-geojson', async (req, res) => {
         .send(i18next.t('routes.gis.shapefile.errors.format.missingZonations'));
     }
 
-    res.send({ geojson: { type: 'FeatureCollection', features } });
+    res.send({ success: true });
   } catch (err) {
     console.error(err);
     res.status(500).send({

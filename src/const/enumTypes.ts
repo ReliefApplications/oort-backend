@@ -129,6 +129,7 @@ export const geospatialType = {
   Point: 'Point',
   LineString: 'LineString',
   Polygon: 'Polygon',
+  Shapefile: 'Shapefile',
 };
 
 /**
