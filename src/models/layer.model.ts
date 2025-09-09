@@ -105,6 +105,7 @@ export interface LayerDefinition {
 export enum GeometryType {
   POINT = 'Point',
   POLYGON = 'Polygon',
+  SHAPEFILE = 'Shapefile',
 }
 
 /** Model for the timeline configuration of a layer */
