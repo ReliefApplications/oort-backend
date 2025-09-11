@@ -29,6 +29,22 @@ import { getMetaData } from '@utils/form/metadata.helper';
 import { getAccessibleFields } from '@utils/form';
 import { get, indexOf } from 'lodash';
 import { accessibleBy } from '@casl/mongoose';
+import mongoose from 'mongoose';
+
+/** Default aggregation common to all records to make lookups for default fields. */
+const defaultRecordAggregation = [
+  { $addFields: { id: { $toString: '$_id' } } },
+  {
+    $addFields: {
+      '_createdBy.user.id': { $toString: '$_createdBy.user._id' },
+    },
+  },
+  {
+    $addFields: {
+      '_lastUpdatedBy.user.id': { $toString: '$_lastUpdatedBy.user._id' },
+    },
+  },
+];
 
 /**
  * Resolve single permission
@@ -185,21 +201,10 @@ export const ResourceType = new GraphQLObjectType({
         archived: { type: GraphQLBoolean },
       },
       async resolve(parent, args, context) {
-        let mongooseFilter: any = {
-          resource: parent.id,
+        const basicFilters: any = {
+          resource: new mongoose.Types.ObjectId(parent.id),
           archived: args.archived ? true : { $ne: true },
         };
-        if (args.filter) {
-          mongooseFilter = {
-            ...mongooseFilter,
-            ...getFilter(args.filter, parent.fields, {
-              ...context,
-              resourceFieldsById: {
-                [parent.id]: parent.fields,
-              },
-            }),
-          };
-        }
         // PAGINATION
         const cursorFilters = args.afterCursor
           ? {
@@ -214,19 +219,39 @@ export const ResourceType = new GraphQLObjectType({
         const permissionFilters = Record.find(
           accessibleBy(ability, 'read').Record
         ).getFilter();
-        let items = await Record.find({
-          $and: [cursorFilters, mongooseFilter, permissionFilters],
-        }).limit(args.first + 1);
+        const filters = {
+          $and: [permissionFilters],
+        };
+        if (args.filter) {
+          filters.$and.push(getFilter(args.filter, parent.fields, context));
+        }
+
+        const itemsPipeline: any[] = [{ $match: { $and: [cursorFilters] } }];
+        if (args.first) {
+          itemsPipeline.push({ $limit: args.first + 1 });
+        }
+
+        const aggregation = await Record.aggregate([
+          { $match: basicFilters },
+          ...defaultRecordAggregation,
+          {
+            $match: filters,
+          },
+          {
+            $facet: {
+              items: itemsPipeline,
+              totalCount: [{ $count: 'count' }],
+            },
+          },
+        ]);
+        let items = aggregation[0]?.items || [];
         const hasNextPage = items.length > args.first;
         if (hasNextPage) {
           items = items.slice(0, items.length - 1);
         }
         const edges = items.map((r) => ({
           cursor: encodeCursor(r.id.toString()),
-          node: Object.assign(
-            getAccessibleFields(r, ability).toObject({ minimize: false }),
-            { id: r._id }
-          ),
+          node: Object.assign(getAccessibleFields(r, ability), { id: r._id }),
         }));
         return {
           pageInfo: {
@@ -235,9 +260,9 @@ export const ResourceType = new GraphQLObjectType({
             endCursor: edges.length > 0 ? edges[edges.length - 1].cursor : null,
           },
           edges,
-          totalCount: await Record.countDocuments({
-            $and: [mongooseFilter, permissionFilters],
-          }),
+          totalCount: aggregation[0]?.totalCount[0]
+            ? aggregation[0].totalCount[0].count
+            : 0,
         };
       },
     },
