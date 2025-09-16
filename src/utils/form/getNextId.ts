@@ -83,9 +83,12 @@ export const updateIncrementalIds = async (
 ) => {
   // If form is a string, fetches the form object
   if (!(resource instanceof Resource)) {
-    resource = await Resource.findOne({
-      _id: resource,
-    });
+    resource = await Resource.findOne(
+      {
+        _id: resource,
+      },
+      'name idShape _id'
+    );
   }
 
   resource = resource as Resource;
@@ -102,12 +105,20 @@ export const updateIncrementalIds = async (
     message: `Updating incremental ids record from resource "${resource.name}"... (${oldShape.shape} -> ${newShape.shape})`,
   });
 
-  const records = await Record.find({ resource }).select(
+  const records = await Record.find({ resource: resource._id }).select(
     'incID createdAt _form'
   );
+  let inc = 0;
+  // Temporary update to avoid unique index issues
+  for (const rec of records) {
+    inc += 1;
+    rec.incID = inc;
+    rec.incrementalId = `${rec._id}_tmp`;
+  }
+  await Record.bulkSave(records);
   // Whether the new shape uses the year variable
   const usesYear = newShape.shape.includes(TEMPLATES.YEAR);
-  let inc = 0;
+  inc = 0;
   for (let r = 0; r < records.length; r++) {
     const { createdAt } = records[r];
     const { createdAt: prevCreatedAt } = records[r - 1] ?? { createdAt: null };
