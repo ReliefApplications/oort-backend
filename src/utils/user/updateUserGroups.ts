@@ -34,9 +34,12 @@ export const updateUserGroups = async (
       !settings.id
     ) {
       logger.error(
-        i18next.t('common.errors.missingObjectParameters', {
-          object: 'user groups settings',
-        })
+        i18next.t(
+          'utils.user.updateUserAttributes.errors.missingObjectParameters',
+          {
+            object: 'user groups settings',
+          }
+        )
       );
       return false;
     }

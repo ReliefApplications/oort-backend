@@ -18,12 +18,12 @@ module.exports = {
           text: 'Unesco sector',
         },
       ],
-      apiConfiguration: '',
-      endpoint: '',
+      apiConfiguration: '68cabe3a2cff3a4806cf9c8c',
+      endpoint: '?$select=department',
       mapping: [
         {
           field: 'attributes.unescoSector',
-          value: '',
+          value: 'department',
         },
       ],
     },
