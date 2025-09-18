@@ -388,7 +388,6 @@ export default class Exporter {
           ) as any)
         )
       );
-    console.log(JSON.stringify(pipeline));
     return pipeline;
   };
 
