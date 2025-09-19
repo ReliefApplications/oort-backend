@@ -189,6 +189,13 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
         ...(audience.length > 0 && {
           audience,
         }),
+        issuer: [
+          `https://login.microsoftonline.com/${config.get(
+            'auth.tenantId'
+          )}/v2.0`,
+          `https://sts.windows.net/${config.get('auth.tenantId')}/`,
+        ],
+        validateIssuer: true,
       }
     : {
         // eslint-disable-next-line no-undef
@@ -293,10 +300,10 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
             done(err);
           });
         // === CLIENT ===
-      } else if (token.azp) {
+      } else if (token.azp || token.appid) {
         // Checks if client already exists in the DB
         Client.findOne({
-          $or: [{ oid: token.oid }, { clientId: token.azp }],
+          $or: [{ oid: token.oid }, { clientId: token.azp || token.appid }],
         })
           .populate({
             // Add to the context all roles / permissions the client has
@@ -318,7 +325,7 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
               if (!client.oid || !client.clientId) {
                 client.azureRoles = token.roles;
                 client.oid = token.oid;
-                client.clientId = token.azp;
+                client.clientId = token.azp || token.appid;
                 client
                   .save()
                   .then((res) => done(null, res, token))
@@ -329,11 +336,11 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
             } else {
               // Creates the client from azure oid if not found
               client = new Client({
-                name: `${token.azp}${
+                name: `${token.azp || token.appid}${
                   token.roles ? ' / ' + token.roles.join(',') : ''
                 }`,
                 azureRoles: token.roles,
-                clientId: token.azp,
+                clientId: token.azp || token.appid,
                 oid: token.oid,
                 roles: [],
                 positionAttributes: [],
