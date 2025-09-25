@@ -147,6 +147,28 @@ export const UserType = new GraphQLObjectType({
     },
     positionAttributes: { type: new GraphQLList(PositionAttributeType) },
     attributes: { type: GraphQLJSON },
+    display: {
+      type: GraphQLString,
+      resolve(parent) {
+
+
+        // Format: "Last Name – First Name"
+        if (parent.lastName && parent.firstName) {
+          return `${parent.lastName} ${parent.firstName}`;
+        }
+        // Fallback to full name
+        else if (parent.name) {
+          return parent.name;
+        }
+        // Final fallback to username
+        else if (parent.username) {
+          return parent.username;
+        }
+        // Last resort - return ID
+        return `User ${parent._id}`;
+      },
+    },
+
   }),
 });
 
