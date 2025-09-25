@@ -45,13 +45,24 @@ const getMetaUsersResolver = async (field: any) => {
     users = await User.find();
   }
   return Object.assign(field, {
+
     choices: (users
       ? users.map((x) => {
-          return {
-            text: x.username,
-            value: x._id,
-          };
-        })
+        // Create display text: "Last Name First Name"
+        let displayText = '';
+        if (x.lastName && x.firstName) {
+          displayText = `${x.lastName} – ${x.firstName}`;
+        } else if (x.name) {
+          displayText = x.name;
+        } else if (x.username) {
+          displayText = x.username;
+        }
+
+        return {
+          text: displayText,
+          value: x._id,
+        };
+      })
       : []
     ).concat({
       text: 'Current user',
