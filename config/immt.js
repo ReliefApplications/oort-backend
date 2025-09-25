@@ -15,7 +15,11 @@ module.exports = {
       list: [
         {
           value: 'unescoSector',
-          text: 'Unesco sector',
+          text: 'Unesco Sector/Division',
+        },
+        {
+          value: 'unescoMajorProgramme',
+          text: 'Unesco Major Programme',
         },
       ],
       apiConfiguration: '68cabe3a2cff3a4806cf9c8c',
