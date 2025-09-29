@@ -35,6 +35,7 @@ interface ExportBatchParams {
   resource?: string;
   timeZone: string;
   fileName: string;
+  locale?: 'en' | 'fr';
 }
 
 /**
@@ -83,6 +84,7 @@ export default class Exporter {
     // todo: replace with resource fields
     await this.getColumns();
     const records: Record[] = await this.getRecords();
+
     switch (this.params.format) {
       case 'xlsx': {
         let workbook: Workbook | stream.xlsx.WorkbookWriter;
@@ -99,7 +101,10 @@ export default class Exporter {
         // Set headers of the file
         this.setHeaders(worksheet);
         try {
-          this.writeRowsXlsx(worksheet, getRowsFromMeta(this.columns, records));
+          const transformedRecords = getRowsFromMeta(this.columns, records);
+          const locale = this.params.locale || 'en';
+          const formattedRecords = this.formatRecordDates(transformedRecords, locale);
+          this.writeRowsXlsx(worksheet, formattedRecords);
         } catch (err) {
           logger.error(err.message);
         }
@@ -122,7 +127,9 @@ export default class Exporter {
         // Generate csv, by parsing the data
         const csvData = [];
         try {
-          for (const row of records) {
+          const locale = this.params.locale || 'en';
+          const formattedRecords = this.formatRecordDates(records, locale);
+          for (const row of formattedRecords) {
             const temp = {};
             for (const column of this.columns) {
               if (column.subColumns) {
@@ -141,6 +148,89 @@ export default class Exporter {
         return csv;
       }
     }
+  }
+
+  /**
+   * Format date according to locale
+   * 
+   * @param dateValue - The date value to format
+   * @param locale - The locale to use ('en' or 'fr')
+   * @returns Formatted date string or null/original value if invalid
+   */
+  private formatDate(dateValue: any, locale: 'en' | 'fr' = 'en'): string | null {
+    // Return null for falsy values except 0 (which is invalid anyway)
+    if (!dateValue || dateValue === null || dateValue === undefined || dateValue === '') {
+      return null;
+    }
+
+    // Skip formatting if value is clearly not a date (like numbers < 1000, which can't be valid years)
+    if (typeof dateValue === 'number' && dateValue < 1000) {
+      return null;
+    }
+
+    // Skip if it's already a formatted date string (contains /)
+    if (typeof dateValue === 'string' && dateValue.includes('/')) {
+      return dateValue;
+    }
+
+    try {
+      const date = new Date(dateValue);
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return null;
+      }
+
+      // Check if date is reasonable (between 1900 and 2100)
+      const year = date.getFullYear();
+      if (year < 1900 || year > 2100) {
+        return null;
+      }
+
+      const options: Intl.DateTimeFormatOptions = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      };
+
+      // Format based on locale
+      if (locale === 'fr') {
+        // French format: DD/MM/YYYY
+        return date.toLocaleDateString('fr-FR', options);
+      } else {
+        // English format: MM/DD/YYYY
+        return date.toLocaleDateString('en-US', options);
+      }
+    } catch (error) {
+      logger.error(`Error formatting date value "${dateValue}": ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Format record dates before export
+   * 
+   * @param records - Records to format
+   * @param locale - Locale for date formatting
+   * @returns Records with formatted dates
+   */
+  private formatRecordDates(records: any[], locale: 'en' | 'fr' = 'en'): any[] {
+    return records.map(record => {
+      const formattedRecord = { ...record };
+
+      // Format expected_date_of_publication
+      if (formattedRecord.expected_date_of_publication) {
+        formattedRecord.expected_date_of_publication = this.formatDate(
+          formattedRecord.expected_date_of_publication,
+          locale
+        );
+      }
+
+      // You can add other date fields here if needed
+      // Example: if (formattedRecord.createdAt) formattedRecord.createdAt = this.formatDate(formattedRecord.createdAt, locale);
+
+      return formattedRecord;
+    });
   }
 
   /**
@@ -308,8 +398,8 @@ export default class Exporter {
                   column.subColumns,
                   isArray(columnValue)
                     ? Array.from(new Set(columnValue)).map(
-                        (id: any) => new mongoose.Types.ObjectId(id)
-                      )
+                      (id: any) => new mongoose.Types.ObjectId(id)
+                    )
                     : [new mongoose.Types.ObjectId(columnValue)]
                 )
               ).then((relatedRecords) => {
@@ -855,23 +945,21 @@ export default class Exporter {
         const axiosQuery =
           referenceData.type === referenceDataType.graphql
             ? axios({
-                url: `${config.get('server.url')}/proxy/${
-                  (referenceData.apiConfiguration?.name ?? '') +
-                  (referenceData.apiConfiguration?.graphQLEndpoint ?? '')
+              url: `${config.get('server.url')}/proxy/${(referenceData.apiConfiguration?.name ?? '') +
+                (referenceData.apiConfiguration?.graphQLEndpoint ?? '')
                 }`,
-                method: 'POST',
-                headers: this.axiosHeaders(),
-                data: {
-                  query: referenceData.query,
-                },
-              })
+              method: 'POST',
+              headers: this.axiosHeaders(),
+              data: {
+                query: referenceData.query,
+              },
+            })
             : axios({
-                url: `${config.get('server.url')}/proxy/${
-                  referenceData.apiConfiguration?.name + referenceData.query
+              url: `${config.get('server.url')}/proxy/${referenceData.apiConfiguration?.name + referenceData.query
                 }`,
-                method: 'GET',
-                headers: this.axiosHeaders(),
-              });
+              method: 'GET',
+              headers: this.axiosHeaders(),
+            });
         await axiosQuery
           .then((response) => {
             data = referenceData.path
@@ -892,27 +980,27 @@ export default class Exporter {
       const getReferenceDataValue = (recordValue) => {
         return isArray(recordValue)
           ? recordValue.reduce((acc, choice) => {
-              const dataRow = data.find(
-                (obj) => obj[referenceData.valueField] === choice
-              );
-              if (dataRow) {
-                const transformer = new DataTransformer(
-                  referenceData.fields,
-                  cloneDeep([dataRow])
-                );
-                const transformedObject = transformer.transformData()[0];
-                Object.keys(transformedObject).forEach((key) => {
-                  if (!acc[key]) {
-                    acc[key] = [];
-                  }
-                  acc[key].push(transformedObject[key]);
-                });
-              }
-              return acc;
-            }, {})
-          : data.find(
-              (obj) => obj[referenceData.valueField] === recordValue //affecting all row, not optimal but gets the job done
+            const dataRow = data.find(
+              (obj) => obj[referenceData.valueField] === choice
             );
+            if (dataRow) {
+              const transformer = new DataTransformer(
+                referenceData.fields,
+                cloneDeep([dataRow])
+              );
+              const transformedObject = transformer.transformData()[0];
+              Object.keys(transformedObject).forEach((key) => {
+                if (!acc[key]) {
+                  acc[key] = [];
+                }
+                acc[key].push(transformedObject[key]);
+              });
+            }
+            return acc;
+          }, {})
+          : data.find(
+            (obj) => obj[referenceData.valueField] === recordValue //affecting all row, not optimal but gets the job done
+          );
       };
 
       for (const record of records) {
