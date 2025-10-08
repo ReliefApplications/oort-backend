@@ -82,14 +82,20 @@ export default {
           accessibleBy(ability, 'read').User
         ).getFilter();
         const filter = omit(args.filter, 'attributes');
-        const availableAttributes: { value: string; text: string }[] =
-          config.get('user.attributes.list') || [];
+        const availableAttributes: {
+          value: string;
+          text: string;
+          multiselect?: boolean;
+        }[] = config.get('user.attributes.list') || [];
         // Get filters for the searched value
         const queryFilters = getFilter(
           filter,
           FILTER_FIELDS.concat(
             availableAttributes.map((attribute) => {
-              return { name: `attributes.${attribute.value}`, type: 'text' };
+              return {
+                name: `attributes.${attribute.value}`,
+                type: attribute.multiselect ? 'tagbox' : 'text',
+              };
             })
           )
         );

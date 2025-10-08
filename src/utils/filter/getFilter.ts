@@ -91,7 +91,8 @@ const buildMongoFilter = (filter: any, fields: any[]): any => {
         switch (filter.operator) {
           case 'eq': {
             if (MULTISELECT_TYPES.includes(field.type)) {
-              return { [fieldName]: { $size: value.length, $all: value } };
+              const v = Array.isArray(value) ? value : [value];
+              return { [fieldName]: { $size: v.length, $all: v } };
             } else if (DATETIME_TYPES.includes(field.type)) {
               return {
                 [fieldName]: { $gte: startDatetime, $lte: endDatetime },
@@ -115,8 +116,9 @@ const buildMongoFilter = (filter: any, fields: any[]): any => {
           }
           case 'neq': {
             if (MULTISELECT_TYPES.includes(field.type)) {
+              const v = Array.isArray(value) ? value : [value];
               return {
-                [fieldName]: { $not: { $size: value.length, $all: value } },
+                [fieldName]: { $not: { $size: v.length, $all: v } },
               };
             } else if (DATETIME_TYPES.includes(field.type)) {
               return {
@@ -227,16 +229,20 @@ const buildMongoFilter = (filter: any, fields: any[]): any => {
           case 'contains': {
             if (MULTISELECT_TYPES.includes(field.type)) {
               const v = Array.isArray(value) ? value : [value];
-              return {
-                $or: [
-                  { [fieldName]: { $all: v } },
-                  {
-                    [fieldName]: {
-                      $all: v.map((x) => new mongoose.Types.ObjectId(x)),
+              if (v.every((x) => mongoose.isValidObjectId(x))) {
+                return {
+                  $or: [
+                    { [fieldName]: { $all: v } },
+                    {
+                      [fieldName]: {
+                        $all: v.map((x) => new mongoose.Types.ObjectId(x)),
+                      },
                     },
-                  },
-                ],
-              };
+                  ],
+                };
+              } else {
+                return { [fieldName]: { $all: v } };
+              }
             } else {
               return { [fieldName]: { $regex: value, $options: 'i' } };
             }
