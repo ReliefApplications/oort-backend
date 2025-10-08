@@ -1,0 +1,7 @@
+# Any file in changelog
+CHANGELOG/
+
+# Artifacts
+build/
+logs/
+.docker/
