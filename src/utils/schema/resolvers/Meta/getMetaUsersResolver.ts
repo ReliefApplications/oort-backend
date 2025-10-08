@@ -1,4 +1,5 @@
 import { User } from '@models';
+import { getAutoAssignedUsersAggregation, getUsersWithCompleteRoles } from '@utils/user/getAutoAssignedRoles';
 import mongoose from 'mongoose';
 
 /**
@@ -10,6 +11,12 @@ import mongoose from 'mongoose';
 const getMetaUsersResolver = async (field: any) => {
   let users: User[] = [];
   if (field.applications && field.applications.length > 0) {
+    for (const applicationId of field.applications) {
+      console.log(await getUsersWithCompleteRoles(applicationId));
+      // const result = await getAutoAssignedUsersAggregation(applicationId);
+      // const bis = await User.aggregate(result);
+      // console.log(bis);
+    }
     const aggregations = [
       // Left join
       {
