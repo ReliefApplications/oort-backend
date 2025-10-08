@@ -151,8 +151,8 @@ export const UserType = new GraphQLObjectType({
       type: GraphQLString,
       resolve(parent) {
         // Format: "Last Name – First Name"
-        if (parent.lastName && parent.firstName) {
-          return `${parent.lastName} ${parent.firstName}`;
+        if (parent.lastName || parent.firstName) {
+          return [parent.lastName, parent.firstName].join(' - ');
         }
         // Fallback to full name
         else if (parent.name) {
@@ -163,7 +163,7 @@ export const UserType = new GraphQLObjectType({
           return parent.username;
         }
         // Last resort - return ID
-        return `User ${parent._id}`;
+        return parent._id;
       },
     },
   }),
