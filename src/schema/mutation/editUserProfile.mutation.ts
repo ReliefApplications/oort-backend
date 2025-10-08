@@ -9,6 +9,7 @@ import { logger } from '@lib/logger';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
+import permissions from '@const/permissions';
 
 /** Arguments for the editUserProfile mutation */
 type EditUserProfileArgs = {
@@ -62,7 +63,16 @@ export default {
 
       if (args.id) {
         const ability: AppAbility = context.user.ability;
-        if (ability.can('update', 'User')) {
+        if (
+          ability.can('update', 'User') ||
+          user.roles.some(
+            (x) =>
+              x.application &&
+              x.permissions.some(
+                (y) => y.type === permissions.canSeeUsers && !y.global
+              )
+          )
+        ) {
           try {
             return await User.findByIdAndUpdate(args.id, update, { new: true });
           } catch {
