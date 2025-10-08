@@ -3,6 +3,7 @@ import get from 'lodash/get';
 import set from 'lodash/set';
 import { getText } from '../form/getDisplayText';
 import * as cheerio from 'cheerio';
+import dayjs from 'dayjs';
 
 /**
  * Set a row for multiselect type, handle specific behavior with ReferenceData
@@ -127,8 +128,8 @@ export const getRowsFromMeta = (columns: any[], records: any[]): any[] => {
         case 'date': {
           const value = get(record, column.field);
           if (value) {
-            const date = new Date(value);
-            set(row, column.name, date.toISOString().split('T')[0]);
+            const formattedDate = dayjs(value).format('DD/MM/YYYY');
+            set(row, column.name, formattedDate);
           } else {
             set(row, column.name, value);
           }
@@ -138,15 +139,8 @@ export const getRowsFromMeta = (columns: any[], records: any[]): any[] => {
         case 'datetime-local': {
           const value = get(record, column.field);
           if (value) {
-            const date = new Date(value);
-            set(
-              row,
-              column.name,
-              `${date.toISOString().split('T')[0]} ${date
-                .toISOString()
-                .split('T')[1]
-                .slice(0, 5)}`
-            );
+            const formattedDateTime = dayjs(value).format('DD/MM/YYYY HH:mm');
+            set(row, column.name, formattedDateTime);
           } else {
             set(row, column.name, value);
           }
@@ -155,8 +149,8 @@ export const getRowsFromMeta = (columns: any[], records: any[]): any[] => {
         case 'time': {
           const value = get(record, column.field);
           if (value) {
-            const date = new Date(value);
-            set(row, column.name, date.toISOString().split('T')[1].slice(0, 5));
+            const formattedTime = dayjs(value).format('HH:mm');
+            set(row, column.name, formattedTime);
           } else {
             set(row, column.name, value);
           }
