@@ -1,6 +1,6 @@
 import get from 'lodash/get';
 import Handlebars from 'handlebars';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { getRowsFromMeta } from '@utils/files';
 
 Handlebars.registerHelper('html', function (value) {
@@ -16,31 +16,31 @@ Handlebars.registerHelper('dataset', function () {
 });
 
 /**
- * Formats date to a specific format, using moment.js
+ * Formats date to a specific format, using dayjs
  * Example: {{dateFormat today "YYYY"}}
  */
 Handlebars.registerHelper('dateFormat', function (date, format) {
-  return moment(date).format(format);
+  return dayjs(date).format(format);
 });
 
 /**
- * Allows date manipulation with moment.js, adding a specified amount of time to a date.
+ * Allows date manipulation with dayjs, adding a specified amount of time to a date.
  * Example: {{dateAdd today 1 "days"}}
  * Can be combined with dateFormat to format the result.
  * Example: {{dateFormat (dateAdd today 1 "days") "YYYY-MM-DD"}}
  */
 Handlebars.registerHelper('dateAdd', function (date, amount, unit) {
-  return moment(date).add(amount, unit);
+  return dayjs(date).add(amount, unit);
 });
 
 /**
- * Allows date manipulation with moment.js, subtracting a specified amount of time from a date.
+ * Allows date manipulation with dayjs, subtracting a specified amount of time from a date.
  * Example: {{dateSubtract today 1 "days"}}
  * Can be combined with dateFormat to format the result.
  * Example: {{dateFormat (dateSubtract today 1 "days") "YYYY-MM-DD"}}
  */
 Handlebars.registerHelper('dateSubtract', function (date, amount, unit) {
-  return moment(date).subtract(amount, unit);
+  return dayjs(date).subtract(amount, unit);
 });
 
 /**
