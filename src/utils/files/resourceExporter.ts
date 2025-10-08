@@ -103,7 +103,10 @@ export default class Exporter {
         try {
           const transformedRecords = getRowsFromMeta(this.columns, records);
           const locale = this.params.locale || 'en';
-          const formattedRecords = this.formatRecordDates(transformedRecords, locale);
+          const formattedRecords = this.formatRecordDates(
+            transformedRecords,
+            locale
+          );
           this.writeRowsXlsx(worksheet, formattedRecords);
         } catch (err) {
           logger.error(err.message);
@@ -152,14 +155,22 @@ export default class Exporter {
 
   /**
    * Format date according to locale
-   * 
+   *
    * @param dateValue - The date value to format
    * @param locale - The locale to use ('en' or 'fr')
    * @returns Formatted date string or null/original value if invalid
    */
-  private formatDate(dateValue: any, locale: 'en' | 'fr' = 'en'): string | null {
+  private formatDate(
+    dateValue: any,
+    locale: 'en' | 'fr' = 'en'
+  ): string | null {
     // Return null for falsy values except 0 (which is invalid anyway)
-    if (!dateValue || dateValue === null || dateValue === undefined || dateValue === '') {
+    if (
+      !dateValue ||
+      dateValue === null ||
+      dateValue === undefined ||
+      dateValue === ''
+    ) {
       return null;
     }
 
@@ -190,7 +201,7 @@ export default class Exporter {
       const options: Intl.DateTimeFormatOptions = {
         year: 'numeric',
         month: '2-digit',
-        day: '2-digit'
+        day: '2-digit',
       };
 
       // Format based on locale
@@ -202,20 +213,22 @@ export default class Exporter {
         return date.toLocaleDateString('en-US', options);
       }
     } catch (error) {
-      logger.error(`Error formatting date value "${dateValue}": ${error.message}`);
+      logger.error(
+        `Error formatting date value "${dateValue}": ${error.message}`
+      );
       return null;
     }
   }
 
   /**
    * Format record dates before export
-   * 
+   *
    * @param records - Records to format
    * @param locale - Locale for date formatting
    * @returns Records with formatted dates
    */
   private formatRecordDates(records: any[], locale: 'en' | 'fr' = 'en'): any[] {
-    return records.map(record => {
+    return records.map((record) => {
       const formattedRecord = { ...record };
 
       // Format expected_date_of_publication
@@ -398,8 +411,8 @@ export default class Exporter {
                   column.subColumns,
                   isArray(columnValue)
                     ? Array.from(new Set(columnValue)).map(
-                      (id: any) => new mongoose.Types.ObjectId(id)
-                    )
+                        (id: any) => new mongoose.Types.ObjectId(id)
+                      )
                     : [new mongoose.Types.ObjectId(columnValue)]
                 )
               ).then((relatedRecords) => {
@@ -945,21 +958,23 @@ export default class Exporter {
         const axiosQuery =
           referenceData.type === referenceDataType.graphql
             ? axios({
-              url: `${config.get('server.url')}/proxy/${(referenceData.apiConfiguration?.name ?? '') +
-                (referenceData.apiConfiguration?.graphQLEndpoint ?? '')
+                url: `${config.get('server.url')}/proxy/${
+                  (referenceData.apiConfiguration?.name ?? '') +
+                  (referenceData.apiConfiguration?.graphQLEndpoint ?? '')
                 }`,
-              method: 'POST',
-              headers: this.axiosHeaders(),
-              data: {
-                query: referenceData.query,
-              },
-            })
+                method: 'POST',
+                headers: this.axiosHeaders(),
+                data: {
+                  query: referenceData.query,
+                },
+              })
             : axios({
-              url: `${config.get('server.url')}/proxy/${referenceData.apiConfiguration?.name + referenceData.query
+                url: `${config.get('server.url')}/proxy/${
+                  referenceData.apiConfiguration?.name + referenceData.query
                 }`,
-              method: 'GET',
-              headers: this.axiosHeaders(),
-            });
+                method: 'GET',
+                headers: this.axiosHeaders(),
+              });
         await axiosQuery
           .then((response) => {
             data = referenceData.path
@@ -980,27 +995,27 @@ export default class Exporter {
       const getReferenceDataValue = (recordValue) => {
         return isArray(recordValue)
           ? recordValue.reduce((acc, choice) => {
-            const dataRow = data.find(
-              (obj) => obj[referenceData.valueField] === choice
-            );
-            if (dataRow) {
-              const transformer = new DataTransformer(
-                referenceData.fields,
-                cloneDeep([dataRow])
+              const dataRow = data.find(
+                (obj) => obj[referenceData.valueField] === choice
               );
-              const transformedObject = transformer.transformData()[0];
-              Object.keys(transformedObject).forEach((key) => {
-                if (!acc[key]) {
-                  acc[key] = [];
-                }
-                acc[key].push(transformedObject[key]);
-              });
-            }
-            return acc;
-          }, {})
+              if (dataRow) {
+                const transformer = new DataTransformer(
+                  referenceData.fields,
+                  cloneDeep([dataRow])
+                );
+                const transformedObject = transformer.transformData()[0];
+                Object.keys(transformedObject).forEach((key) => {
+                  if (!acc[key]) {
+                    acc[key] = [];
+                  }
+                  acc[key].push(transformedObject[key]);
+                });
+              }
+              return acc;
+            }, {})
           : data.find(
-            (obj) => obj[referenceData.valueField] === recordValue //affecting all row, not optimal but gets the job done
-          );
+              (obj) => obj[referenceData.valueField] === recordValue //affecting all row, not optimal but gets the job done
+            );
       };
 
       for (const record of records) {
