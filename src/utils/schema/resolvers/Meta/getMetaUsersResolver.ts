@@ -50,7 +50,7 @@ const getMetaUsersResolver = async (field: any) => {
           // Extract display text
           let displayText = '';
           if (x.lastName && x.firstName) {
-            displayText = [x.lastName, x.firstName].join(' - ');
+            displayText = [x.lastName, x.firstName].join(', ');
           } else if (x.name) {
             displayText = x.name;
           } else if (x.username) {
