@@ -1,4 +1,6 @@
-import { User } from '@models';
+import { Role, User } from '@models';
+import { checkIfRoleIsAssignedToUser } from '@utils/user/getAutoAssignedRoles';
+import { uniqBy } from 'lodash';
 import mongoose from 'mongoose';
 
 /**
@@ -10,6 +12,11 @@ import mongoose from 'mongoose';
 const getMetaUsersResolver = async (field: any) => {
   let users: User[] = [];
   if (field.applications && field.applications.length > 0) {
+    const appObjectIds = field.applications.map(
+      (x: string) => new mongoose.Types.ObjectId(x)
+    );
+
+    // Get users with manually assigned roles
     const aggregations = [
       // Left join
       {
@@ -28,10 +35,7 @@ const getMetaUsersResolver = async (field: any) => {
               input: '$roles',
               as: 'role',
               cond: {
-                $in: [
-                  '$$role.application',
-                  field.applications.map((x) => new mongoose.Types.ObjectId(x)),
-                ],
+                $in: ['$$role.application', appObjectIds],
               },
             },
           },
@@ -40,7 +44,27 @@ const getMetaUsersResolver = async (field: any) => {
       // Filter users that have at least one role in the application(s).
       { $match: { 'roles.0': { $exists: true } } },
     ];
-    users = await User.aggregate(aggregations);
+    const manuallyAssignedUsers = await User.aggregate(aggregations);
+
+    // Get users with auto assigned roles
+    let autoAssignedUsers: User[] = [];
+    const applicationAutoRoles = await Role.find({
+      application: { $in: appObjectIds },
+      autoAssignment: { $exists: true, $ne: [] },
+    });
+    if (applicationAutoRoles.length > 0) {
+      // We must fetch users and check them against the rules in application code.
+      // NOTE: This fetches all users, which could be a performance consideration for very large user bases.
+      const allUsers = await User.find();
+      autoAssignedUsers = allUsers.filter((user) =>
+        applicationAutoRoles.some((role) =>
+          checkIfRoleIsAssignedToUser(user, role)
+        )
+      );
+    }
+    users = uniqBy([...manuallyAssignedUsers, ...autoAssignedUsers], (user) =>
+      user._id.toString()
+    );
   } else {
     users = await User.find();
   }
