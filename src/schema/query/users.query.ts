@@ -14,6 +14,7 @@ import { accessibleBy } from '@casl/mongoose';
 import getFilter from '@utils/filter/getFilter';
 import { omit } from 'lodash';
 import config from 'config';
+import { checkIfRoleIsAssignedToUser } from '@utils/user/getAutoAssignedRoles';
 
 /** Default page size */
 const DEFAULT_FIRST = 10;
@@ -114,16 +115,42 @@ export default {
         // another filter to the array of filters, to only get users that have a role
         // in any of the applications provided
         if (args.applications) {
-          // We get the roles for the queried applications
+          const appObjectIds = args.applications.map(
+            (x) => new Types.ObjectId(x)
+          );
+          // Manually assigned roles
           const appRoles = await Role.find({
             application: {
-              $in: args.applications.map((x) => new Types.ObjectId(x)),
+              $in: appObjectIds,
             },
           }).select('_id');
 
           // We add the filter to get the users that have at least one role in the application(s)
           // besides meeting the other filter criteria
-          filters.push({ roles: { $in: appRoles } });
+          const manualRoleCondition = { roles: { $in: appRoles } };
+
+          // Auto assigned roles
+          const autoRoles = await Role.find({
+            application: { $in: appObjectIds },
+            autoAssignment: { $exists: true, $ne: [] },
+          });
+          let autoAssignedUserIds: Types.ObjectId[] = [];
+          if (autoRoles.length > 0) {
+            // NOTE: This fetches all users, which could be a performance consideration for very large user bases.
+            const allUsers = await User.find({});
+            autoAssignedUserIds = allUsers
+              .filter((user) =>
+                autoRoles.some((role) =>
+                  checkIfRoleIsAssignedToUser(user, role)
+                )
+              )
+              .map((user) => user._id);
+          }
+          const autoRoleCondition = { _id: { $in: autoAssignedUserIds } };
+
+          filters.push({
+            $or: [manualRoleCondition, autoRoleCondition],
+          });
         }
 
         let items: any[] = await User.find({
