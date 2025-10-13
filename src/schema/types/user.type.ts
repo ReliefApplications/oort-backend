@@ -152,7 +152,7 @@ export const UserType = new GraphQLObjectType({
       resolve(parent) {
         // Format: "Last Name – First Name"
         if (parent.lastName || parent.firstName) {
-          return [parent.lastName, parent.firstName].join(' - ');
+          return [parent.lastName, parent.firstName].join(', ');
         }
         // Fallback to full name
         else if (parent.name) {
