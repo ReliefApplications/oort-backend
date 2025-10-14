@@ -1,9 +1,5 @@
-import {
-  customNotificationRecipientsType,
-  customNotificationType,
-} from '@const/enumTypes';
-import { Channel, CustomNotification, Notification, User } from '@models';
-// import pubsub from '@server/pubsub';
+import { customNotificationType } from '@const/enumTypes';
+import { CustomNotification, Notification, User } from '@models';
 import { Address, sendEmail } from '@utils/email';
 import { PubSub } from 'graphql-subscriptions';
 import { get, isArray } from 'lodash';
@@ -63,55 +59,34 @@ const sendAsInApp = async (
             resource: notification.resource,
           }
         : null;
-    if (
-      notification.recipientsType === customNotificationRecipientsType.channel
-    ) {
-      // Send notification to channel
-      const channel = await Channel.findById(recipients[0]);
-      if (channel) {
+
+    const sendToUser = async (recipient: string) => {
+      // Send notification to a user
+      const isValidObjectId = mongoose.Types.ObjectId.isValid(recipient);
+      const query = isValidObjectId
+        ? { $or: [{ _id: recipient }, { username: recipient }] }
+        : { username: recipient };
+
+      const user = await User.findOne(query);
+      if (user) {
         const notificationInstance = new Notification({
           action: content.title,
           content: content.description,
-          channel: channel.id,
+          user: user._id,
           seenBy: [],
           redirect,
         });
         await notificationInstance.save();
-        // const publisher = await pubsub();
-        pubsub.publish(channel.id, { notification: notificationInstance });
+        pubsub.publish(user._id.toString(), {
+          notification: notificationInstance,
+        });
       }
-    } else if (
-      notification.recipientsType === customNotificationRecipientsType.userField
-    ) {
-      // const publisher = await pubsub();
-      const sendToUser = async (recipient: string) => {
-        // Send notification to a user
-        const isValidObjectId = mongoose.Types.ObjectId.isValid(recipient);
-        const query = isValidObjectId
-          ? { $or: [{ _id: recipient }, { username: recipient }] }
-          : { username: recipient };
+    };
 
-        const user = await User.findOne(query);
-        if (user) {
-          const notificationInstance = new Notification({
-            action: content.title,
-            content: content.description,
-            user: user._id,
-            seenBy: [],
-            redirect,
-          });
-          await notificationInstance.save();
-          pubsub.publish(user._id.toString(), {
-            notification: notificationInstance,
-          });
-        }
-      };
-
-      if (isArray(recipients))
-        recipients.forEach((recipient) => sendToUser(recipient));
-      else {
-        sendToUser(recipients);
-      }
+    if (isArray(recipients))
+      recipients.forEach((recipient) => sendToUser(recipient));
+    else {
+      sendToUser(recipients);
     }
   } else {
     throw new Error(
