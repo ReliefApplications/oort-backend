@@ -6,13 +6,15 @@ import { getStructures, getReferenceDatas } from './getStructures';
 import { Form } from '@models';
 import logger from '@lib/logger';
 import buildTypes from './buildTypes';
+import { PubSub } from 'graphql-subscriptions';
 
 /**
  * Build a new GraphQL schema to add to the default one, providing API for the resources / forms.
  *
+ * @param pubsub PubSub
  * @returns GraphQL schema built from the active resources / forms of the database.
  */
-const buildSchema = async (): Promise<GraphQLSchema> => {
+const buildSchema = async (pubsub: PubSub): Promise<GraphQLSchema> => {
   try {
     const typeDefs = await buildTypes();
 
@@ -34,7 +36,7 @@ const buildSchema = async (): Promise<GraphQLSchema> => {
 
     // Merge default schema and form / resource schema.
     const graphQLSchema = mergeSchemas({
-      schemas: [schema, builtSchema],
+      schemas: [schema(pubsub), builtSchema],
     });
 
     logger.info('🔨 Schema built');
@@ -42,7 +44,7 @@ const buildSchema = async (): Promise<GraphQLSchema> => {
     return graphQLSchema;
   } catch (err) {
     logger.error(err.message, { stack: err.stack });
-    return schema;
+    return schema(pubsub);
   }
 };
 

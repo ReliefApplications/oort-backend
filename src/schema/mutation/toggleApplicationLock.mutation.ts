@@ -6,13 +6,13 @@ import {
 } from 'graphql';
 import { ApplicationType } from '../types';
 import { AppAbility } from '@security/defineUserAbility';
-import pubsub from '../../server/pubsub';
 import { Application } from '@models';
 import { logger } from '@lib/logger';
 import { accessibleBy } from '@casl/mongoose';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
+import { PubSub } from 'graphql-subscriptions';
 
 /** Arguments for the toggleApplicationLock mutation */
 type ToggleApplicationLockArgs = {
@@ -22,8 +22,11 @@ type ToggleApplicationLockArgs = {
 
 /**
  * Toggle application lock, to prevent other users to edit the application at the same time.
+ *
+ * @param pubsub PubSub
+ * @returns GraphQL Mutation
  */
-export default {
+const toggleApplicationLock = (pubsub: PubSub) => ({
   type: ApplicationType,
   args: {
     id: { type: new GraphQLNonNull(GraphQLID) },
@@ -52,8 +55,7 @@ export default {
       application = await Application.findOneAndUpdate(filters, update, {
         new: true,
       });
-      const publisher = await pubsub();
-      publisher.publish('app_lock', {
+      pubsub.publish('app_lock', {
         application,
         user: user._id,
       });
@@ -68,4 +70,6 @@ export default {
       );
     }
   },
-};
+});
+
+export default toggleApplicationLock;

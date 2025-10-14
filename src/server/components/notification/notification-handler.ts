@@ -8,6 +8,7 @@ import {
   Record,
   Application,
   User,
+  Role,
 } from '@models';
 import { get } from 'lodash';
 import { sendNotification } from './notification-sender';
@@ -18,6 +19,8 @@ import qs from 'qs';
 import Exporter from '@utils/files/resourceExporter';
 import { restMiddleware } from '@server/middlewares';
 import config from 'config';
+import { PubSub } from 'graphql-subscriptions';
+import mongoose from 'mongoose';
 
 /**
  * Flattens a nested array
@@ -167,6 +170,32 @@ const resolveRecipientsFromIds = async (ids: string[]) => {
 };
 
 /**
+ * Resolves recipients from channel IDs
+ *
+ * @param channelIds Array of channel IDs
+ * @returns Array of user objects
+ */
+const resolveRecipientsFromChannels = async (channelIds: string[]) => {
+  const objChannelIds = channelIds.map((id) => new mongoose.Types.ObjectId(id));
+  const roles = await Role.find({ channels: { $in: objChannelIds } })
+    .select('_id')
+    .lean();
+  if (!roles.length) return [];
+  const roleIds = roles.map((r) => r._id);
+  const foundUsers = await User.find(
+    { roles: { $in: roleIds } },
+    'username id firstName lastName'
+  );
+
+  return foundUsers.map((user) => ({
+    id: user.id,
+    firstName: user.firstName || '',
+    lastName: user.lastName || '',
+    email: user.username,
+  }));
+};
+
+/**
  * Resolves email recipients to User objects when possible, falls back to email strings
  *
  * @param emails array of email addresses
@@ -249,12 +278,14 @@ const getClientToken = async () => {
 /**
  * Check if trigger has filters, if so return mongoose filter
  *
+ * @param pubsub PubSub
  * @param notification custom notification
  * @param application custom notification's application
  * @param resource resource object
  * @param records records object
  */
 export const handleNotification = async (
+  pubsub: PubSub,
   notification: CustomNotification,
   application: Application,
   resource?: Resource,
@@ -391,6 +422,7 @@ export const handleNotification = async (
                 // Send one notification per user
                 for (const user of users) {
                   await sendNotification(
+                    pubsub,
                     preprocessNotificationTemplate(
                       template.content,
                       notificationType,
@@ -413,6 +445,7 @@ export const handleNotification = async (
                 // Send one notification per user
                 for (const user of users) {
                   await sendNotification(
+                    pubsub,
                     preprocessNotificationTemplate(
                       template.content,
                       notificationType,
@@ -428,6 +461,7 @@ export const handleNotification = async (
                 // Send one notification per email (not associated with a user)
                 for (const email of emails) {
                   await sendNotification(
+                    pubsub,
                     preprocessNotificationTemplate(
                       template.content,
                       notificationType,
@@ -454,48 +488,75 @@ export const handleNotification = async (
               recordsIds.push(record._id);
             }
           }
-          // Recipient is a list of emails or users
-          const { users, emails } = await resolveRecipientsFromEmails(
-            recipients
-          );
-          // Send one notification per user
-          for (const user of users) {
-            await sendNotification(
-              preprocessNotificationTemplate(
-                template.content,
-                notificationType,
-                exporter.columns,
-                newRecords,
-                user
-              ),
-              [user.email],
-              notification,
-              recordsIds
+          if (
+            notification.recipientsType ===
+            customNotificationRecipientsType.channel
+          ) {
+            // Recipient is a channel, get users linked to this channel through their roles
+            const users = await resolveRecipientsFromChannels(recipients);
+            // Send one notification per user
+            for (const user of users) {
+              await sendNotification(
+                pubsub,
+                preprocessNotificationTemplate(
+                  template.content,
+                  notificationType,
+                  exporter.columns,
+                  newRecords,
+                  user
+                ),
+                [user.email],
+                notification,
+                recordsIds
+              );
+            }
+            success = true;
+          } else {
+            // Recipient is a list of emails or users
+            const { users, emails } = await resolveRecipientsFromEmails(
+              recipients
             );
-          }
-          // Send one notification per email (not associated with a user)
-          for (const email of emails) {
-            await sendNotification(
-              preprocessNotificationTemplate(
-                template.content,
-                notificationType,
-                exporter.columns,
-                newRecords,
-                {
-                  email,
-                }
-              ),
-              [email],
-              notification,
-              recordsIds
-            );
-          }
+            // Send one notification per user
+            for (const user of users) {
+              await sendNotification(
+                pubsub,
+                preprocessNotificationTemplate(
+                  template.content,
+                  notificationType,
+                  exporter.columns,
+                  newRecords,
+                  user
+                ),
+                [user.email],
+                notification,
+                recordsIds
+              );
+            }
+            // Send one notification per email (not associated with a user)
+            for (const email of emails) {
+              await sendNotification(
+                pubsub,
+                preprocessNotificationTemplate(
+                  template.content,
+                  notificationType,
+                  exporter.columns,
+                  newRecords,
+                  {
+                    email,
+                  }
+                ),
+                [email],
+                notification,
+                recordsIds
+              );
+            }
 
-          success = true;
+            success = true;
+          }
         }
       }
     } else {
-      await sendNotification(template, recipients, notification);
+      await sendNotification(pubsub, template, recipients, notification);
       success = true;
     }
 

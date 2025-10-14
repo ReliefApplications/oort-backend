@@ -11,7 +11,7 @@ import { graphQLAuthCheck } from '@schema/shared';
 import { UserArgs, UserInputType } from '@schema/inputs/user.input';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
-import pubsub from '../../server/pubsub';
+import { PubSub } from 'graphql-subscriptions';
 
 /** Arguments for the addUsers mutation */
 type AddUsersArgs = {
@@ -21,8 +21,11 @@ type AddUsersArgs = {
 
 /**
  * Add new users.
+ *
+ * @param pubsub PubSub
+ * @returns GraphQL Mutation
  */
-export default {
+const addUsers = (pubsub: PubSub) => ({
   type: new GraphQLList(UserType),
   args: {
     users: { type: new GraphQLNonNull(new GraphQLList(UserInputType)) },
@@ -174,9 +177,8 @@ export default {
       }
       // Send notifications
       await Notification.insertMany(notifications.map((x) => x.notification));
-      const publisher = await pubsub();
       notifications.forEach((x) =>
-        publisher.publish(x.channel.id, { notification: x.notification })
+        pubsub.publish(x.channel.id, { notification: x.notification })
       );
 
       // Return the full list of users
@@ -197,4 +199,6 @@ export default {
       );
     }
   },
-};
+});
+
+export default addUsers;

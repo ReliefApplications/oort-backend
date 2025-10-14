@@ -8,7 +8,7 @@ import { logger } from '@lib/logger';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
-import pubsub from '../../server/pubsub';
+import { PubSub } from 'graphql-subscriptions';
 
 /** Arguments for the editUser mutation */
 type EditUserArgs = {
@@ -21,8 +21,11 @@ type EditUserArgs = {
 /**
  * Edits an user's roles and groups, providing its id and the list of roles/groups.
  * Throws an error if not logged or authorized.
+ *
+ * @param pubsub PubSub
+ * @returns GraphQL Mutation
  */
-export default {
+const editUser = (pubsub: PubSub) => ({
   type: UserType,
   args: {
     id: { type: new GraphQLNonNull(GraphQLID) },
@@ -165,9 +168,8 @@ export default {
               notifications.map((x) => x.notification)
             );
 
-            const publisher = await pubsub();
             notifications.forEach((x) => {
-              publisher.publish(x.channel.id, { notification: x.notification });
+              pubsub.publish(x.channel.id, { notification: x.notification });
             });
           }
         }
@@ -191,4 +193,6 @@ export default {
       );
     }
   },
-};
+});
+
+export default editUser;

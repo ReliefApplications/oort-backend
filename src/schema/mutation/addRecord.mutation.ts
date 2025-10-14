@@ -4,7 +4,6 @@ import { RecordType } from '../types';
 import { Form, Record, Notification, Channel } from '@models';
 import { transformRecord, getOwnership, getNextId } from '@utils/form';
 import extendAbilityForRecords from '@security/extendAbilityForRecords';
-import pubsub from '../../server/pubsub';
 import { getFormPermissionFilter } from '@utils/filter';
 import { logger } from '@lib/logger';
 import { graphQLAuthCheck } from '@schema/shared';
@@ -12,6 +11,7 @@ import { Types } from 'mongoose';
 import { Context } from '@server/apollo/context';
 import { logEvent } from '@utils/events/logEvent';
 import { EventType } from '@utils/events/event.model';
+import { PubSub } from 'graphql-subscriptions';
 
 /** Arguments for the addRecord mutation */
 type AddRecordArgs = {
@@ -24,8 +24,11 @@ type AddRecordArgs = {
  * Add a record to a form, if user authorized.
  * Throw a GraphQL error if not logged or authorized, or form not found.
  * TODO: we have to check form by form for that.
+ *
+ * @param pubsub PubSub
+ * @returns GraphQL Mutation
  */
-export default {
+const addRecord = (pubsub: PubSub) => ({
   type: RecordType,
   args: {
     id: { type: GraphQLID },
@@ -151,8 +154,7 @@ export default {
           seenBy: [],
         });
         await notification.save();
-        const publisher = await pubsub();
-        publisher.publish(channel.id, { notification });
+        pubsub.publish(channel.id, { notification });
       }
       await record.save();
       logEvent({
@@ -173,4 +175,6 @@ export default {
       );
     }
   },
-};
+});
+
+export default addRecord;

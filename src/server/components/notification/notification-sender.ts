@@ -1,11 +1,10 @@
-import {
-  customNotificationRecipientsType,
-  customNotificationType,
-} from '@const/enumTypes';
-import { Channel, CustomNotification, Notification } from '@models';
-import pubsub from '@server/pubsub';
+import { customNotificationType } from '@const/enumTypes';
+import { CustomNotification, Notification, User } from '@models';
 import { Address, sendEmail } from '@utils/email';
+import { PubSub } from 'graphql-subscriptions';
 import { get, isArray } from 'lodash';
+import mongoose from 'mongoose';
+import config from 'config';
 
 /**
  * Send notification by email
@@ -20,14 +19,30 @@ const sendAsMail = async (
   notification: CustomNotification
 ) => {
   if (!!content && recipients.length > 0) {
-    await sendEmail({
-      message: {
-        to: recipients,
-        subject: content.subject,
-        html: content.body,
-        attachments: [],
-      },
-    });
+    if (config.get('email.debugEmail')) {
+      await sendEmail({
+        message: {
+          to: config.get('email.debugEmail'),
+          subject:
+            '[Debug] ' +
+            content.subject +
+            ' (recipients: ' +
+            recipients.join(', ') +
+            ')',
+          html: content.body,
+          attachments: [],
+        },
+      });
+    } else {
+      await sendEmail({
+        message: {
+          to: recipients,
+          subject: content.subject,
+          html: content.body,
+          attachments: [],
+        },
+      });
+    }
   } else {
     throw new Error(
       `[${notification.name}] notification email template not available or recipients not available:`
@@ -38,12 +53,14 @@ const sendAsMail = async (
 /**
  * Send notification as in-app notification
  *
+ * @param pubsub PubSub
  * @param content Template email content
  * @param recipients custom notification recipients (form id or users from user field)
  * @param notification custom notification
  * @param recordsIds records ids list (if any)
  */
 const sendAsInApp = async (
+  pubsub: PubSub,
   content: any,
   recipients: string | string[],
   notification: CustomNotification,
@@ -59,45 +76,34 @@ const sendAsInApp = async (
             resource: notification.resource,
           }
         : null;
-    if (
-      notification.recipientsType === customNotificationRecipientsType.channel
-    ) {
-      // Send notification to channel
-      const channel = await Channel.findById(recipients[0]);
-      if (channel) {
-        const notificationInstance = new Notification({
-          action: content.title,
-          content: content.description,
-          channel: channel.id,
-          seenBy: [],
-          redirect,
-        });
-        await notificationInstance.save();
-        const publisher = await pubsub();
-        publisher.publish(channel.id, { notificationInstance });
-      }
-    } else if (
-      notification.recipientsType === customNotificationRecipientsType.userField
-    ) {
-      const publisher = await pubsub();
-      const sendToUser = async (recipient: string) => {
-        // Send notification to a user
-        const notificationInstance = new Notification({
-          action: content.title,
-          content: content.description,
-          user: recipient,
-          seenBy: [],
-          redirect,
-        });
-        await notificationInstance.save();
-        publisher.publish(recipient, { notificationInstance });
-      };
 
-      if (isArray(recipients))
-        recipients.forEach((recipient) => sendToUser(recipient));
-      else {
-        sendToUser(recipients);
+    const sendToUser = async (recipient: string) => {
+      // Send notification to a user
+      const isValidObjectId = mongoose.Types.ObjectId.isValid(recipient);
+      const query = isValidObjectId
+        ? { $or: [{ _id: recipient }, { username: recipient }] }
+        : { username: recipient };
+
+      const user = await User.findOne(query);
+      if (user) {
+        const notificationInstance = new Notification({
+          action: content.title,
+          content: content.description,
+          user: user._id,
+          seenBy: [],
+          redirect,
+        });
+        await notificationInstance.save();
+        pubsub.publish(user._id.toString(), {
+          notification: notificationInstance,
+        });
       }
+    };
+
+    if (isArray(recipients))
+      recipients.forEach((recipient) => sendToUser(recipient));
+    else {
+      sendToUser(recipients);
     }
   } else {
     throw new Error(
@@ -109,6 +115,7 @@ const sendAsInApp = async (
 /**
  * Prepare custom notification to be sent by type (email or notification)
  *
+ * @param pubsub PubSub
  * @param content processed email content
  * @param recipients custom notification recipients (always a array)
  * (can be a single email, a list of emails, a channel id or users from a user field)
@@ -116,6 +123,7 @@ const sendAsInApp = async (
  * @param recordsIds records ids list
  */
 export const sendNotification = async (
+  pubsub: PubSub,
   content: any,
   recipients: Address[] | string,
   notification: CustomNotification,
@@ -129,6 +137,7 @@ export const sendNotification = async (
     } else {
       // If custom notification type is notification
       await sendAsInApp(
+        pubsub,
         content,
         recipients as string,
         notification,
