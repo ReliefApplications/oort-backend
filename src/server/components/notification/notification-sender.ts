@@ -4,6 +4,7 @@ import { Address, sendEmail } from '@utils/email';
 import { PubSub } from 'graphql-subscriptions';
 import { get, isArray } from 'lodash';
 import mongoose from 'mongoose';
+import config from 'config';
 
 /**
  * Send notification by email
@@ -18,14 +19,25 @@ const sendAsMail = async (
   notification: CustomNotification
 ) => {
   if (!!content && recipients.length > 0) {
-    await sendEmail({
-      message: {
-        to: recipients,
-        subject: content.subject,
-        html: content.body,
-        attachments: [],
-      },
-    });
+    if (config.get('email.debugEmail')) {
+      await sendEmail({
+        message: {
+          to: config.get('email.debugEmail'),
+          subject: content.subject,
+          html: content.body,
+          attachments: [],
+        },
+      });
+    } else {
+      await sendEmail({
+        message: {
+          to: recipients,
+          subject: content.subject,
+          html: content.body,
+          attachments: [],
+        },
+      });
+    }
   } else {
     throw new Error(
       `[${notification.name}] notification email template not available or recipients not available:`
