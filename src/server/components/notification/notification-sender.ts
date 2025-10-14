@@ -23,7 +23,12 @@ const sendAsMail = async (
       await sendEmail({
         message: {
           to: config.get('email.debugEmail'),
-          subject: content.subject,
+          subject:
+            '[Debug] ' +
+            content.subject +
+            ' (recipients: ' +
+            recipients.join(', ') +
+            ')',
           html: content.body,
           attachments: [],
         },
