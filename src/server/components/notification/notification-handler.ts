@@ -251,22 +251,25 @@ const resolveRecipientsFromEmails = async (emails: string[]) => {
  * @returns The client token
  */
 const getClientToken = async () => {
-  const tokenUrl = `https://id-mab.unesco.oortcloud.tech/realms/${config.get(
-    'auth.realm'
-  )}/protocol/openid-connect/token`;
-
   const data = qs.stringify({
     grant_type: 'client_credentials',
     client_id: config.get('notifications.clientId'),
     client_secret: config.get('notifications.clientSecret'),
+    ...(config.get('notifications.scope') && {
+      scope: config.get('notifications.scope'),
+    }),
   });
 
   try {
-    const response = await axios.post(tokenUrl, data, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
+    const response = await axios.post(
+      config.get('notifications.clientTokenUrl'),
+      data,
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }
+    );
     const accessToken = response.data.access_token;
     return accessToken;
   } catch (err) {

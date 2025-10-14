@@ -68,5 +68,7 @@ module.exports = {
     leader: 'NOTIFICATIONS_LEADER',
     clientId: 'NOTIFICATIONS_CLIENT_ID',
     clientSecret: 'NOTIFICATIONS_CLIENT_SECRET',
+    clientTokenUrl: 'NOTIFICATIONS_CLIENT_TOKEN_URL',
+    scope: 'NOTIFICATIONS_CLIENT_SCOPE',
   },
 };

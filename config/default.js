@@ -74,6 +74,8 @@ module.exports = {
     leader: false,
     clientId: '',
     clientSecret: '',
+    clientTokenUrl: '',
+    scope: '',
   },
   /**
    * User management settings.
