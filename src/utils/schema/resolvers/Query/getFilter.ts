@@ -261,7 +261,7 @@ const buildMongoFilter = (
         case 'isempty':
           return { [fieldName]: { $exists: true, $eq: '' } };
         case 'isnotempty':
-          return { [fieldName]: { $exists: true, $ne: '' } };
+          return { [fieldName]: { $type: 'array', $ne: [] } };
         case 'near': {
           return {
             [fieldName]: {
@@ -407,7 +407,7 @@ const buildMongoFilter = (
             ],
           };
         case 'isnotempty':
-          return { [fieldName]: { $exists: true, $ne: [] } };
+          return { [fieldName]: { $type: 'array', $ne: [] } };
       }
     };
 

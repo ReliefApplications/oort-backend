@@ -271,7 +271,7 @@ const buildMongoFilter = (filter: any, fields: any[]): any => {
           }
           case 'isnotempty': {
             if (MULTISELECT_TYPES.includes(field.type)) {
-              return { [fieldName]: { $exists: true, $ne: [] } };
+              return { [fieldName]: { $type: 'array', $ne: [] } };
             } else {
               return { [fieldName]: { $exists: true, $ne: '' } };
             }
