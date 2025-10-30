@@ -110,6 +110,9 @@ const addUsers = (pubsub: PubSub) => ({
           if (x.positionAttributes) {
             newUser.positionAttributes = x.positionAttributes;
           }
+          if (x.attributes) {
+            newUser.attributes = x.attributes;
+          }
           // remove after 7 days if the user does not activate the account
           const date = new Date();
           date.setDate(date.getDate() + 7);
@@ -121,12 +124,15 @@ const addUsers = (pubsub: PubSub) => ({
       args.users
         .filter((x) => registeredEmails.includes(x.email))
         .forEach((x) => {
-          const updateUser = {
+          const updateUser: any  = {
             $addToSet: {
               roles: x.roles,
               positionAttributes: { $each: x?.positionAttributes || [] },
             },
           };
+          if (x.attributes) {
+            updateUser.$set = { attributes: x.attributes };
+          }
           existingUserUpdates.push({
             updateOne: {
               filter: { username: x.email },

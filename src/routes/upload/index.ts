@@ -24,6 +24,7 @@ import jwtDecode from 'jwt-decode';
 import { cloneDeep, has, isEqual } from 'lodash';
 import { Context } from '@server/apollo/context';
 import fileUpload from 'express-fileupload';
+import config from 'config';
 
 /** File size limit, in bytes  */
 const FILE_SIZE_LIMIT = 200 * 1024 * 1024;
@@ -457,6 +458,7 @@ router.post('/application/:id/invite', async (req: any, res) => {
           email: '',
           roles: [],
           positionAttributes: [],
+          attributes: {}
         };
         if (rawUser.email && rawUser.role) {
           user.email = rawUser.email.text || rawUser.email;
@@ -468,6 +470,16 @@ router.post('/application/:id/invite', async (req: any, res) => {
               category: attr._id,
             });
           }
+
+          const availableAttributes: any[] = config.get('user.attributes.list') || [];
+          availableAttributes
+            .filter((attr: any) => attr.includeInTemplate)
+            .forEach((attr: any) => {
+              const value = rawUser[attr.text];
+              if (value) {
+                user.attributes[attr.value] = value;
+              }
+          });
         } else {
           return res
             .status(400)
@@ -511,10 +523,20 @@ router.post('/invite', async (req: any, res) => {
           email: '',
           roles: [],
           positionAttributes: [],
+          attributes: {},
         };
         if (rawUser.email && rawUser.role) {
           user.email = rawUser.email.text || rawUser.email;
           user.roles = [roles.find((x) => x.title === rawUser.role)?._id];
+          const availableAttributes: any[] = config.get('user.attributes.list') || [];
+          availableAttributes
+            .filter((attr: any) => attr.includeInTemplate)
+            .forEach((attr: any) => {
+              const value = rawUser[attr.text];
+              if (value) {
+                user.attributes[attr.value] = value;
+              }
+    });
         } else {
           return res
             .status(400)

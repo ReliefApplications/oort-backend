@@ -15,7 +15,9 @@ module.exports = {
           text: 'Country',
           referenceData: '67605fdc851e937cd9b21be8',
           textField: 'name',
+          valueField: 'iso3_code',
           userCanEdit: true,
+          includeInTemplate: true,
         },
         {
           value: 'jobTitle',
