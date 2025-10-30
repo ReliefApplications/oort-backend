@@ -346,7 +346,7 @@ const buildMongoFilter = (
                     { [fieldName]: { [mappedOperator]: v.toISOString() } },
                   ],
                 }
-              : { [fieldName]: { [mappedOperator]: undefined } }; // If not a valid date, would always be false for the remaining operators
+              : { [fieldName]: { [mappedOperator]: v } }; // If not a valid date, would always be false for the remaining operators
           }
 
           // If a number, also check for string values
