@@ -31,6 +31,7 @@ import pullJobs from './pullJobs.query';
 import referenceData from './referenceData.query';
 import referenceDatas from './referenceDatas.query';
 import recordHistory from './recordHistory.query';
+import userAttributes from './userAttributes.query';
 import user from './user.query';
 import group from './group.query';
 import groups from './groups.query';
@@ -86,6 +87,7 @@ const Query = new GraphQLObjectType({
     layer,
     draftRecords,
     comments,
+    userAttributes,
   },
 });
 

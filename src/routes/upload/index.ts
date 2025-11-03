@@ -458,7 +458,7 @@ router.post('/application/:id/invite', async (req: any, res) => {
           email: '',
           roles: [],
           positionAttributes: [],
-          attributes: {}
+          attributes: {},
         };
         if (rawUser.email && rawUser.role) {
           user.email = rawUser.email.text || rawUser.email;
@@ -471,7 +471,8 @@ router.post('/application/:id/invite', async (req: any, res) => {
             });
           }
 
-          const availableAttributes: any[] = config.get('user.attributes.list') || [];
+          const availableAttributes: any[] =
+            config.get('user.attributes.list') || [];
           availableAttributes
             .filter((attr: any) => attr.includeInTemplate)
             .forEach((attr: any) => {
@@ -479,7 +480,7 @@ router.post('/application/:id/invite', async (req: any, res) => {
               if (value) {
                 user.attributes[attr.value] = value;
               }
-          });
+            });
         } else {
           return res
             .status(400)
@@ -528,7 +529,8 @@ router.post('/invite', async (req: any, res) => {
         if (rawUser.email && rawUser.role) {
           user.email = rawUser.email.text || rawUser.email;
           user.roles = [roles.find((x) => x.title === rawUser.role)?._id];
-          const availableAttributes: any[] = config.get('user.attributes.list') || [];
+          const availableAttributes: any[] =
+            config.get('user.attributes.list') || [];
           availableAttributes
             .filter((attr: any) => attr.includeInTemplate)
             .forEach((attr: any) => {
@@ -536,7 +538,7 @@ router.post('/invite', async (req: any, res) => {
               if (value) {
                 user.attributes[attr.value] = value;
               }
-    });
+            });
         } else {
           return res
             .status(400)

@@ -224,7 +224,7 @@ const getUserTemplateFields = async (roles: Role[]) => {
 
   // Load user attributes from config
   const availableAttributes: any[] = config.get('user.attributes.list') || [];
-  
+
   // Filter attributes that should be included in template
   const templateAttributes: any[] = availableAttributes.filter(
     (attr: any) => attr.includeInTemplate && attr.referenceData
@@ -234,11 +234,11 @@ const getUserTemplateFields = async (roles: Role[]) => {
   for (const attr of templateAttributes) {
     try {
       const referenceData = await ReferenceData.findById(attr.referenceData);
-      
+
       if (referenceData && referenceData.type === 'static') {
         const valueField = attr.valueField || 'value';
         const items = referenceData.data || [];
-        
+
         // Add column with dropdown
         fields.push({
           name: attr.text,

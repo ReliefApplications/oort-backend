@@ -18,6 +18,7 @@ module.exports = {
           valueField: 'iso3_code',
           userCanEdit: true,
           includeInTemplate: true,
+          showInList: true,
         },
         {
           value: 'jobTitle',
