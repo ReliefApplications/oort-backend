@@ -24,11 +24,51 @@ const getSortAggregation = async (
     sortFields = [{ field: 'createdAt', order: 'asc' }];
   }
   await sortFields.forEach(async (item: { field: string; order: string }) => {
-    const field: any = fields.find((x) => x && x.name === item.field);
-    const parentField: any =
-      item.field && item.field.includes('.')
-        ? fields.find((x) => x && x.name === item.field.split('.')[0])
-        : '';
+    // Check if this is a nested field
+    const isNestedField = item.field && item.field.includes('.');
+    const fieldName = isNestedField ? item.field.split('.')[0] : item.field;
+
+    const field: any = fields.find((x) => x && x.name === fieldName);
+    const parentField: any = isNestedField
+      ? fields.find((x) => x && x.name === fieldName)
+      : '';
+    // For nested fields, use the full path as-is since the aggregation pipeline
+    // in all.ts already flattens resource fields properly
+    if (isNestedField) {
+      aggregationSort = {
+        ...aggregationSort,
+        [item.field]: getSortOrder(item.order),
+      };
+      return;
+    }
+    // Handle resource fields - after projection they're at top level with nested structure
+    if (field && (field.type === 'resource' || field.type === 'resources')) {
+      // Resource fields are projected at top level after aggregation
+      // Sort by the display field if available, otherwise fallback to 'name'
+      const sortPath = field.displayField
+        ? `${item.field}.${field.displayField}`
+        : `${item.field}.name`;
+
+      aggregationSort = {
+        ...aggregationSort,
+        [sortPath]: getSortOrder(item.order),
+      };
+      return;
+    }
+    // Handle reference data fields - these are also projected at top level
+    if (field && field.referenceData?.id) {
+      // Reference data fields are projected at top level
+      // Sort by the display field if available
+      const sortPath = field.referenceData.displayField
+        ? `${item.field}.${field.referenceData.displayField}`
+        : `${item.field}`;
+
+      aggregationSort = {
+        ...aggregationSort,
+        [sortPath]: getSortOrder(item.order),
+      };
+      return;
+    }
     // If we need to populate choices to sort on the text value
     if (field && (field.choices || field.choicesByUrl)) {
       const choices = await getFullChoices(field, context);
