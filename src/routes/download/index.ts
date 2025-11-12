@@ -227,26 +227,35 @@ const getUserTemplateFields = async (roles: Role[]) => {
 
   // Filter attributes that should be included in template
   const templateAttributes: any[] = availableAttributes.filter(
-    (attr: any) => attr.includeInTemplate && attr.referenceData
+    (attr: any) => attr.includeInTemplate
   );
 
   // Add fields for each template attribute
   for (const attr of templateAttributes) {
     try {
-      const referenceData = await ReferenceData.findById(attr.referenceData);
+      if (attr.referenceData) {
+        const referenceData = await ReferenceData.findById(attr.referenceData);
+        if (referenceData && referenceData.type === 'static') {
+          const valueField = attr.valueField || 'value';
+          const items = referenceData.data || [];
 
-      if (referenceData && referenceData.type === 'static') {
-        const valueField = attr.valueField || 'value';
-        const items = referenceData.data || [];
-
-        // Add column with dropdown
+          const options = items
+            .map((item) => item[valueField])
+            .filter((x) => x !== null);
+          // Add column with dropdown
+          fields.push({
+            name: attr.text,
+            meta: {
+              type: 'list',
+              allowBlank: true,
+              options,
+            },
+          });
+        }
+      } else {
+        // Add column as text input
         fields.push({
           name: attr.text,
-          meta: {
-            type: 'list',
-            allowBlank: true,
-            options: items.map((item) => item[valueField]),
-          },
         });
       }
     } catch (err) {

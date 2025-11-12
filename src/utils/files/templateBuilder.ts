@@ -31,6 +31,10 @@ export const templateBuilder = async (res, fileName: string, fields: any) => {
     right: { style: 'thin' },
   };
 
+  const metadataSheet = workbook.addWorksheet('Metadata', {
+    state: 'hidden',
+  });
+
   // === SET COLUMNS VALIDATORS ===
   fields.forEach((x: any, index: number) => {
     const meta = x.meta;
@@ -38,11 +42,26 @@ export const templateBuilder = async (res, fileName: string, fields: any) => {
       switch (meta.type) {
         case 'list': {
           for (let i = 2; i <= 100; i++) {
-            worksheet.getCell(i, index + 1).dataValidation = {
-              type: 'list',
-              formulae: [`"${meta.options.join(',')}"`],
-              allowBlank: meta.allowBlank || true,
-            };
+            if (meta.options.join(',').length > 255) {
+              const listColumnIndex = index + 1;
+              const colLetter = metadataSheet.getColumn(listColumnIndex).letter;
+              meta.options.forEach((option: string, optionIndex: number) => {
+                metadataSheet.getCell(optionIndex + 1, listColumnIndex).value =
+                  option;
+              });
+              const listRange = `'Metadata'!$${colLetter}$1:$${colLetter}$${meta.options.length}`;
+              worksheet.getCell(i, index + 1).dataValidation = {
+                type: 'list',
+                formulae: [listRange],
+                allowBlank: meta.allowBlank || true,
+              };
+            } else {
+              worksheet.getCell(i, index + 1).dataValidation = {
+                type: 'list',
+                formulae: [`"${meta.options.join(',')}"`],
+                allowBlank: meta.allowBlank || true,
+              };
+            }
           }
           break;
         }
