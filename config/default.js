@@ -172,6 +172,12 @@ module.exports = {
        *
        * value: Key stored in the DB.
        * text: Title displayed to the user.
+       * referenceData: Reference data ID for dropdown choices (optional).
+       * textField: Field name for display text in reference data (optional).
+       * valueField: Field name for stored value in reference data (optional).
+       * userCanEdit: Boolean to allow user to edit this attribute (optional).
+       * showInList: Boolean to show this attribute in user list table (optional).
+       * includeInTemplate: Boolean to include in bulk upload template (optional).
        */
       list: [],
     },

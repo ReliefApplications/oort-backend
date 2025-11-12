@@ -10,6 +10,7 @@ import {
   RecordHistoryMeta,
   RecordHistory as RecordHistoryType,
   Aggregation,
+  ReferenceData,
 } from '@models';
 import { AppAbility } from '@security/defineUserAbility';
 import extendAbilityForRecords from '@security/extendAbilityForRecords';
@@ -206,8 +207,8 @@ const buildAggregationDataExport = async (req, res) => {
  * @param roles list of roles
  * @returns list of template fields
  */
-const getUserTemplateFields = (roles: Role[]) => {
-  return [
+const getUserTemplateFields = async (roles: Role[]) => {
+  const fields = [
     {
       name: 'email',
     },
@@ -220,6 +221,49 @@ const getUserTemplateFields = (roles: Role[]) => {
       },
     },
   ];
+
+  // Load user attributes from config
+  const availableAttributes: any[] = config.get('user.attributes.list') || [];
+
+  // Filter attributes that should be included in template
+  const templateAttributes: any[] = availableAttributes.filter(
+    (attr: any) => attr.includeInTemplate
+  );
+
+  // Add fields for each template attribute
+  for (const attr of templateAttributes) {
+    try {
+      if (attr.referenceData) {
+        const referenceData = await ReferenceData.findById(attr.referenceData);
+        if (referenceData && referenceData.type === 'static') {
+          const valueField = attr.valueField || 'value';
+          const items = referenceData.data || [];
+
+          const options = items
+            .map((item) => item[valueField])
+            .filter((x) => x !== null);
+          // Add column with dropdown
+          fields.push({
+            name: attr.text,
+            meta: {
+              type: 'list',
+              allowBlank: true,
+              options,
+            },
+          });
+        }
+      } else {
+        // Add column as text input
+        fields.push({
+          name: attr.text,
+        });
+      }
+    } catch (err) {
+      logger.error(`Error loading reference data for ${attr.value}:`, err);
+    }
+  }
+
+  return fields;
 };
 
 /**
