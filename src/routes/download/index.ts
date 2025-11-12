@@ -51,11 +51,40 @@ const router = express.Router();
  * @param users list of users to serialize
  * @returns User export file
  */
-const buildUserExport = (req, res, users) => {
+const buildUserExport = async (req, res, users) => {
+  // Fetch country reference data to map ISO3 codes to names
+  const referenceDataId = config.get<string>('admin0.referenceData');
+  let countryMap: Record<string, string> = {};
+
+  if (referenceDataId) {
+    try {
+      const referenceData = await ReferenceData.findById(
+        new mongoose.Types.ObjectId(referenceDataId)
+      ).select('data');
+
+      if (referenceData?.data) {
+        countryMap = referenceData.data.reduce((acc, country) => {
+          if (country.iso3_code && country.name) {
+            acc[country.iso3_code] = country.name;
+          }
+          return acc;
+        }, {});
+      }
+    } catch (err) {
+      logger.error('Failed to fetch country reference data for export', err);
+    }
+  }
+
   const rows = users.map((x: any) => {
+    const countryCode = x.attributes?.country || '';
+    const countryName = countryCode
+      ? countryMap[countryCode] || countryCode
+      : '';
+
     return {
       username: x.username,
       name: x.name,
+      country: countryName,
       roles: x.roles.map((role) => role.title).join(', '),
     };
   });
@@ -65,6 +94,7 @@ const buildUserExport = (req, res, users) => {
       { name: 'username', title: 'Username', field: 'username' },
       { name: 'name', title: 'Name', field: 'name' },
       { name: 'roles', title: 'Roles', field: 'roles' },
+      { name: 'country', title: 'Country', field: 'country' },
     ];
     const type = (req.query ? req.query.type : 'xlsx').toString();
     return fileBuilder(res, 'users', columns, rows, type);
@@ -755,6 +785,15 @@ router.post('/application/:id/users', async (req, res) => {
         },
         // Filter users that have at least one role in the application.
         { $match: { 'roles.0': { $exists: true } } },
+        // Select the fields to be returned.
+        {
+          $project: {
+            username: 1,
+            name: 1,
+            roles: 1,
+            attributes: 1,
+          },
+        },
       ];
 
       if (ids.length > 0)
