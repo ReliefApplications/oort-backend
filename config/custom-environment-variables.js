@@ -31,6 +31,7 @@ module.exports = {
     port: 'MAIL_PORT',
     user: 'MAIL_USER',
     pass: 'MAIL_PASS',
+    debugEmail: 'MAIL_DEBUG_EMAIL',
   },
   auth: {
     provider: 'AUTH_PROVIDER',
