@@ -179,18 +179,7 @@ module.exports = {
        * showInList: Boolean to show this attribute in user list table (optional).
        * includeInTemplate: Boolean to include in bulk upload template (optional).
        */
-      list: [
-        {
-          value: 'country',
-          text: 'Country',
-          referenceData: '67605fdc851e937cd9b21be8',
-          textField: 'name',
-          valueField: 'iso3_code',
-          userCanEdit: true,
-          showInList: true,
-          includeInTemplate: true,
-        },
-      ],
+      list: [],
     },
   },
   logger: {
