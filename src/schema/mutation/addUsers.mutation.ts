@@ -124,7 +124,17 @@ const addUsers = (pubsub: PubSub) => ({
       args.users
         .filter((x) => registeredEmails.includes(x.email))
         .forEach((x) => {
-          const updateUser: any = {
+          type UpdateUserQuery = {
+            $addToSet: {
+              roles: typeof x.roles;
+              positionAttributes: {
+                $each: NonNullable<typeof x.positionAttributes>;
+              };
+            };
+            $set?: { attributes: NonNullable<typeof x.attributes> };
+          };
+
+          const updateUser: UpdateUserQuery = {
             $addToSet: {
               roles: x.roles,
               positionAttributes: { $each: x?.positionAttributes || [] },
