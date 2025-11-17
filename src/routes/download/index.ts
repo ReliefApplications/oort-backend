@@ -51,20 +51,59 @@ const router = express.Router();
  * @param users list of users to serialize
  * @returns User export file
  */
-const buildUserExport = (req, res, users) => {
+const buildUserExport = async (req, res, users) => {
+  // Loop through configured attributes to add them as columns
+  const attributes = (config.get<any[]>('user.attributes.list') || []).filter(
+    (x) => x.showInList
+  );
+  const attributeChoices: any = {};
+  for (const attribute of attributes) {
+    if (attribute.referenceData) {
+      const referenceData = await ReferenceData.findById(
+        new mongoose.Types.ObjectId(attribute.referenceData)
+      );
+      if (referenceData && referenceData.type === 'static') {
+        attributeChoices[attribute.value] = referenceData.data.reduce(
+          (acc, item) => {
+            acc[item[attribute.valueField || 'value']] =
+              item[attribute.textField || 'text'];
+            return acc;
+          },
+          {}
+        );
+      }
+    }
+  }
+
   const rows = users.map((x: any) => {
     return {
+      // Main columns
       username: x.username,
       name: x.name,
       roles: x.roles.map((role) => role.title).join(', '),
+      // Additional columns for MAB
+      ...attributes.reduce((acc, attribute) => {
+        acc[attribute.value] = x.attributes
+          ? attributeChoices[attribute.value][x.attributes[attribute.value]] ||
+            x.attributes[attribute.value]
+          : '';
+        return acc;
+      }, {}),
     };
   });
 
   if (rows) {
     const columns = [
+      // Main columns
       { name: 'username', title: 'Username', field: 'username' },
       { name: 'name', title: 'Name', field: 'name' },
       { name: 'roles', title: 'Roles', field: 'roles' },
+      // Additional columns for MAB
+      ...attributes.map((attribute) => ({
+        name: attribute.value,
+        title: attribute.text,
+        field: attribute.value,
+      })),
     ];
     const type = (req.query ? req.query.type : 'xlsx').toString();
     return fileBuilder(res, 'users', columns, rows, type);
@@ -755,6 +794,15 @@ router.post('/application/:id/users', async (req, res) => {
         },
         // Filter users that have at least one role in the application.
         { $match: { 'roles.0': { $exists: true } } },
+        // Select the fields to be returned.
+        {
+          $project: {
+            username: 1,
+            name: 1,
+            roles: 1,
+            attributes: 1,
+          },
+        },
       ];
 
       if (ids.length > 0)
