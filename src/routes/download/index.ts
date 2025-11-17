@@ -52,49 +52,58 @@ const router = express.Router();
  * @returns User export file
  */
 const buildUserExport = async (req, res, users) => {
-  // Fetch country reference data to map ISO3 codes to names
-  const referenceDataId = config.get<string>('admin0.referenceData');
-  let countryMap: Record<string, string> = {};
-
-  if (referenceDataId) {
-    try {
+  // Loop through configured attributes to add them as columns
+  const attributes = (config.get<any[]>('user.attributes.list') || []).filter(
+    (x) => x.showInList
+  );
+  const attributeChoices: any = {};
+  for (const attribute of attributes) {
+    if (attribute.referenceData) {
       const referenceData = await ReferenceData.findById(
-        new mongoose.Types.ObjectId(referenceDataId)
-      ).select('data');
-
-      if (referenceData?.data) {
-        countryMap = referenceData.data.reduce((acc, country) => {
-          if (country.iso3_code && country.name) {
-            acc[country.iso3_code] = country.name;
-          }
-          return acc;
-        }, {});
+        new mongoose.Types.ObjectId(attribute.referenceData)
+      );
+      if (referenceData && referenceData.type === 'static') {
+        attributeChoices[attribute.value] = referenceData.data.reduce(
+          (acc, item) => {
+            acc[item[attribute.valueField || 'value']] =
+              item[attribute.textField || 'text'];
+            return acc;
+          },
+          {}
+        );
       }
-    } catch (err) {
-      logger.error('Failed to fetch country reference data for export', err);
     }
   }
 
   const rows = users.map((x: any) => {
-    const countryCode = x.attributes?.country || '';
-    const countryName = countryCode
-      ? countryMap[countryCode] || countryCode
-      : '';
-
     return {
+      // Main columns
       username: x.username,
       name: x.name,
-      country: countryName,
       roles: x.roles.map((role) => role.title).join(', '),
+      // Additional columns for MAB
+      ...attributes.reduce((acc, attribute) => {
+        acc[attribute.value] = x.attributes
+          ? attributeChoices[attribute.value][x.attributes[attribute.value]] ||
+            x.attributes[attribute.value]
+          : '';
+        return acc;
+      }, {}),
     };
   });
 
   if (rows) {
     const columns = [
+      // Main columns
       { name: 'username', title: 'Username', field: 'username' },
       { name: 'name', title: 'Name', field: 'name' },
       { name: 'roles', title: 'Roles', field: 'roles' },
-      { name: 'country', title: 'Country', field: 'country' },
+      // Additional columns for MAB
+      ...attributes.map((attribute) => ({
+        name: attribute.value,
+        title: attribute.text,
+        field: attribute.value,
+      })),
     ];
     const type = (req.query ? req.query.type : 'xlsx').toString();
     return fileBuilder(res, 'users', columns, rows, type);
