@@ -30,6 +30,11 @@ module.exports = {
           text: 'Editable BRs',
           userCanEdit: false,
           type: 'array',
+          showInList: true,
+          includeInTemplate: true,
+          referenceData: '682e1d63839fa743ca474aa0',
+          textField: 'a_01_1_name_in_english',
+          valueField: '_id',
         },
         {
           value: '_can_view_brs',
