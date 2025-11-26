@@ -56,14 +56,14 @@ const buildUserExport = async (req, res, users) => {
     (x) => x.showInList
   );
   const attributeChoices: any = {};
-  const attributeRecords: any = {};
 
   for (const attribute of attributes) {
+    // Load reference data choices if applicable
     if (attribute.referenceData) {
       const referenceData = await ReferenceData.findById(
         new mongoose.Types.ObjectId(attribute.referenceData)
       );
-      if (referenceData?.type === 'static') {
+      if (referenceData && referenceData?.type === 'static') {
         attributeChoices[attribute.value] = referenceData.data.reduce(
           (acc, item) => {
             acc[item[attribute.valueField || 'value']] =
@@ -72,18 +72,20 @@ const buildUserExport = async (req, res, users) => {
           },
           {}
         );
-      } else {
-        const records = await RecordModel.find({
-          resource: new mongoose.Types.ObjectId(attribute.referenceData),
-          archived: { $ne: true },
-        }).select('_id data');
-
-        attributeRecords[attribute.value] = records.reduce((acc, record) => {
-          const textValue = record.data?.[attribute.textField] || '';
-          acc[record._id.toString()] = textValue;
-          return acc;
-        }, {});
       }
+    }
+
+    if (attribute.resource) {
+      const records = await RecordModel.find({
+        resource: new mongoose.Types.ObjectId(attribute.resource),
+        archived: { $ne: true },
+      }).select(`_id data.${attribute.textField}`);
+
+      attributeChoices[attribute.value] = records.reduce((acc, record) => {
+        const textValue = record.data?.[attribute.textField] || '';
+        acc[record._id.toString()] = textValue;
+        return acc;
+      }, {});
     }
   }
 
@@ -101,19 +103,13 @@ const buildUserExport = async (req, res, users) => {
           attribute.type === 'array' &&
           Array.isArray(attributeValue)
         ) {
-          const lookupMap =
-            attributeChoices[attribute.value] ||
-            attributeRecords[attribute.value] ||
-            {};
+          const lookupMap = attributeChoices[attribute.value] || {};
           acc[attribute.value] = attributeValue
             .map((id) => lookupMap[id] || id)
             .filter((v) => v)
             .join(', ');
         } else {
-          const lookupMap =
-            attributeChoices[attribute.value] ||
-            attributeRecords[attribute.value] ||
-            {};
+          const lookupMap = attributeChoices[attribute.value] || {};
           acc[attribute.value] = lookupMap[attributeValue] || attributeValue;
         }
 
@@ -124,9 +120,11 @@ const buildUserExport = async (req, res, users) => {
 
   if (rows) {
     const columns = [
+      // Main columns
       { name: 'username', title: 'Username', field: 'username' },
       { name: 'name', title: 'Name', field: 'name' },
       { name: 'roles', title: 'Roles', field: 'roles' },
+      // Attributes
       ...attributes.map((attribute) => ({
         name: attribute.value,
         title: attribute.text,

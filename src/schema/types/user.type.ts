@@ -8,22 +8,12 @@ import {
 import GraphQLJSON from 'graphql-type-json';
 import { Types } from 'mongoose';
 import { ApplicationType, PermissionType, RoleType, GroupType } from '.';
-import {
-  Role,
-  Permission,
-  Application,
-  Resource,
-  Form,
-  Group,
-  Record,
-  ReferenceData,
-} from '@models';
+import { Role, Permission, Application, Resource, Form, Group } from '@models';
 import { AppAbility } from '@security/defineUserAbility';
 import { PositionAttributeType } from './positionAttribute.type';
 import permissions from '@const/permissions';
 import { Connection } from './pagination.type';
 import { accessibleBy } from '@casl/mongoose';
-import config from 'config';
 
 /**
  * GraphQL User type.
@@ -156,82 +146,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     positionAttributes: { type: new GraphQLList(PositionAttributeType) },
-    attributes: {
-      type: GraphQLJSON,
-      async resolve(parent) {
-        if (!parent.attributes) return {};
-
-        const attributeConfig = config.get<any[]>('user.attributes.list') || [];
-        const resolvedAttributes = { ...parent.attributes };
-
-        for (const attrConfig of attributeConfig) {
-          const attrValue = parent.attributes[attrConfig.value];
-
-          if (attrConfig.showInList && !attrValue) {
-            resolvedAttributes[attrConfig.value] = '';
-            continue;
-          }
-
-          if (!attrValue || !attrConfig.referenceData) continue;
-
-          try {
-            const referenceData = await ReferenceData.findById(
-              new Types.ObjectId(attrConfig.referenceData)
-            );
-
-            if (referenceData?.type === 'static') {
-              const lookupMap = referenceData.data.reduce((acc, item) => {
-                acc[item[attrConfig.valueField || 'value']] =
-                  item[attrConfig.textField || 'text'];
-                return acc;
-              }, {});
-
-              if (attrConfig.type === 'array' && Array.isArray(attrValue)) {
-                resolvedAttributes[attrConfig.value] = attrValue
-                  .map((id) => lookupMap[id] || id)
-                  .filter((v) => v)
-                  .join(', ');
-              } else {
-                resolvedAttributes[attrConfig.value] =
-                  lookupMap[attrValue] || attrValue;
-              }
-            } else {
-              if (attrConfig.type === 'array' && Array.isArray(attrValue)) {
-                const records = await Record.find({
-                  _id: { $in: attrValue.map((id) => new Types.ObjectId(id)) },
-                  resource: new Types.ObjectId(attrConfig.referenceData),
-                  archived: { $ne: true },
-                }).select('data');
-
-                const names = records
-                  .map((record) => record.data?.[attrConfig.textField] || '')
-                  .filter((name) => name);
-
-                resolvedAttributes[attrConfig.value] = names.join(', ');
-              } else {
-                const record = await Record.findOne({
-                  _id: new Types.ObjectId(attrValue),
-                  resource: new Types.ObjectId(attrConfig.referenceData),
-                  archived: { $ne: true },
-                }).select('data');
-
-                if (record) {
-                  resolvedAttributes[attrConfig.value] =
-                    record.data?.[attrConfig.textField] || attrValue;
-                }
-              }
-            }
-          } catch (err) {
-            console.error(
-              `Error resolving attribute ${attrConfig.value}:`,
-              err
-            );
-          }
-        }
-
-        return resolvedAttributes;
-      },
-    },
+    attributes: { type: GraphQLJSON },
   }),
 });
 

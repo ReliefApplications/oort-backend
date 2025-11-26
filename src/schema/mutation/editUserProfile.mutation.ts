@@ -30,12 +30,17 @@ export default {
   async resolve(parent, args: EditUserProfileArgs, context: Context) {
     graphQLAuthCheck(context);
     try {
-      const user = context.user;
-      const availableAttributes: { value: string; text: string }[] =
-        config.get('user.attributes.list') || [];
+      const currentUser = context.user;
+      const availableAttributes: {
+        value: string;
+        text: string;
+        userCanEdit: boolean;
+      }[] = config.get('user.attributes.list') || [];
 
       // Create base update
-      const update = {};
+      const update = {
+        attributes: {},
+      };
       Object.assign(
         update,
         args.profile.favoriteApp && { favoriteApp: args.profile.favoriteApp },
@@ -48,7 +53,10 @@ export default {
       const attributes = {};
       if (args.profile.attributes) {
         for (const attribute in args.profile.attributes) {
-          if (availableAttributes.find((x) => x.value === attribute)) {
+          const targetAttribute = availableAttributes.find(
+            (x) => x.value === attribute
+          );
+          if (targetAttribute && targetAttribute.userCanEdit) {
             Object.assign(attributes, {
               [attribute]: get(args.profile.attributes, attribute, null),
             });
@@ -64,6 +72,8 @@ export default {
         const ability: AppAbility = context.user.ability;
         if (ability.can('update', 'User')) {
           try {
+            const user = await User.findById(args.id).select('attributes');
+            update.attributes = { ...user.attributes, ...attributes };
             return await User.findByIdAndUpdate(args.id, update, { new: true });
           } catch {
             throw new GraphQLError(
@@ -76,7 +86,11 @@ export default {
           );
         }
       } else {
-        return await User.findByIdAndUpdate(user._id, update, { new: true });
+        const user = await User.findById(currentUser._id).select('attributes');
+        update.attributes = { ...user.attributes, ...attributes };
+        return await User.findByIdAndUpdate(currentUser._id, update, {
+          new: true,
+        });
       }
     } catch (err) {
       logger.error(err.message, { stack: err.stack });

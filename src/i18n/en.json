@@ -321,6 +321,13 @@
 				}
 			}
 		},
+		"permissions": {
+			"attributes": {
+				"errors": {
+					"cannotFetchChoices": "Cannot fetch choices for this attribute."
+				}
+			}
+		},
 		"style": {
 			"errors": {
 				"notFound": "Unable to load application's style"
