@@ -321,6 +321,13 @@
 				}
 			}
 		},
+		"permissions": {
+			"attributes": {
+				"errors": {
+					"cannotFetchChoices": "******"
+				}
+			}
+		},
 		"style": {
 			"errors": {
 				"notFound": "******"

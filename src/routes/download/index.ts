@@ -52,17 +52,18 @@ const router = express.Router();
  * @returns User export file
  */
 const buildUserExport = async (req, res, users) => {
-  // Loop through configured attributes to add them as columns
   const attributes = (config.get<any[]>('user.attributes.list') || []).filter(
     (x) => x.showInList
   );
   const attributeChoices: any = {};
+
   for (const attribute of attributes) {
+    // Load reference data choices if applicable
     if (attribute.referenceData) {
       const referenceData = await ReferenceData.findById(
         new mongoose.Types.ObjectId(attribute.referenceData)
       );
-      if (referenceData && referenceData.type === 'static') {
+      if (referenceData && referenceData?.type === 'static') {
         attributeChoices[attribute.value] = referenceData.data.reduce(
           (acc, item) => {
             acc[item[attribute.valueField || 'value']] =
@@ -73,20 +74,45 @@ const buildUserExport = async (req, res, users) => {
         );
       }
     }
+
+    if (attribute.resource) {
+      const records = await RecordModel.find({
+        resource: new mongoose.Types.ObjectId(attribute.resource),
+        archived: { $ne: true },
+      }).select(`_id data.${attribute.textField}`);
+
+      attributeChoices[attribute.value] = records.reduce((acc, record) => {
+        const textValue = record.data?.[attribute.textField] || '';
+        acc[record._id.toString()] = textValue;
+        return acc;
+      }, {});
+    }
   }
 
   const rows = users.map((x: any) => {
     return {
-      // Main columns
       username: x.username,
       name: x.name,
       roles: x.roles.map((role) => role.title).join(', '),
-      // Additional columns for MAB
       ...attributes.reduce((acc, attribute) => {
-        acc[attribute.value] = x.attributes
-          ? attributeChoices[attribute.value][x.attributes[attribute.value]] ||
-            x.attributes[attribute.value]
-          : '';
+        const attributeValue = x.attributes?.[attribute.value];
+
+        if (!attributeValue) {
+          acc[attribute.value] = '';
+        } else if (
+          attribute.type === 'array' &&
+          Array.isArray(attributeValue)
+        ) {
+          const lookupMap = attributeChoices[attribute.value] || {};
+          acc[attribute.value] = attributeValue
+            .map((id) => lookupMap[id] || id)
+            .filter((v) => v)
+            .join(', ');
+        } else {
+          const lookupMap = attributeChoices[attribute.value] || {};
+          acc[attribute.value] = lookupMap[attributeValue] || attributeValue;
+        }
+
         return acc;
       }, {}),
     };
@@ -98,7 +124,7 @@ const buildUserExport = async (req, res, users) => {
       { name: 'username', title: 'Username', field: 'username' },
       { name: 'name', title: 'Name', field: 'name' },
       { name: 'roles', title: 'Roles', field: 'roles' },
-      // Additional columns for MAB
+      // Attributes
       ...attributes.map((attribute) => ({
         name: attribute.value,
         title: attribute.text,
