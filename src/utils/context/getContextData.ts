@@ -137,9 +137,29 @@ export const getContextData = async (
   const ctx = page.context;
   try {
     if (recordId) {
-      const resource = 'resource' in ctx ? ctx.resource : null;
-      context.user.ability = await extendAbilityForRecords(context.user);
-      const data = await getContextDataForRecord(resource, recordId, context);
+      const resourceId = 'resource' in ctx ? ctx.resource : null;
+
+      if (resourceId) {
+        const resource =
+          resourceId instanceof Resource
+            ? resourceId
+            : await Resource.findById(resourceId);
+        if (resource) {
+          context.user.ability = await extendAbilityForRecords(
+            context.user,
+            resource
+          );
+        } else {
+          context.user.ability = await extendAbilityForRecords(context.user);
+        }
+      } else {
+        context.user.ability = await extendAbilityForRecords(context.user);
+      }
+      const data = await getContextDataForRecord(
+        resourceId as any,
+        recordId,
+        context
+      );
       return data;
     } else if (elementId) {
       const refData = 'refData' in ctx ? ctx.refData : null;

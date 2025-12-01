@@ -1,7 +1,7 @@
 import { Form, Resource, User, Role, ReferenceData } from '@models';
 import mongoose from 'mongoose';
 import { sortBy } from 'lodash';
-import extendAbilityForRecords from '@security/extendAbilityForRecords';
+import { getCachedRecordsAbility } from '@utils/schema/abilityCache';
 import { accessibleBy } from '@casl/mongoose';
 
 export type Metadata = {
@@ -147,8 +147,8 @@ export const getMetaData = async (
 ): Promise<any[]> => {
   const metaData: Metadata[] = [];
   context._parent = parent;
-  context.user._abilityForRecords = await extendAbilityForRecords(
-    context.user,
+  context.user._abilityForRecords = await getCachedRecordsAbility(
+    context,
     parent
   );
   let forms: Form[] = [];
