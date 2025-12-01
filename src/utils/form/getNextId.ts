@@ -9,7 +9,6 @@ import i18next from 'i18next';
 import { isEqual } from 'lodash';
 import { Types } from 'mongoose';
 import { logger } from '@lib/logger';
-import NodeCache from 'node-cache';
 
 /** Maps each available variable to its template */
 const TEMPLATES = {
@@ -18,11 +17,6 @@ const TEMPLATES = {
   RESOURCE_NAME: '{resourceName}',
   INCREMENTAL_NUM: '{incremental}',
 } as const;
-
-/** Local storage initialization */
-const cache = new NodeCache();
-/** Cache duration */
-const CACHE_DURATION = 10;
 
 /**
  * Builds the incremental ID from the the shape string and an object with all the variables.
@@ -160,28 +154,6 @@ export const getNextId = async (structureId: string | Form) => {
   const idShape = resource.idShape ?? DEFAULT_INCREMENTAL_ID_SHAPE;
   const name = resource.name;
 
-  // Check if it's in the cache
-  const cachedId: number | Promise<number> | undefined = cache.get(
-    (structureId as Form).resource.toString()
-  );
-
-  // If it's in the cache, increment it and return
-  if (cachedId) {
-    const id = await cachedId;
-    const incrementalId = buildIncrementalId(idShape, {
-      incremental: id.toString(),
-      year: new Date().getFullYear().toString(),
-      resourceInitial: name?.charAt(0).toUpperCase() || '',
-      resourceName: name?.toUpperCase() || '',
-    });
-    cache.set(
-      (structureId as Form).resource.toString(),
-      id + 1,
-      CACHE_DURATION
-    );
-    return { incID: id, incrementalId };
-  }
-
   const nextIdPromise = new Promise<number>(async (resolve) => {
     /** Gets the last id added to the form */
     const getLastID = async () => {
@@ -224,20 +196,33 @@ export const getNextId = async (structureId: string | Form) => {
     resolve(nextID);
   });
 
-  // If not in cache, add it as a promise with the next id + 1
-  cache.set(
-    (structureId as Form).resource.toString(),
-    new Promise((r) => nextIdPromise.then((id) => r(id + 1))),
-    10
-  );
-
-  const incID = await nextIdPromise;
-  const incrementalId = buildIncrementalId(idShape, {
+  let incID = await nextIdPromise;
+  let incrementalId = buildIncrementalId(idShape, {
     incremental: incID.toString(),
     year: new Date().getFullYear().toString(),
     resourceInitial: name?.charAt(0).toUpperCase() || '',
     resourceName: name?.toUpperCase() || '',
   });
+
+  let existingRecord = await Record.findOne({
+    resource: (structureId as Form).resource,
+    incrementalId,
+  }).select('_id');
+  let increment = 0;
+  while (existingRecord) {
+    increment += 1;
+    incID = incID + increment;
+    incrementalId = buildIncrementalId(idShape, {
+      incremental: incID.toString(),
+      year: new Date().getFullYear().toString(),
+      resourceInitial: name?.charAt(0).toUpperCase() || '',
+      resourceName: name?.toUpperCase() || '',
+    });
+    existingRecord = await Record.findOne({
+      resource: (structureId as Form).resource,
+      incrementalId,
+    }).select('_id');
+  }
 
   return { incID, incrementalId };
 };
