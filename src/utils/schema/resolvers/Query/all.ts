@@ -81,6 +81,10 @@ export const buildProjectAggregation = (
   if (queryFields && Array.isArray(queryFields)) {
     queryFields.forEach((field) => {
       data[field.name] = 1;
+      // Also project resource fields at root level since they're populated there
+      if (field.fields && field.fields.length > 0) {
+        staticProject[field.name] = 1;
+      }
     });
     staticProject.data = data;
   }
@@ -88,7 +92,12 @@ export const buildProjectAggregation = (
     staticProject.data[field.name] = 1;
   });
   sort.forEach((item: any) => {
-    staticProject.data[item.name] = 1;
+    // For nested fields we need to project the parent field at root level
+    const fieldName = item.field
+      ? item.field.split('.')[0]
+      : item.name?.split('.')[0] || item.name;
+    staticProject.data[fieldName] = 1;
+    staticProject[fieldName] = 1;
   });
   return [{ $project: staticProject }];
 };
