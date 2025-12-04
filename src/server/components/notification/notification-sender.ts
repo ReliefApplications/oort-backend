@@ -20,6 +20,11 @@ const sendAsMail = async (
 ) => {
   if (!!content && recipients.length > 0) {
     if (config.get('email.debugEmail')) {
+      console.log(
+        `[Debug] Sending email notification "${
+          notification.name
+        }" to: ${recipients.join(', ')}`
+      );
       await sendEmail({
         message: {
           to: config.get('email.debugEmail'),
@@ -34,6 +39,11 @@ const sendAsMail = async (
         },
       });
     } else {
+      console.log(
+        `Sending email notification "${
+          notification.name
+        }" to: ${recipients.join(', ')}`
+      );
       await sendEmail({
         message: {
           to: recipients,
