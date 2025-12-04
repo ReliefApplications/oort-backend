@@ -33,6 +33,7 @@ module.exports = {
     port: '',
     user: '',
     pass: '',
+    debugEmail: '',
   },
   database: {
     provider: '',
