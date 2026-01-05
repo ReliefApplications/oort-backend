@@ -87,7 +87,7 @@ export const buildProjectAggregation = (
   calculatedFields.forEach((field) => {
     staticProject.data[field.name] = 1;
   });
-  sort.forEach((item: any) => {
+  sort?.forEach((item: any) => {
     staticProject.data[item.name] = 1;
   });
   return [{ $project: staticProject }];
