@@ -12,51 +12,15 @@ import {
   getOwnership,
   // checkRecordValidation,
   checkRecordTriggers,
+  hasInaccessibleFields,
 } from '@utils/form';
 import { RecordType } from '../types';
 import { Types } from 'mongoose';
-import { AppAbility } from 'security/defineUserAbility';
-import { filter, isEqual, keys, union, has, get } from 'lodash';
 import { logger } from '@lib/logger';
 import { graphQLAuthCheck } from '@schema/shared';
 import { Context } from '@server/apollo/context';
 import { logEvent } from '@utils/events/logEvent';
 import { EventType } from '@utils/events/event.model';
-
-/**
- * Checks if the user has the permission to update all the fields they're trying to update
- *
- * @param record The record to edit
- * @param newData The new data to set
- * @param ability The user ability
- * @returns If there's a field the user can't update
- */
-export const inaccessibleFields = (
-  record: Record,
-  newData: any,
-  ability: AppAbility
-) => {
-  const oldData = record.data || {};
-  const allKeys = union(keys(oldData), keys(newData));
-  const updatedKeys = filter(allKeys, (key) => {
-    let previous = get(oldData, key);
-    let next = get(newData, key);
-
-    // check for date objects and convert them to strings
-    if (previous instanceof Date) previous = previous.toISOString();
-    if (next instanceof Date) next = next.toISOString();
-
-    return !isEqual(previous, next);
-  });
-
-  const failedKeys = updatedKeys.filter(
-    (question) =>
-      ability.cannot('update', record, `data.${question}`) &&
-      has(newData, question)
-  );
-
-  return failedKeys;
-};
 
 /** Arguments for the editRecord mutation */
 type EditRecordArgs = {
@@ -122,22 +86,22 @@ export default {
         oldRecord.form,
         'fields permissions resource structure'
       );
-      if (!oldRecord || !parentForm) {
+      const parentResource: Resource = await Resource.findById(
+        parentForm.resource,
+        'fields'
+      );
+      if (!oldRecord || !parentForm || !parentResource) {
         throw new GraphQLError(context.i18next.t('common.errors.dataNotFound'));
       }
 
       // Check permissions with two layers
       const ability = await extendAbilityForRecords(user, parentForm);
-      const errorFields = inaccessibleFields(oldRecord, args.data, ability);
-      if (ability.cannot('update', oldRecord)) {
+      if (
+        ability.cannot('update', oldRecord) ||
+        hasInaccessibleFields(oldRecord, args.data, ability, parentResource)
+      ) {
         throw new GraphQLError(
           context.i18next.t('common.errors.permissionNotGranted')
-        );
-      }
-      if (errorFields.length > 0) {
-        throw new GraphQLError(
-          context.i18next.t('common.errors.permissionNotGranted') +
-            errorFields.join(', ')
         );
       }
 
