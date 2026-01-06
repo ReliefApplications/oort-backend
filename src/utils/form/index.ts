@@ -6,6 +6,7 @@ export * from './findDuplicateFields';
 export * from './extractFields';
 export * from './extractKoboFields';
 export * from './getFieldType';
+export * from './hasInaccessibleFields';
 
 // === RECORDS ===
 export * from './transformRecord';
