@@ -2,6 +2,7 @@
 	"common": {
 		"errors": {
 			"authenticationTokenNotFound": "Missing bearer token.",
+			"badRequest": "Bad request.",
 			"dataNotFound": "Data not found",
 			"duplicatedGraphQLTypeName": "A form or a reference data with a similar name already exists. Please provide a different name.",
 			"fileExtensionNotAllowed": "File extension not allowed",

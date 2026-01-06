@@ -4,6 +4,7 @@ import { logger } from '@lib/logger';
 import extendAbilityForApplications from '@security/extendAbilityForApplication';
 import { AppAbility } from '@security/defineUserAbility';
 import config from 'config';
+import { isValidObjectId } from 'mongoose';
 
 /**
  * Routes for notifications / triggers
@@ -24,7 +25,7 @@ const router = express.Router();
 router.get('/triggers', async (req: any, res) => {
   try {
     const applicationId = req.query.application as string;
-    if (!applicationId) {
+    if (!applicationId || isValidObjectId(applicationId) === false) {
       return res.status(400).send(req.t('common.errors.badRequest'));
     }
 
@@ -69,25 +70,25 @@ router.get('/triggers', async (req: any, res) => {
 
     if (search) {
       const lowered = search.toLowerCase();
-      notifications = notifications.filter((n: any) =>
+      notifications = notifications.filter((n) =>
         (n.name || '').toLowerCase().includes(lowered)
       );
     }
 
     if (startDate) {
       notifications = notifications.filter(
-        (n: any) => n.createdAt && new Date(n.createdAt) >= startDate
+        (n) => n.createdAt && new Date(n.createdAt) >= startDate
       );
     }
 
     if (endDate) {
       notifications = notifications.filter(
-        (n: any) => n.createdAt && new Date(n.createdAt) <= endDate
+        (n) => n.createdAt && new Date(n.createdAt) <= endDate
       );
     }
 
     // Sort by name ascending
-    notifications = notifications.sort((a: any, b: any) =>
+    notifications = notifications.sort((a, b) =>
       (a.name || '').localeCompare(b.name || '')
     );
 

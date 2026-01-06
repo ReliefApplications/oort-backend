@@ -2,6 +2,7 @@
 	"common": {
 		"errors": {
 			"authenticationTokenNotFound": "******",
+			"badRequest": "******",
 			"dataNotFound": "******",
 			"duplicatedGraphQLTypeName": "******",
 			"fileExtensionNotAllowed": "******",
