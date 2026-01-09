@@ -56,7 +56,7 @@ jobs:
   update_deployment_status:
     name: Update Deployment Status ✅
     runs-on: ubuntu-latest
-    needs: 
+    needs:
       - create_deployment
       - deploy
     if: always()

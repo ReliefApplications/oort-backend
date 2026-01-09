@@ -25,6 +25,7 @@ interface FormDocument extends Document {
   structure?: any;
   core?: boolean;
   status?: string;
+  disableCascadingUpdates?: boolean;
   permissions?: {
     canSee?: any[];
     canUpdate?: any[];
@@ -106,6 +107,12 @@ const schema = new Schema<Form>(
     graphQLTypeName: String,
     structure: mongoose.Schema.Types.Mixed,
     core: Boolean,
+    disableCascadingUpdates: {
+      type: Boolean,
+      default: true,
+      description:
+        'When true, this form will not receive updates from sibling forms, but will still receive updates from parent forms.',
+    },
     status: {
       type: String,
       enum: Object.values(status),

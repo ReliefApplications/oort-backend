@@ -3,6 +3,7 @@ import {
   GraphQLString,
   GraphQLID,
   GraphQLError,
+  GraphQLBoolean,
 } from 'graphql';
 import { validateGraphQLTypeName } from '@utils/validators';
 import {
@@ -37,6 +38,7 @@ type AddFormArgs = {
   template?: string | Types.ObjectId;
   apiConfiguration?: string | Types.ObjectId;
   kobo?: string;
+  disableCascadingUpdates?: boolean;
 };
 
 /**
@@ -51,6 +53,7 @@ export default {
     template: { type: GraphQLID },
     apiConfiguration: { type: GraphQLID },
     kobo: { type: GraphQLString },
+    disableCascadingUpdates: { type: GraphQLBoolean },
   },
   async resolve(parent, args: AddFormArgs, context: Context) {
     graphQLAuthCheck(context);
@@ -167,6 +170,7 @@ export default {
             structure,
             fields,
             versions: [version._id],
+            disableCascadingUpdates: args.disableCascadingUpdates !== false,
             kobo: {
               id: args.kobo,
               deployedVersionId,
@@ -205,6 +209,7 @@ export default {
             resource,
             core: true,
             permissions: defaultFormPermissions,
+            disableCascadingUpdates: args.disableCascadingUpdates !== false,
           });
           await form.save();
           return form;
@@ -234,6 +239,7 @@ export default {
             structure,
             fields,
             permissions: defaultFormPermissions,
+            disableCascadingUpdates: args.disableCascadingUpdates !== false,
           });
           await form.save();
           return form;
