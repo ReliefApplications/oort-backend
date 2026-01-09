@@ -89,14 +89,13 @@ const userNeedsUpdate = (
  * Check if we need to update user groups and attributes and perform it when needed.
  *
  * @param user Logged user to update.
- * @param req Original req.
  * @returns Boolean to indicate if there is any change in the user.
  */
-export const updateUser = async (user: User, req: any): Promise<boolean> => {
+export const updateUser = async (user: User): Promise<boolean> => {
   // Check if we really need to fetch new ones
   if (!userNeedsUpdate(user)) return false;
   const userChanges: boolean[] = await Promise.all([
-    updateUserAttributes(user, req),
+    updateUserAttributes(user),
     // updateUserGroups(user, req),
   ]);
   for (const update of userChanges) {

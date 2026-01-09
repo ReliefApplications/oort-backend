@@ -66,7 +66,7 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
                 user.name = token.name;
                 user.oid = token.sub;
                 user.deleteAt = undefined; // deactivate the planned deletion
-                updateUser(user, req).then(() => {
+                updateUser(user).then(() => {
                   user
                     .save()
                     .then(() => {
@@ -77,7 +77,7 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
                     });
                 });
               } else {
-                updateUser(user, req).then((changed) => {
+                updateUser(user).then((changed) => {
                   if (changed || !user.firstName || !user.lastName) {
                     if (!user.firstName) {
                       user.firstName = token.given_name;
@@ -109,7 +109,7 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
                 roles: [],
                 positionAttributes: [],
               });
-              updateUser(user, req).then(() => {
+              updateUser(user).then(() => {
                 user
                   .save()
                   .then(() => {
@@ -236,7 +236,7 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
                 user.lastName = token.family_name;
                 user.name = token.name;
                 user.oid = token.oid;
-                updateUser(user, req).then(() => {
+                updateUser(user).then(() => {
                   user
                     .save()
                     .then(() => {
@@ -247,7 +247,7 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
                     });
                 });
               } else {
-                updateUser(user, req).then((changed) => {
+                updateUser(user).then((changed) => {
                   if (changed || !user.firstName || !user.lastName) {
                     if (!user.firstName) {
                       user.firstName = token.given_name;
@@ -279,7 +279,7 @@ if (config.get('auth.provider') === AuthenticationType.keycloak) {
                 roles: [],
                 positionAttributes: [],
               });
-              updateUser(user, req).then(() => {
+              updateUser(user).then(() => {
                 user
                   .save()
                   .then(() => {
