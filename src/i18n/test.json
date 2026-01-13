@@ -314,8 +314,10 @@
 				"errors": {
 					"format": {
 						"crs": "******",
+						"gaps": "******",
 						"missingPolygons": "******",
 						"missingZonations": "******",
+						"overlapping": "******",
 						"shapefile": "******"
 					},
 					"processing": "******"
