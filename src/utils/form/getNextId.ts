@@ -25,6 +25,19 @@ const cache = new NodeCache();
 const CACHE_DURATION = 10;
 
 /**
+ * Extracts the first alphabetic character from a string.
+ * Skips special characters, numbers, and whitespace.
+ *
+ * @param str The string to extract from.
+ * @returns The first alphabetic character in uppercase, or empty string if none found.
+ */
+const getFirstAlphabeticChar = (str: string | undefined): string => {
+  if (!str) return '';
+  const match = str.match(/[a-zA-Z]/);
+  return match ? match[0].toUpperCase() : '';
+};
+
+/**
  * Builds the incremental ID from the the shape string and an object with all the variables.
  *
  * @param idShape The shape id object.
@@ -139,7 +152,7 @@ export const updateIncrementalIds = async (
     const newIncrementalId = buildIncrementalId(newShape, {
       incremental: inc.toString(),
       year: createdAt.getFullYear().toString(),
-      resourceInitial: resource.name?.charAt(0).toUpperCase() || '',
+      resourceInitial: getFirstAlphabeticChar(resource.name),
       resourceName: resource.name?.toUpperCase() || '',
     });
 
@@ -182,7 +195,7 @@ export const getNextId = async (structureId: string | Form) => {
     const incrementalId = buildIncrementalId(idShape, {
       incremental: id.toString(),
       year: new Date().getFullYear().toString(),
-      resourceInitial: name?.charAt(0).toUpperCase() || '',
+      resourceInitial: getFirstAlphabeticChar(name),
       resourceName: name?.toUpperCase() || '',
     });
     cache.set(
@@ -249,7 +262,7 @@ export const getNextId = async (structureId: string | Form) => {
   let incrementalId = buildIncrementalId(idShape, {
     incremental: incID.toString(),
     year: new Date().getFullYear().toString(),
-    resourceInitial: name?.charAt(0).toUpperCase() || '',
+    resourceInitial: getFirstAlphabeticChar(name),
     resourceName: name?.toUpperCase() || '',
   });
 
@@ -263,7 +276,7 @@ export const getNextId = async (structureId: string | Form) => {
     incrementalId = buildIncrementalId(idShape, {
       incremental: incID.toString(),
       year: new Date().getFullYear().toString(),
-      resourceInitial: name?.charAt(0).toUpperCase() || '',
+      resourceInitial: getFirstAlphabeticChar(name),
       resourceName: name?.toUpperCase() || '',
     });
   }
