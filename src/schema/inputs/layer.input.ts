@@ -148,6 +148,7 @@ const LayerDataSourceInputType = new GraphQLInputObjectType({
     latitudeField: { type: GraphQLString },
     longitudeField: { type: GraphQLString },
     type: { type: GraphQLString },
+    requiredFilterFields: { type: GraphQLString },
   }),
 });
 

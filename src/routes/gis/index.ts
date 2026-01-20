@@ -416,6 +416,42 @@ router.get('/feature', async (req, res) => {
       get(req, 'query.graphQLVariables', null)
     );
 
+    // Check if required filter fields are present
+    const requiredFilterFields = get(req, 'query.requiredFilterFields') as
+      | string
+      | undefined;
+    if (requiredFilterFields) {
+      const requiredFields = requiredFilterFields
+        .split(',')
+        .map((f) => f.trim());
+      const hasRequiredFilters = requiredFields.every((field) => {
+        return contextFilters?.filters?.some((f: FilterDescriptor) => {
+          const fieldMatches = f.field === field;
+          const hasValue =
+            f.value !== null &&
+            f.value !== undefined &&
+            f.value !== '' &&
+            (Array.isArray(f.value) ? f.value.length > 0 : true);
+          return fieldMatches && hasValue;
+        });
+      });
+
+      if (!hasRequiredFilters) {
+        // Return empty result instead of querying
+        logger.info(
+          `Skipping layer query - required filter fields not satisfied: ${requiredFilterFields}`
+        );
+        if (layerType === GeometryType.SHAPEFILE) {
+          return res.send([]);
+        } else {
+          return res.send({
+            type: 'FeatureCollection',
+            features: [],
+          });
+        }
+      }
+    }
+
     // used to filter features by property values only
     const propertyFilters: { prop: string; value: unknown }[] = [];
 

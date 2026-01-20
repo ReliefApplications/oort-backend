@@ -33,6 +33,7 @@ const LayerDatasource = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLString),
       resolve: (parent) => parent.type ?? GeometryType.POINT,
     },
+    requiredFilterFields: { type: GraphQLString },
   }),
 });
 

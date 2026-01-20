@@ -130,6 +130,7 @@ export interface LayerDatasource {
   latitudeField?: string;
   longitudeField?: string;
   type: GeometryType;
+  requiredFilterFields?: string;
 }
 
 /** Layer documents interface declaration */
@@ -212,6 +213,7 @@ const layerSchema = new Schema(
         type: String,
         enum: Object.values(GeometryType),
       },
+      requiredFilterFields: String,
     },
     contextFilters: String,
     at: String,
