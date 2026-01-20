@@ -9,11 +9,11 @@ html
       link(rel="stylesheet", href="style.css", data-inline)
   body
     div.frame.center
-      img.head(src="https://doc.oortcloud.tech/img/logo.png" alt="Oort - Data management system")
+      img.head(src=logoUrl alt="UNESCO")
       h3.head
         | #{t('appInvitation.sharedBy', { senderName: senderName })}
         |
-        span.oort-color #{appName} 
+        span.mab-color #{appName} 
         | #{t('appInvitation.sharedApp')}
       
       p #{t('appInvitation.accessInfo', { senderName: senderName, appName: appName })}
