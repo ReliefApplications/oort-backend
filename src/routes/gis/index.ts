@@ -708,9 +708,7 @@ router.post('/validate-shapefile', async (req, res) => {
       } catch (err) {
         return res
           .status(400)
-          .send(
-            i18next.t('routes.gis.shapefile.errors.format.missingPolygons')
-          );
+          .send(i18next.t('routes.gis.shapefile.errors.format.crs'));
       }
     }
 

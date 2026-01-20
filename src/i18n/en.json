@@ -313,9 +313,11 @@
 			"shapefile": {
 				"errors": {
 					"format": {
-						"crs": "Formatting error: Please ensure the coordinate reference system (CRS) WGS 84 World Geodetic System (ESPG: 4326) is used for all layers and upload again.",
+						"crs": "Please ensure the coordinate reference system (CRS) WGS 84 World Geodetic System (ESPG: 4326) is used for all layers and upload again.",
+						"gaps": "Geometry error: There are one or more gaps (empty spaces) between zonation polygons. Please correct these errors and upload the files again.",
 						"missingPolygons": "Formatting error: The shapefile must be comprised of three (3) polygons, one each for the core area(s), buffer zone(s), and transition area(s). Please correct these errors and upload the files again.",
 						"missingZonations": "Formatting error: The attribute table must describe the zonation polygons using the labels Core, Buffer, and Transition (in English). Please correct these errors and upload the files again.",
+						"overlapping": "Geometry error: There are one or more overlapping zonation polygons. Please correct these errors and upload the files again.",
 						"shapefile": "Formatting error: Please upload a single .zip file including all linked .shp, .shx, .dbf, and .prj."
 					},
 					"processing": "Processing error: The shapefile could not be processed. Please ensure that the file is correctly formatted and try again."
