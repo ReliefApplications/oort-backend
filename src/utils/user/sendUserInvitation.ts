@@ -6,15 +6,28 @@ import { resolve } from 'path';
 
 /**
  * Loads the UNESCO logo and converts it to a data URL for embedding in emails
+ *
+ * @returns The data URL of the UNESCO logo
  */
 const getUnescoLogoDataUrl = (): string => {
-  const logoPath = resolve(__dirname, '../../assets/emails/images/logo-blue.svg');
+  // Path relative to the project root (where node process runs)
+  const logoPath = resolve(
+    process.cwd(),
+    'src/assets/emails/images/logo-blue.svg'
+  );
   const svgContent = readFileSync(logoPath, 'utf-8');
-  const base64 = Buffer.from(svgContent).toString('base64');
-  return `data:image/svg+xml;base64,${base64}`;
+  // For SVG, URL encoding is more reliable than base64 in emails
+  const urlEncoded = encodeURIComponent(svgContent)
+    .replace(/'/g, '%27')
+    .replace(/"/g, '%22');
+  return `data:image/svg+xml;charset=utf8,${urlEncoded}`;
 };
 
-// Cache the logo data URL to avoid reading the file multiple times
+/**
+ * Loads the data URL of the UNESCO logo
+ *
+ * @returns The data URL of the UNESCO logo
+ */
 const UNESCO_LOGO_DATA_URL = getUnescoLogoDataUrl();
 
 /**
@@ -31,7 +44,7 @@ export const sendAppInvitation = async (
 ) => {
   const url = new URL(config.get('frontOffice.uri'));
   url.pathname = `/${application.id}`;
-  
+
   // Send individual emails to each recipient for privacy
   for (const recipient of recipients) {
     await sendEmail({

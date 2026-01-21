@@ -9,7 +9,7 @@ html
       link(rel="stylesheet", href="style.css", data-inline)
   body
     div.frame.large
-      div.center: img.head(src=logoUrl alt="UNESCO")
+      div.center: img.head(src="#{logoUrl}" alt="UNESCO")
 
       h3.head: !=t('createAccountToApp.title', { senderName: senderName, appName: appName })
 
