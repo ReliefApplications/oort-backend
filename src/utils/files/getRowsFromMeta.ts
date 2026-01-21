@@ -1,4 +1,4 @@
-import { isArray } from 'lodash';
+import { isArray, isNaN, isNumber } from 'lodash';
 import get from 'lodash/get';
 import set from 'lodash/set';
 import { getText } from '../form/getDisplayText';
@@ -166,6 +166,14 @@ export const getRowsFromMeta = (columns: any[], records: any[]): any[] => {
           if (value) {
             const text = cheerio.load(value).text();
             set(row, column.name, text);
+          }
+          break;
+        }
+        case 'numeric': {
+          const value = get(record, column.field);
+          // Make sure to only set valid numbers
+          if (isNumber(value) && !isNaN(value)) {
+            set(row, column.name, value);
           }
           break;
         }
