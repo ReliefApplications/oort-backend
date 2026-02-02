@@ -8,23 +8,26 @@ html
       meta(name="x-apple-disable-message-reformatting")
       link(rel="stylesheet", href="style.css", data-inline)
   body
-    div.frame.center
-      img.head(src="#{logoUrl}" alt="UNESCO")
-      h3.head
-        | #{t('appInvitation.sharedBy', { senderName: senderName })}
-        |
-        span.mab-color #{appName} 
-        | #{t('appInvitation.sharedApp')}
-      
-      p #{t('appInvitation.accessInfo', { senderName: senderName, appName: appName })}
+    div.frame.large
+      div.center: img.head(src=logoUrl alt="UNESCO")
+
+      p #{t('createAccount.intro', { senderName: senderName })}
+      p #{t('createAccount.platformInfo')}
+      p #{t('createAccount.stepsIntro')}
+      ol
+        li: span #{t('createAccount.steps.1')}
+        li: span #{t('createAccount.steps.2')}
+        li: span #{t('createAccount.steps.3')}
+
+      p.center: a.button(href=registerUrl target="_blank") #{t('createAccount.registerButton')}
+
       p
-        a.button(href=url target="_blank") #{t('appInvitation.accessButton')}
+        strong #{t('createAccount.noteTitle')}
+        | #{t('createAccount.noteContent')}
+      p #{t('createAccount.thanks')}
+      p #{t('createAccount.signature')}
       p
-        strong #{t('appInvitation.noteTitle')}
-        | #{t('appInvitation.noteContent')}
-        a(href=url) #{url}
-        |.
-      p.footer
-        | Oort Cloud Technology ⋅ 
-        | Calle Penas, 70, 28410 Manzanares el Real ⋅ 
-        | Madrid Spain - B87964946
+        | #{t('createAccount.registerDirectly')}
+        a(href=registerUrl) #{registerUrl}
+
+      p.footer.center #{t('createAccount.footer')}

@@ -48,7 +48,7 @@ const email = new Email({
     directory: path.resolve('src/assets/emails/i18n'),
     defaultLocale: 'en',
   },
-  preview: true, // TEMP: Enable to test email templates in browser
+  preview: false,
 });
 
 /** Address type for nodemailer */

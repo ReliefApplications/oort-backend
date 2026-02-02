@@ -4,31 +4,113 @@ import config from 'config';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
-/**
- * Loads the UNESCO logo and converts it to a data URL for embedding in emails
- *
- * @returns The data URL of the UNESCO logo
- */
-const getUnescoLogoDataUrl = (): string => {
-  // Path relative to the project root (where node process runs)
-  const logoPath = resolve(
-    process.cwd(),
-    'src/assets/emails/images/logo-blue.svg'
-  );
-  const svgContent = readFileSync(logoPath, 'utf-8');
-  // For SVG, URL encoding is more reliable than base64 in emails
-  const urlEncoded = encodeURIComponent(svgContent)
-    .replace(/'/g, '%27')
-    .replace(/"/g, '%22');
-  return `data:image/svg+xml;charset=utf8,${urlEncoded}`;
+type InvitationLocals = {
+  senderName: string;
+  appName?: string;
+  url?: URL;
+  registerUrl: URL;
+  logoUrl: string;
+};
+
+type LogoAttachment = {
+  filename: string;
+  content: string;
+  encoding: 'base64';
+  cid: string;
+  contentType: string;
+  contentDisposition: 'inline';
 };
 
 /**
- * Loads the data URL of the UNESCO logo
+ * Loads the UNESCO logo as an inline attachment for email clients
  *
- * @returns The data URL of the UNESCO logo
+ * @returns The attachment definition for the UNESCO logo
  */
-const UNESCO_LOGO_DATA_URL = getUnescoLogoDataUrl();
+const getUnescoLogoAttachment = (): LogoAttachment => {
+  const logoPath = resolve(
+    process.cwd(),
+    'src/assets/emails/images/logo-blue.png'
+  );
+  const pngContent = readFileSync(logoPath);
+  return {
+    filename: 'logo-blue.png',
+    content: pngContent.toString('base64'),
+    encoding: 'base64',
+    cid: 'unesco-logo',
+    contentType: 'image/png',
+    contentDisposition: 'inline',
+  };
+};
+
+/**
+ * Build the register URL used in invitation emails.
+ *
+ * @param redirectUri The redirect URI after registration
+ * @returns The registration URL
+ */
+const buildRegisterUrl = (redirectUri: string | URL): URL => {
+  const authBase = config.get('auth.url').toString();
+  const authRealm = config.get('auth.realm').toString();
+  const authClientId = config.get('auth.clientId').toString();
+  return new URL(
+    `${authBase}/realms/${authRealm}/protocol/openid-connect/registrations?client_id=${authClientId}&scope=openid%20profile&redirect_uri=${redirectUri}&response_type=code`
+  );
+};
+
+/**
+ * Resolve a sender name to display in the email.
+ *
+ * @param sender The user who sends the invitation
+ * @returns The sender name to use in the template
+ */
+const resolveSenderName = (sender: User): string => {
+  const directName = sender.name?.trim();
+  if (directName) {
+    return directName;
+  }
+  const composedName = [sender.firstName, sender.lastName]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  if (composedName) {
+    return composedName;
+  }
+  return sender.username || 'MAB Secretariat';
+};
+
+/**
+ * Send invitation emails individually to avoid exposing recipients.
+ *
+ * @param recipients The list of recipients for the mail
+ * @param template The email template to use
+ * @param locals The locals passed to the template
+ * @param attachments Optional attachments to include in the email
+ */
+const sendInvitationEmails = async (
+  recipients: string[],
+  template: string,
+  locals: InvitationLocals,
+  attachments?: LogoAttachment[]
+): Promise<void> => {
+  for (const recipient of recipients) {
+    try {
+      await sendEmail({
+        template,
+        message: {
+          to: [recipient],
+          attachments,
+        },
+        locals: { ...locals },
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      throw new Error(
+        `Failed to send ${template} invitation to ${recipient}: ${errorMessage}`
+      );
+    }
+  }
+};
 
 /**
  * Send a mail with the invitation link to the application
@@ -44,22 +126,22 @@ export const sendAppInvitation = async (
 ) => {
   const url = new URL(config.get('frontOffice.uri'));
   url.pathname = `/${application.id}`;
+  const senderName = resolveSenderName(sender);
+  const registerUrl = buildRegisterUrl(url);
+  const logoAttachment = getUnescoLogoAttachment();
 
-  // Send individual emails to each recipient for privacy
-  for (const recipient of recipients) {
-    await sendEmail({
-      template: 'app-invitation',
-      message: {
-        to: [recipient],
-      },
-      locals: {
-        senderName: 'MAB Secretariat',
-        appName: application.name,
-        url,
-        logoUrl: UNESCO_LOGO_DATA_URL,
-      },
-    });
-  }
+  await sendInvitationEmails(
+    recipients,
+    'app-invitation',
+    {
+      senderName,
+      appName: application.name,
+      url,
+      registerUrl,
+      logoUrl: `cid:${logoAttachment.cid}`,
+    },
+    [logoAttachment]
+  );
 };
 
 /**
@@ -74,54 +156,40 @@ export const sendCreateAccountInvitation = async (
   sender: User,
   application: Application | null
 ) => {
-  // Send individual emails to each recipient for privacy
-  for (const recipient of recipients) {
-    if (application) {
-      const url = new URL(config.get('frontOffice.uri'));
-      url.pathname = `/${application.id}`;
-      await sendEmail({
-        template: 'create-account-to-app',
-        message: {
-          to: [recipient],
-        },
-        locals: {
-          senderName: 'MAB Secretariat',
-          appName: application.name,
-          url,
-          logoUrl: UNESCO_LOGO_DATA_URL,
-          registerUrl: new URL(
-            config.get('auth.url').toString() +
-              '/realms/' +
-              config.get('auth.realm').toString() +
-              '/protocol/openid-connect/registrations?client_id=' +
-              config.get('auth.clientId').toString() +
-              '&scope=openid%20profile&redirect_uri=' +
-              url +
-              '&response_type=code'
-          ),
-        },
-      });
-    } else {
-      await sendEmail({
-        template: 'create-account',
-        message: {
-          to: [recipient],
-        },
-        locals: {
-          senderName: 'MAB Secretariat',
-          url: new URL(
-            config.get('auth.url').toString() +
-              '/realms/' +
-              config.get('auth.realm').toString() +
-              '/protocol/openid-connect/registrations?client_id=' +
-              config.get('auth.clientId').toString() +
-              '&scope=openid%20profile&redirect_uri=' +
-              config.get('backOffice.uri').toString().slice(0, -1) +
-              '&response_type=code'
-          ),
-          logoUrl: UNESCO_LOGO_DATA_URL,
-        },
-      });
-    }
+  const senderName = resolveSenderName(sender);
+
+  if (application) {
+    const url = new URL(config.get('frontOffice.uri'));
+    url.pathname = `/${application.id}`;
+    const registerUrl = buildRegisterUrl(url);
+    const logoAttachment = getUnescoLogoAttachment();
+    await sendInvitationEmails(
+      recipients,
+      'create-account-to-app',
+      {
+        senderName,
+        appName: application.name,
+        url,
+        registerUrl,
+        logoUrl: `cid:${logoAttachment.cid}`,
+      },
+      [logoAttachment]
+    );
+    return;
   }
+
+  const registerUrl = buildRegisterUrl(
+    config.get('backOffice.uri').toString().slice(0, -1)
+  );
+  const logoAttachment = getUnescoLogoAttachment();
+  await sendInvitationEmails(
+    recipients,
+    'create-account',
+    {
+      senderName,
+      registerUrl,
+      logoUrl: `cid:${logoAttachment.cid}`,
+    },
+    [logoAttachment]
+  );
 };
