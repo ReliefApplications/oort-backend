@@ -38,6 +38,7 @@ export interface Record extends AccessibleFieldsDocument {
   _lastUpdatedBy?: { user: User };
   lastUpdateForm?: any;
   _lastUpdateForm?: Form;
+  _triggerNotifications?: boolean;
 }
 
 /** Mongoose record schema declaration */
@@ -109,6 +110,10 @@ const recordSchema = new Schema<Record>(
     versions: {
       type: [mongoose.Schema.Types.ObjectId],
       ref: 'Version',
+    },
+    _triggerNotifications: {
+      type: Boolean,
+      default: false,
     },
   },
   {

@@ -189,6 +189,8 @@ export default {
               username: user.username,
             },
           },
+          // Ask for notifications
+          _triggerNotifications: true,
         };
         const ownership = getOwnership(fields, args.data); // Update with template during merge
         Object.assign(

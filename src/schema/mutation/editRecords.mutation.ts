@@ -125,6 +125,8 @@ export default {
                 username: user.username,
               },
             },
+            // Ask for notifications
+            _triggerNotifications: true,
             $push: { versions: version._id },
           };
           const ownership = getOwnership(record.form.fields, args.data); // Update with template during merge
@@ -137,7 +139,6 @@ export default {
           });
           await version.save();
           records.push(newRecord);
-          // }
         }
       }
       return records;
