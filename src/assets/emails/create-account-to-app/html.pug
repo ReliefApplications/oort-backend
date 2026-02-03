@@ -9,27 +9,25 @@ html
       link(rel="stylesheet", href="style.css", data-inline)
   body
     div.frame.large
-      div.center: img.head(src="https://doc.oortcloud.tech/img/logo.png" alt="Oort - Data management system")
+      div.center: img.head(src=logoUrl alt="UNESCO")
 
-      h3.head: !=t('createAccountToApp.title', { senderName: senderName, appName: appName })
+      p #{t('createAccount.intro', { senderName: senderName })}
+      p #{t('createAccount.platformInfo')}
+      p #{t('createAccount.stepsIntro')}
+      ol
+        li: span #{t('createAccount.steps.1')}
+        li: span #{t('createAccount.steps.2')}
+        li: span #{t('createAccount.steps.3')}
 
-      p #{t('createAccountToApp.accessInfo')}
-      ol 
-        li: span!=t('createAccountToApp.accessSteps.1', { url: registerUrl })
-        li: span #{t('createAccountToApp.accessSteps.2')}
-        li: span!=t('createAccountToApp.accessSteps.3', { url: url })
-  
-      p.center: a.button(href=registerUrl target="_blank") #{t('createAccountToApp.registerButton')}
+      p.center: a.button(href=registerUrl target="_blank") #{t('createAccount.registerButton')}
 
       p
-        strong #{t('createAccountToApp.noteTitle')}
-        | #{t('createAccountToApp.noteContent')}
+        strong #{t('createAccount.noteTitle')}
+        | #{t('createAccount.noteContent')}
+      p #{t('createAccount.thanks')}
+      p #{t('createAccount.signature')}
       p
-        | #{t('createAccountToApp.registerDirectly')}
+        | #{t('createAccount.registerDirectly')}
         a(href=registerUrl) #{registerUrl}
-        | .
 
-      p.footer.center
-        | Oort Cloud Technology ⋅ 
-        | Calle Penas, 70, 28410 Manzanares el Real ⋅ 
-        | Madrid Spain - B87964946
+      p.footer.center #{t('createAccount.footer')}

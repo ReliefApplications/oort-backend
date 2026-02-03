@@ -39,7 +39,7 @@ p {
 }
 
 li {
-  color: #6f51ae;
+  color: #0177D5;
   font-weight: bold;
 }
 li > span {
@@ -51,13 +51,13 @@ li > span {
   text-align: center;
 }
 
-.oort-color,
+.mab-color,
 a {
-  color: #6f51ae;
+  color: #0177D5;
 }
 
 .button {
-  background-color: #6f51ae;
+  background-color: #0177D5;
   color: white;
   text-decoration-line: none;
   font-weight: 500;
