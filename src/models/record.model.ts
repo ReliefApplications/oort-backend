@@ -125,7 +125,10 @@ recordSchema.index(
   { unique: true, partialFilterExpression: { resource: { $exists: true } } }
 );
 
-recordSchema.index({ '$**': 'text' });
+recordSchema.index(
+  { '$**': 'text' },
+  { default_language: 'none', language_override: 'textSearchLanguage' }
+);
 recordSchema.index({ 'data.$**': 1 });
 
 recordSchema.index({ archived: 1, form: 1, resource: 1, createdAt: 1 });
