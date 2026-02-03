@@ -23,7 +23,32 @@ export function setupRecordWatcher(pubsub: PubSub): void {
   }).on('change', async (data) => {
     try {
       const recordId = data.documentKey._id;
+
+      // Check for opt-in notification trigger flag
+      // Only process notifications if explicitly requested via _triggerNotifications: true
+      let shouldTriggerNotifications = false;
+
+      if (data.operationType === 'insert') {
+        // For inserts, always consider we trigger notifications
+        shouldTriggerNotifications = true;
+      } else {
+        // For updates, check the updatedFields
+        const updatedFields = data.updateDescription?.updatedFields || {};
+        shouldTriggerNotifications =
+          updatedFields._triggerNotifications === true;
+      }
+
+      if (!shouldTriggerNotifications) {
+        // Skip notification processing - not opted in
+        return;
+      }
+
       const record = await Record.findById(recordId);
+
+      // Directly remove the notification flag
+      await Record.findByIdAndUpdate(recordId, {
+        _triggerNotifications: false,
+      });
 
       const type =
         data.operationType === 'update' ? 'onRecordUpdate' : 'onRecordCreation';
