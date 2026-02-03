@@ -6,6 +6,7 @@
   "appInvitation.accessButton": "Ouvrir l'application",
   "appInvitation.noteTitle": "Note : ",
   "appInvitation.noteContent": "Si vous obtenez une page 404, assurez-vous d'être connecté à votre compte. Vous pouvez également accéder directement à la page de l'application en cliquant sur le lien suivant ",
+  "appInvitation.footer": "Siège de l'UNESCO - 7 place de Fontenoy - 75352 Paris 7 SP - France",
   "createAccount.subject": "[MAB] {{senderName}} vous a invité à accéder à la plateforme de soumission en ligne du Programme sur l'Homme et la biosphère (MAB)",
   "createAccount.intro": "{{senderName}} vous a invité à accéder à la plateforme de soumission en ligne du Programme sur l'Homme et la biosphère (MAB).",
   "createAccount.platformInfo": "Cette plateforme vous permet d'examiner et de compléter les dossiers de nomination des réserves de biosphère ainsi que les soumissions de rapports périodiques.",

@@ -11,23 +11,17 @@ html
     div.frame.large
       div.center: img.head(src=logoUrl alt="UNESCO")
 
-      p #{t('createAccount.intro', { senderName: senderName })}
-      p #{t('createAccount.platformInfo')}
-      p #{t('createAccount.stepsIntro')}
-      ol
-        li: span #{t('createAccount.steps.1')}
-        li: span #{t('createAccount.steps.2')}
-        li: span #{t('createAccount.steps.3')}
-
-      p.center: a.button(href=registerUrl target="_blank") #{t('createAccount.registerButton')}
-
       p
-        strong #{t('createAccount.noteTitle')}
-        | #{t('createAccount.noteContent')}
-      p #{t('createAccount.thanks')}
-      p #{t('createAccount.signature')}
+        | #{t('appInvitation.sharedBy', { senderName: senderName })}
+        span.mab-color #{appName} 
+        | #{t('appInvitation.sharedApp')}
+      
+      p #{t('appInvitation.accessInfo', { senderName: senderName, appName: appName })}
+      p.center: a.button(href=url target="_blank") #{t('appInvitation.accessButton')}
       p
-        | #{t('createAccount.registerDirectly')}
-        a(href=registerUrl) #{registerUrl}
+        strong #{t('appInvitation.noteTitle')}
+        | #{t('appInvitation.noteContent')}
+        a(href=url) #{url}
+        |.
 
-      p.footer.center #{t('createAccount.footer')}
+      p.footer.center #{t('appInvitation.footer')}
