@@ -1,8 +1,7 @@
 {
-  "appInvitation.subject": "[MAB] {{senderName}} shared the {{appName}} application with you",
-  "appInvitation.sharedBy": "{{senderName}} shared the",
-  "appInvitation.sharedApp": "application with you",
-  "appInvitation.accessInfo": "{{senderName}} shared with you the {{appName}} application on the MAB platform.\nYou can access this application by clicking the button below:",
+  "appInvitation.subject": "[MAB] {{senderName}} has invited you to access the MAB Programme online submission platform",
+  "appInvitation.intro": "{{senderName}} has invited you to access the Man and the Biosphere (MAB) Programme online submission platform.",
+  "appInvitation.accessInfo": "You can access this application by clicking the button below:",
   "appInvitation.accessButton": "Open the application",
   "appInvitation.noteTitle": "Note: ",
   "appInvitation.noteContent": "If you get a 404 page, make sure you're signed in with your account. You can also access the application page directly at: ",

@@ -11,10 +11,7 @@ html
     div.frame.large
       div.center: img.head(src=logoUrl alt="UNESCO")
 
-      p
-        | #{t('appInvitation.sharedBy', { senderName: senderName })}
-        span.mab-color #{appName} 
-        | #{t('appInvitation.sharedApp')}
+      p #{t('createAccount.intro', { senderName: senderName })}
       
       p #{t('appInvitation.accessInfo', { senderName: senderName, appName: appName })}
       p.center: a.button(href=url target="_blank") #{t('appInvitation.accessButton')}
