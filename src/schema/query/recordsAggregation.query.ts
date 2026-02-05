@@ -36,6 +36,7 @@ import {
   CompositeFilterDescriptor,
   FilterDescriptor,
 } from '@const/compositeFilter';
+import { isFilterEmpty } from '@utils/filter/isFilterEmpty';
 
 /** Pagination default items per query */
 const DEFAULT_FIRST = 10;
@@ -82,6 +83,7 @@ type RecordsAggregationArgs = {
   at?: Date;
   sortField?: string;
   sortOrder?: string;
+  requireContextFilters: boolean;
   contextFilters?: CompositeFilterDescriptor;
   skipPagination?: boolean;
 };
@@ -214,6 +216,7 @@ export default {
   args: {
     resource: { type: new GraphQLNonNull(GraphQLID) },
     aggregation: { type: new GraphQLNonNull(GraphQLJSON) },
+    requireContextFilters: { type: GraphQLBoolean },
     contextFilters: { type: GraphQLJSON },
     mapping: { type: GraphQLJSON },
     first: { type: GraphQLInt },
@@ -274,6 +277,10 @@ export default {
           resource.fields.map((f) => f.name),
           aggregation.sourceFields
         );
+        // If aggregation requires context filters, & filter is empty, returns empty data
+        if (args.requireContextFilters && isFilterEmpty(args.contextFilters)) {
+          return { items: [], totalCount: 0 };
+        }
         aggregation.pipeline.unshift({
           type: 'filter',
           form: args.contextFilters,
