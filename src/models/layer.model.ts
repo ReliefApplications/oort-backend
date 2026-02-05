@@ -146,6 +146,7 @@ export interface Layer extends Document {
   layerDefinition?: LayerDefinition;
   popupInfo?: PopupElement[];
   timelineInfo?: TimelineInfo;
+  requireContextFilters: boolean;
   contextFilters: string;
   at: string;
 }
@@ -213,6 +214,7 @@ const layerSchema = new Schema(
         enum: Object.values(GeometryType),
       },
     },
+    requireContextFilters: Boolean,
     contextFilters: String,
     at: String,
   },

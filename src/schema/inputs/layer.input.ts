@@ -194,6 +194,7 @@ const LayerInputType = new GraphQLInputObjectType({
       }),
     },
     datasource: { type: LayerDataSourceInputType },
+    requireContextFilters: { type: GraphQLBoolean },
     contextFilters: { type: GraphQLString },
     at: { type: GraphQLString },
   }),
