@@ -110,8 +110,13 @@ const preprocessNotificationTemplate = (
     email: string;
   }
 ) => {
+  let body = content.body;
+  let subject = content.subject;
+  let title = content.title;
+  let description = content.description;
+
   if (notificationType === customNotificationType.email) {
-    content.body = preprocess(
+    body = preprocess(
       content.body,
       {
         fields,
@@ -119,7 +124,7 @@ const preprocessNotificationTemplate = (
       },
       user
     );
-    content.subject = preprocess(
+    subject = preprocess(
       content.subject,
       {
         fields,
@@ -128,7 +133,7 @@ const preprocessNotificationTemplate = (
       user
     );
   } else {
-    content.title = preprocess(
+    title = preprocess(
       content.title,
       {
         fields,
@@ -136,7 +141,7 @@ const preprocessNotificationTemplate = (
       },
       user
     );
-    content.description = preprocess(
+    description = preprocess(
       content.description,
       {
         fields,
@@ -145,7 +150,12 @@ const preprocessNotificationTemplate = (
       user
     );
   }
-  return content;
+  return {
+    subject,
+    body,
+    title,
+    description,
+  };
 };
 
 /**
