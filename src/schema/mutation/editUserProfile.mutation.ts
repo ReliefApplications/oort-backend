@@ -3,6 +3,7 @@ import { User } from '@models';
 import { UserProfileArgs, UserProfileInputType } from '../inputs';
 import { UserType } from '../types';
 import { AppAbility } from '@security/defineUserAbility';
+import permissions from '@const/permissions';
 import config from 'config';
 import { isEmpty, get } from 'lodash';
 import { logger } from '@lib/logger';
@@ -15,6 +16,9 @@ type EditUserProfileArgs = {
   profile: UserProfileArgs;
   id?: string | Types.ObjectId;
 };
+
+/** User attribute key used for assigned country. */
+const COUNTRY_ATTRIBUTE = 'country';
 
 /**
  * Edit User profile.
@@ -31,11 +35,21 @@ export default {
     graphQLAuthCheck(context);
     try {
       const currentUser = context.user;
+      const ability: AppAbility = currentUser.ability;
       const availableAttributes: {
         value: string;
         text: string;
         userCanEdit: boolean;
       }[] = config.get('user.attributes.list') || [];
+      const isEditingAnotherUser =
+        !!args.id && args.id.toString() !== currentUser._id.toString();
+      const canAssignCountryToOtherUsers =
+        isEditingAnotherUser &&
+        currentUser.roles?.some((role) =>
+          role.permissions?.some((permission) => {
+            return permission.type === permissions.canSeeUsers;
+          })
+        );
 
       // Create base update
       const update = {
@@ -53,6 +67,12 @@ export default {
       const attributes = {};
       if (args.profile.attributes) {
         for (const attribute in args.profile.attributes) {
+          if (
+            attribute === COUNTRY_ATTRIBUTE &&
+            !canAssignCountryToOtherUsers
+          ) {
+            continue;
+          }
           const targetAttribute = availableAttributes.find(
             (x) => x.value === attribute
           );
@@ -69,7 +89,6 @@ export default {
       }
 
       if (args.id) {
-        const ability: AppAbility = context.user.ability;
         if (ability.can('update', 'User')) {
           try {
             const user = await User.findById(args.id).select('attributes');
