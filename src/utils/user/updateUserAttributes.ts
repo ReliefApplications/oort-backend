@@ -13,7 +13,7 @@ export const updateUserAttributes = async (user: User): Promise<boolean> => {
   try {
     // todo: not suitable at all as it will only work for MAB!
     // Update profile with all BRs it can view
-    const editableBRs = await Record.aggregate([
+    let editableBRs = await Record.aggregate([
       {
         $match: {
           resource: new Types.ObjectId('682e1d63839fa743ca474aa0'),
@@ -41,6 +41,31 @@ export const updateUserAttributes = async (user: User): Promise<boolean> => {
     if (
       user.roles.find((x) => x._id.toString() === '6772988c2fc2a0c65c171444')
     ) {
+      countries = [user.attributes.country].filter((c) => c);
+    }
+    // National Focal Point
+    if (
+      user.roles.find((x) => x._id.toString() === '69971593bc875afe08a8dd6f')
+    ) {
+      // Editable BRs are all BRs in same country
+      if (user.attributes.country) {
+        editableBRs = await Record.aggregate([
+          {
+            $match: {
+              resource: new Types.ObjectId('682e1d63839fa743ca474aa0'),
+              'data.countries': user.attributes.country,
+            },
+          },
+          {
+            $project: {
+              _id: 1,
+              countries: '$data.countries',
+            },
+          },
+        ]);
+      } else {
+        editableBRs = [];
+      }
       countries = [user.attributes.country].filter((c) => c);
     }
     const viewableBRs = await Record.aggregate([
