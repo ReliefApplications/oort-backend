@@ -11,7 +11,7 @@ import { Types } from 'mongoose';
  */
 export const updateUserAttributes = async (user: User): Promise<boolean> => {
   try {
-    const userCountry = user.attributes?.country;
+    let userCountry = user.attributes?.country;
     const userRoles = user.roles || [];
 
     // todo: not suitable at all as it will only work for MAB!
@@ -30,6 +30,16 @@ export const updateUserAttributes = async (user: User): Promise<boolean> => {
         },
       },
     ]);
+    const editableBRCountries: string[] = uniq(
+      editableBRs.flatMap((doc) => doc.countries || [])
+    ).filter(Boolean);
+
+    // Keep profile country aligned with BR assignment.
+    if (!userCountry && editableBRCountries.length === 1) {
+      userCountry = editableBRCountries[0];
+      set(user, 'attributes.country', userCountry);
+    }
+
     let countries: string[] = [];
     // Biosphere manager
     if (
