@@ -11,6 +11,9 @@ import { Types } from 'mongoose';
  */
 export const updateUserAttributes = async (user: User): Promise<boolean> => {
   try {
+    const userCountry = user.attributes?.country;
+    const userRoles = user.roles || [];
+
     // todo: not suitable at all as it will only work for MAB!
     // Update profile with all BRs it can view
     let editableBRs = await Record.aggregate([
@@ -30,30 +33,30 @@ export const updateUserAttributes = async (user: User): Promise<boolean> => {
     let countries: string[] = [];
     // Biosphere manager
     if (
-      user.roles.find((x) => x._id.toString() === '677298832fc2a0c65c171418')
+      userRoles.find((x) => x._id.toString() === '677298832fc2a0c65c171418')
     ) {
       countries = uniq([
         ...editableBRs.flatMap((doc) => doc.countries || []),
-        user.attributes.country,
+        userCountry,
       ]).filter(Boolean);
     }
     // National commission
     if (
-      user.roles.find((x) => x._id.toString() === '6772988c2fc2a0c65c171444')
+      userRoles.find((x) => x._id.toString() === '6772988c2fc2a0c65c171444')
     ) {
-      countries = [user.attributes.country].filter((c) => c);
+      countries = [userCountry].filter((c) => c);
     }
     // National Focal Point
     if (
-      user.roles.find((x) => x._id.toString() === '69971593bc875afe08a8dd6f')
+      userRoles.find((x) => x._id.toString() === '69971593bc875afe08a8dd6f')
     ) {
       // Editable BRs are all BRs in same country
-      if (user.attributes.country) {
+      if (userCountry) {
         editableBRs = await Record.aggregate([
           {
             $match: {
               resource: new Types.ObjectId('682e1d63839fa743ca474aa0'),
-              'data.countries': user.attributes.country,
+              'data.countries': userCountry,
             },
           },
           {
@@ -66,7 +69,7 @@ export const updateUserAttributes = async (user: User): Promise<boolean> => {
       } else {
         editableBRs = [];
       }
-      countries = [user.attributes.country].filter((c) => c);
+      countries = [userCountry].filter((c) => c);
     }
     const viewableBRs = await Record.aggregate([
       {
@@ -83,19 +86,17 @@ export const updateUserAttributes = async (user: User): Promise<boolean> => {
         },
       },
     ]);
-    set(
-      user,
-      'attributes._can_edit_brs',
-      editableBRs.map((doc) => doc._id.toString())
-    );
-    set(
-      user,
-      'attributes._can_view_brs',
-      viewableBRs.map((doc) => doc._id.toString())
-    );
+    const editableBRIds = editableBRs.map((doc) => doc._id.toString());
+    const viewableBRIds = uniq([
+      ...viewableBRs.map((doc) => doc._id.toString()),
+      ...editableBRIds,
+    ]);
+
+    set(user, 'attributes._can_edit_brs', editableBRIds);
+    set(user, 'attributes._can_view_brs', viewableBRIds);
     user.markModified('attributes');
     return true;
-  } catch {
+  } catch (err) {
     logger.error('Fail to update user attributes');
     return false;
   }
