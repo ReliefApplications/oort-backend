@@ -75,21 +75,24 @@ export const buildProjectAggregation = (
         username: 1,
       },
     },
-    data: 0,
   };
-  const data = {};
-  if (queryFields && Array.isArray(queryFields)) {
+  const data: { [key: string]: number } = {};
+  if (queryFields && Array.isArray(queryFields) && queryFields.length > 0) {
     queryFields.forEach((field) => {
       data[field.name] = 1;
     });
-    staticProject.data = data;
   }
   calculatedFields.forEach((field) => {
-    staticProject.data[field.name] = 1;
+    data[field.name] = 1;
   });
   sort?.forEach((item: any) => {
-    staticProject.data[item.name] = 1;
+    if (item?.name) {
+      data[item.name] = 1;
+    }
   });
+  if (Object.keys(data).length > 0) {
+    staticProject.data = data;
+  }
   return [{ $project: staticProject }];
 };
 
