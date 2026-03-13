@@ -910,9 +910,19 @@ export default class Exporter {
               }
               return acc;
             }, {})
-          : data.find(
-              (obj) => obj[referenceData.valueField] === recordValue //affecting all row, not optimal but gets the job done
-            );
+          : (() => {
+              const dataRow = data.find(
+                (obj) => obj[referenceData.valueField] === recordValue
+              );
+              if (dataRow) {
+                const transformer = new DataTransformer(
+                  referenceData.fields,
+                  cloneDeep([dataRow])
+                );
+                return transformer.transformData()[0];
+              }
+              return dataRow;
+            })();
       };
 
       for (const record of records) {
