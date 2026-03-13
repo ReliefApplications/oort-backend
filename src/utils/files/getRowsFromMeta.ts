@@ -46,6 +46,18 @@ export const getRowsFromMeta = (columns: any[], records: any[]): any[] => {
   for (const record of records) {
     const row = {};
     for (const column of columns) {
+      // Super hotfix for export
+      if (
+        column.name === 'id_prod_please_name_potential_co_publishing_partners'
+      ) {
+        const value: any = get(record, column.field) || [];
+        const displayValue = value
+          .map((x: any) => get(x, 'co_publishing_partners'))
+          .join(', ');
+        set(row, column.name, displayValue);
+        continue;
+      }
+
       switch (column.type) {
         case 'owner': {
           let value: any = get(record, column.field);
