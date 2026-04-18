@@ -44,7 +44,7 @@ const email = new Email({
     },
   },
   i18n: {
-    locales: ['en', 'fr'],
+    locales: ['en', 'fr', 'es'],
     directory: path.resolve('src/assets/emails/i18n'),
     defaultLocale: 'en',
   },
