@@ -1,0 +1,28 @@
+# Build artifacts
+node_modules
+build
+dist
+coverage
+
+# Logs
+logs
+
+# Storage / uploads
+__blobstorage__
+files
+
+# Generated / vendor
+package-lock.json
+CHANGELOG.md
+CHANGELOG
+
+# Config / env
+.env
+.env.*
+config/local.*
+
+# Migrations template
+src/utils/migrations/template.ts
+
+# Legacy tests
+__tests__/old

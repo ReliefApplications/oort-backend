@@ -39,7 +39,7 @@ p {
 }
 
 li {
-  color: #0177D5;
+  color: #0177d5;
   font-weight: bold;
 }
 li > span {
@@ -53,11 +53,11 @@ li > span {
 
 .mab-color,
 a {
-  color: #0177D5;
+  color: #0177d5;
 }
 
 .button {
-  background-color: #0177D5;
+  background-color: #0177d5;
   color: white;
   text-decoration-line: none;
   font-weight: 500;
