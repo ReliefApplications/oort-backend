@@ -1,0 +1,23 @@
+{
+  "appInvitation.subject": "[MAB] {{senderName}} le ha invitado a acceder a la plataforma de presentación en línea del Programa MAB",
+  "appInvitation.intro": "{{senderName}} le ha invitado a acceder a la plataforma de presentación en línea del Programa sobre el Hombre y la Biosfera (MAB).",
+  "appInvitation.accessInfo": "Puede acceder a esta aplicación haciendo clic en el botón siguiente:",
+  "appInvitation.accessButton": "Abrir la aplicación",
+  "appInvitation.noteTitle": "Nota: ",
+  "appInvitation.noteContent": "Si obtiene una página 404, asegúrese de haber iniciado sesión con su cuenta. También puede acceder directamente a la página de la aplicación en: ",
+  "appInvitation.footer": "Sede de la UNESCO - 7 place de Fontenoy - 75352 París 7 SP - Francia",
+  "createAccount.subject": "[MAB] {{senderName}} le ha invitado a acceder a la plataforma de presentación en línea del Programa MAB",
+  "createAccount.intro": "{{senderName}} le ha invitado a acceder a la plataforma de presentación en línea del Programa sobre el Hombre y la Biosfera (MAB).",
+  "createAccount.platformInfo": "Esta plataforma le permite revisar y completar los expedientes de designación de Reservas de Biosfera, así como las presentaciones de los exámenes periódicos.",
+  "createAccount.stepsIntro": "Para crear su cuenta de usuario y acceder a la plataforma, siga los pasos a continuación:",
+  "createAccount.steps.1": "Cree su cuenta utilizando el enlace a continuación. Asegúrese de registrarse con la misma dirección de correo electrónico en la que ha recibido esta invitación.",
+  "createAccount.steps.2": "Valide su cuenta haciendo clic en el enlace de confirmación que se le enviará.",
+  "createAccount.steps.3": "Inicie sesión con sus credenciales. Le recomendamos guardar la página de inicio de sesión en sus favoritos para acceder más fácilmente en el futuro.",
+  "createAccount.registerButton": "Crear su cuenta",
+  "createAccount.noteTitle": "Importante: ",
+  "createAccount.noteContent": "Esta invitación es válida durante 7 días. Si caduca, pida a la persona que le invitó que le envíe una nueva invitación.",
+  "createAccount.thanks": "Gracias.",
+  "createAccount.signature": "La Secretaría del MAB",
+  "createAccount.registerDirectly": "También puede registrarse en: ",
+  "createAccount.footer": "Sede de la UNESCO - 7 place de Fontenoy - 75352 París 7 SP - Francia"
+}
