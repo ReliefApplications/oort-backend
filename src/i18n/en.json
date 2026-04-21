@@ -1,408 +1,380 @@
 {
-	"common": {
-		"errors": {
-			"authenticationTokenNotFound": "Missing bearer token.",
-			"badRequest": "Bad request.",
-			"dataNotFound": "Data not found",
-			"duplicatedGraphQLTypeName": "A form or a reference data with a similar name already exists. Please provide a different name.",
-			"fileExtensionNotAllowed": "File extension not allowed",
-			"fileSizeLimitReached": "File size exceed {{limit}}MB",
-			"internalServerError": "Internal Server Error",
-			"invalidAPI": "API cannot be reached.",
-			"invalidEmailsInput": "Wrong format detected. Please provide valid emails.",
-			"invalidGraphQLName": "The name can only consist of alphanumeric characters and underscores, and must start with a letter. Please choose a different name.",
-			"maximumPaginationLimit": "Maximum page size is {{paginationLimit}}. Please use a different page size.",
-			"permissionNotGranted": "Permission not granted.",
-			"userNotLogged": "You must be connected."
-		}
-	},
-	"history": {
-		"allFields": "All fields",
-		"filename": "Record history {{id}}",
-		"headers": {
-			"date": "Date",
-			"displayName": "Field title",
-			"exportDate": "Export date",
-			"fieldName": "Field name",
-			"fields": "Filtered fields",
-			"form": "Form",
-			"fromDate": "Filter from",
-			"new": "New value",
-			"old": "Old value",
-			"record": "Record",
-			"time": "Time",
-			"toDate": "Filter to",
-			"type": "Action type",
-			"user": "User"
-		},
-		"value": {
-			"add": "Add value",
-			"change": "Change value",
-			"delete": "Delete value",
-			"pull": "Remove element",
-			"push": "Add element"
-		}
-	},
-	"mutations": {
-		"aggregation": {
-			"add": {
-				"errors": {
-					"invalidArguments": "Resource or reference data and aggregation must be provided when adding a new aggregation"
-				}
-			},
-			"delete": {
-				"errors": {
-					"invalidArguments": "Resource or reference data and aggregation id must be provided when deleting an aggregation"
-				}
-			},
-			"edit": {
-				"errors": {
-					"invalidArguments": "Resource or reference data and aggregation and aggregation id must be provided when editing an aggregation"
-				}
-			}
-		},
-		"apiConfiguration": {
-			"add": {
-				"errors": {
-					"invalidArguments": "API name must be provided."
-				}
-			},
-			"edit": {
-				"errors": {
-					"invalidArguments": "Either name, status, authType, endpoint, graphqlEndpoint, pingUrl, settings or permissions must be provided."
-				}
-			}
-		},
-		"application": {
-			"content": {
-				"duplicate": {
-					"errors": {
-						"incompatibleArguments": "Step id and page id cannot be both provided.",
-						"missingArguments": "Step id or page id must be provided."
-					}
-				}
-			},
-			"duplicate": {
-				"errors": {
-					"invalidArguments": "Application name must be provided.",
-					"namedDuplicated": "Application with name {{name}} already exists. This name cannot be used. Please provide a different name."
-				}
-			},
-			"edit": {
-				"errors": {
-					"invalidArguments": "Either name, status, pages, settings or permissions must be provided."
-				}
-			}
-		},
-		"customNotification": {
-			"add": {
-				"errors": {
-					"maximumFrequency": "Please set a frequency lower than or equal to than once per hour."
-				}
-			},
-			"edit": {
-				"errors": {
-					"maximumFrequency": "Please set a frequency lower than or equal to than once per hour."
-				}
-			}
-		},
-		"dashboard": {
-			"add": {
-				"errors": {
-					"invalidArguments": "Dashboard name must be provided.",
-					"invalidPageType": "The provided page is not a dashboard."
-				}
-			},
-			"addWithContext": {
-				"errors": {
-					"invalidArguments": "You need to provide one, and only one, argument between a reference data element and a record.",
-					"invalidContextEl": "The context element does not exist",
-					"invalidElement": "Provided element must be a string or a number"
-				}
-			},
-			"edit": {
-				"errors": {
-					"invalidArguments": "Either name or structure must be provided."
-				}
-			}
-		},
-		"form": {
-			"add": {
-				"errors": {
-					"koboForm": "An error occurred when trying to create a new form from a Kobo form",
-					"resourceDuplicated": "An existing resource with that name already exists."
-				}
-			},
-			"edit": {
-				"errors": {
-					"coreFieldMissing": "Core field missing : {{name}}. Please implement this field.",
-					"defaultFieldDuplicated": "Default field name duplicated: {{name}}. This name cannot be used. Please provide a different name.",
-					"relatedNameDuplicated": "Related name duplicated : {{name}}. The target Resource already contains a field with that name. Please provide a different name."
-				}
-			}
-		},
-		"group": {
-			"add": {
-				"errors": {
-					"manualCreationDisabled": "Manual creation of groups is disabled."
-				}
-			},
-			"fetch": {
-				"errors": {
-					"fetchRequestFailed": "Failed to fetch groups.",
-					"groupsFromServiceDisabled": "Fetching groups from service not available."
-				}
-			}
-		},
-		"layout": {
-			"add": {
-				"errors": {
-					"invalidAddPageArguments": "Page type must be an available type and linked application ID must be provided."
-				}
-			},
-			"delete": {
-				"errors": {
-					"invalidArguments": "Resource and aggregation id must be provided when you are delete Aggregation"
-				}
-			},
-			"edit": {
-				"errors": {
-					"invalidAddPageArguments": "Page type must be an available type and linked application ID must be provided."
-				}
-			}
-		},
-		"notification": {
-			"publish": {
-				"errors": {
-					"invalidArguments": "Action, content and channel arguments must all be provided."
-				}
-			},
-			"see": {
-				"errors": {
-					"invalidArguments": "Notifications IDs must be provided."
-				}
-			}
-		},
-		"page": {
-			"add": {
-				"errors": {
-					"invalidArguments": "Page type must be an available type and linked application ID must be provided."
-				}
-			},
-			"edit": {
-				"context": {
-					"errors": {
-						"invalidArguments": "You cannot provide both a reference data and a resource as datasource."
-					}
-				},
-				"errors": {
-					"invalidArguments": "Either name, permissions, visibility or icon must be provided to update the page."
-				}
-			}
-		},
-		"record": {
-			"add": {
-				"recordAlreadyExists": "Record with specified ID already exists"
-			},
-			"convert": {
-				"errors": {
-					"invalidConversion": "Cannot convert this record to this target form type."
-				}
-			},
-			"edit": {
-				"errors": {
-					"invalidArguments": "Either data or version must be provided.",
-					"wrongTemplateProvided": "Template must sharing the same resource as the parent form of the edited record."
-				}
-			},
-			"errors": {
-				"missingParameters": "Missing query parameters: record id or uniqueField and uniqueValue"
-			}
-		},
-		"reference": {
-			"add": {
-				"errors": {
-					"invalidArguments": "Name must be provided."
-				}
-			},
-			"edit": {
-				"errors": {
-					"formResDuplicated": "A form or a resource with that name already exists.",
-					"invalidArguments": "Either name, type, pageInfo, apiConfiguration, query, fields, valueField, path, data or permissions must be provided."
-				}
-			}
-		},
-		"resource": {
-			"edit": {
-				"errors": {
-					"calculatedFieldTooLong": "The expression is too big.",
-					"field": {
-						"missingReadPermissionOnResource": "Please provide permission to read or create records before setting visible fields.",
-						"missingWritePermissionOnResource": "Please provide permission to update or create records before setting editable fields.",
-						"notFound": "Field does not exist.",
-						"notVisible": "Please set field as visible before setting it as editable."
-					},
-					"invalidArguments": "Either fields or permissions must be provided.",
-					"permission": {
-						"notVisible": "Please provide permission to read records before providing permission to edit them."
-					}
-				}
-			}
-		},
-		"step": {
-			"add": {
-				"errors": {
-					"invalidArguments": "Name must be provided."
-				}
-			},
-			"edit": {
-				"errors": {
-					"invalidArguments": "Either name, type, content, icon or permissions must be provided."
-				}
-			}
-		},
-		"user": {
-			"edit": {
-				"errors": {
-					"invalidArguments": "Either groups or roles must be provided."
-				}
-			}
-		},
-		"workflow": {
-			"add": {
-				"errors": {
-					"invalidArguments": "Page id must be provided.",
-					"pageTypeError": "The page passed in argument is not a workflow type"
-				}
-			},
-			"edit": {
-				"errors": {
-					"invalidArguments": "Either name or steps must be provided."
-				}
-			}
-		}
-	},
-	"query": {
-		"records": {
-			"aggregation": {
-				"errors": {
-					"invalidAggregation": "Error with the aggregation format passed, missing a core parameter such as dataSource, pipeline, etc."
-				}
-			}
-		}
-	},
-	"routes": {
-		"download": {
-			"errors": {
-				"missingParameters": "Missing parameters"
-			}
-		},
-		"email": {
-			"errors": {
-				"missingFile": "No file detected."
-			}
-		},
-		"gis": {
-			"feature": {
-				"errors": {
-					"invalidFields": "Please provide either geoField or latitudeField and longitudeField to the request parameters.",
-					"missingPolygonGeoField": "Please provide a geoField when querying polygons.",
-					"unexpected": "System failed to query data."
-				}
-			},
-			"shapefile": {
-				"errors": {
-					"format": {
-						"crs": "Please ensure the coordinate reference system (CRS) WGS 84 World Geodetic System (ESPG: 4326) is used for all layers and upload again.",
-						"gaps": "Geometry error: There are one or more gaps (empty spaces) between zonation polygons. Please correct these errors and upload the files again.",
-						"missingPolygons": "Formatting error: The shapefile must be comprised of three (3) polygons, one each for the core area(s), buffer zone(s), and transition area(s). Please correct these errors and upload the files again.",
-						"missingZonations": "Formatting error: The attribute table must describe the zonation polygons using the labels Core, Buffer, and Transition (in English). Please correct these errors and upload the files again.",
-						"overlapping": "Geometry error: There are one or more overlapping zonation polygons. Please correct these errors and upload the files again.",
-						"shapefile": "Formatting error: Please upload a single .zip file including all linked .shp, .shx, .dbf, and .prj."
-					},
-					"processing": "Processing error: The shapefile could not be processed. Please ensure that the file is correctly formatted and try again."
-				}
-			}
-		},
-		"permissions": {
-			"attributes": {
-				"errors": {
-					"cannotFetchChoices": "Cannot fetch choices for this attribute."
-				}
-			}
-		},
-		"style": {
-			"errors": {
-				"notFound": "Unable to load application's style"
-			},
-			"noStyle": "This application don't have a custom style file."
-		},
-		"upload": {
-			"errors": {
-				"invalidUserUpload": "Please provide email and role for each user.",
-				"missingFile": "No file detected.",
-				"requiredField": "Required question missing: {{field}}",
-				"resourceNotFound": "Could not find item on line {{line}} for question {{field}}."
-			}
-		}
-	},
-	"server": {
-		"middlewares": {
-			"cors": {
-				"errors": {
-					"invalidCORS": "The CORS policy for this site does not allow access from the specified Origin."
-				}
-			}
-		}
-	},
-	"utils": {
-		"aggregation": {
-			"buildPipeline": {
-				"errors": {
-					"invalidCustomStage": "Custom stage cannot be parsed correctly."
-				}
-			}
-		},
-		"files": {
-			"uploadFile": {
-				"errors": {
-					"fileCannotBeUploaded": "File cannot be uploaded."
-				}
-			}
-		},
-		"form": {
-			"extractFields": {
-				"errors": {
-					"missingDataField": "Please add a value name to all questions, inside Data tab.",
-					"missingRelatedField": "Please add a related name to {{name}} question."
-				}
-			},
-			"findDuplicateFields": {
-				"errors": {
-					"dataFieldDuplicated": "Data name duplicated : {{name}}. Please provide different value names for all questions."
-				}
-			},
-			"getNextId": {
-				"errors": {
-					"incrementalIdError": "Error with the incremental ID for records",
-					"invalidShape": "Error creating new record, ID shape for form is invalid"
-				}
-			}
-		},
-		"user": {
-			"updateUserAttributes": {
-				"errors": {
-					"missingObjectParameters": "Missing {{object}} parameters"
-				}
-			}
-		},
-		"validators": {
-			"validateName": {
-				"errors": {
-					"invalidFieldName": "The name of the field {{field}} is invalid: {{err}}",
-					"usageOfProtectedName": "This name is protected and cannot be used. Please choose a different name."
-				}
-			}
-		}
-	}
+  "common": {
+    "errors": {
+      "authenticationTokenNotFound": "Missing bearer token.",
+      "badRequest": "Bad request.",
+      "dataNotFound": "Data not found",
+      "duplicatedGraphQLTypeName": "A form or a reference data with a similar name already exists. Please provide a different name.",
+      "fileExtensionNotAllowed": "File extension not allowed",
+      "fileSizeLimitReached": "File size exceed {{limit}}MB",
+      "internalServerError": "Internal Server Error",
+      "invalidAPI": "API cannot be reached.",
+      "invalidEmailsInput": "Wrong format detected. Please provide valid emails.",
+      "invalidGraphQLName": "The name can only consist of alphanumeric characters and underscores, and must start with a letter. Please choose a different name.",
+      "maximumPaginationLimit": "Maximum page size is {{paginationLimit}}. Please use a different page size.",
+      "permissionNotGranted": "Permission not granted.",
+      "userNotLogged": "You must be connected."
+    }
+  },
+  "history": {
+    "allFields": "All fields",
+    "filename": "Record history {{id}}",
+    "headers": {
+      "date": "Date",
+      "displayName": "Field title",
+      "exportDate": "Export date",
+      "fieldName": "Field name",
+      "fields": "Filtered fields",
+      "form": "Form",
+      "fromDate": "Filter from",
+      "new": "New value",
+      "old": "Old value",
+      "record": "Record",
+      "time": "Time",
+      "toDate": "Filter to",
+      "type": "Action type",
+      "user": "User"
+    },
+    "value": {
+      "add": "Add value",
+      "change": "Change value",
+      "delete": "Delete value",
+      "pull": "Remove element",
+      "push": "Add element"
+    }
+  },
+  "mutations": {
+    "aggregation": {
+      "add": {
+        "errors": {
+          "invalidArguments": "Resource or reference data and aggregation must be provided when adding a new aggregation"
+        }
+      },
+      "delete": {
+        "errors": {
+          "invalidArguments": "Resource or reference data and aggregation id must be provided when deleting an aggregation"
+        }
+      },
+      "edit": {
+        "errors": {
+          "invalidArguments": "Resource or reference data and aggregation and aggregation id must be provided when editing an aggregation"
+        }
+      }
+    },
+    "apiConfiguration": {
+      "add": { "errors": { "invalidArguments": "API name must be provided." } },
+      "edit": {
+        "errors": {
+          "invalidArguments": "Either name, status, authType, endpoint, graphqlEndpoint, pingUrl, settings or permissions must be provided."
+        }
+      }
+    },
+    "application": {
+      "content": {
+        "duplicate": {
+          "errors": {
+            "incompatibleArguments": "Step id and page id cannot be both provided.",
+            "missingArguments": "Step id or page id must be provided."
+          }
+        }
+      },
+      "duplicate": {
+        "errors": {
+          "invalidArguments": "Application name must be provided.",
+          "namedDuplicated": "Application with name {{name}} already exists. This name cannot be used. Please provide a different name."
+        }
+      },
+      "edit": {
+        "errors": {
+          "invalidArguments": "Either name, status, pages, settings or permissions must be provided."
+        }
+      }
+    },
+    "customNotification": {
+      "add": {
+        "errors": {
+          "maximumFrequency": "Please set a frequency lower than or equal to than once per hour."
+        }
+      },
+      "edit": {
+        "errors": {
+          "maximumFrequency": "Please set a frequency lower than or equal to than once per hour."
+        }
+      }
+    },
+    "dashboard": {
+      "add": {
+        "errors": {
+          "invalidArguments": "Dashboard name must be provided.",
+          "invalidPageType": "The provided page is not a dashboard."
+        }
+      },
+      "addWithContext": {
+        "errors": {
+          "invalidArguments": "You need to provide one, and only one, argument between a reference data element and a record.",
+          "invalidContextEl": "The context element does not exist",
+          "invalidElement": "Provided element must be a string or a number"
+        }
+      },
+      "edit": {
+        "errors": {
+          "invalidArguments": "Either name or structure must be provided."
+        }
+      }
+    },
+    "form": {
+      "add": {
+        "errors": {
+          "koboForm": "An error occurred when trying to create a new form from a Kobo form",
+          "resourceDuplicated": "An existing resource with that name already exists."
+        }
+      },
+      "edit": {
+        "errors": {
+          "coreFieldMissing": "Core field missing : {{name}}. Please implement this field.",
+          "defaultFieldDuplicated": "Default field name duplicated: {{name}}. This name cannot be used. Please provide a different name.",
+          "relatedNameDuplicated": "Related name duplicated : {{name}}. The target Resource already contains a field with that name. Please provide a different name."
+        }
+      }
+    },
+    "group": {
+      "add": {
+        "errors": {
+          "manualCreationDisabled": "Manual creation of groups is disabled."
+        }
+      },
+      "fetch": {
+        "errors": {
+          "fetchRequestFailed": "Failed to fetch groups.",
+          "groupsFromServiceDisabled": "Fetching groups from service not available."
+        }
+      }
+    },
+    "layout": {
+      "add": {
+        "errors": {
+          "invalidAddPageArguments": "Page type must be an available type and linked application ID must be provided."
+        }
+      },
+      "delete": {
+        "errors": {
+          "invalidArguments": "Resource and aggregation id must be provided when you are delete Aggregation"
+        }
+      },
+      "edit": {
+        "errors": {
+          "invalidAddPageArguments": "Page type must be an available type and linked application ID must be provided."
+        }
+      }
+    },
+    "notification": {
+      "publish": {
+        "errors": {
+          "invalidArguments": "Action, content and channel arguments must all be provided."
+        }
+      },
+      "see": {
+        "errors": { "invalidArguments": "Notifications IDs must be provided." }
+      }
+    },
+    "page": {
+      "add": {
+        "errors": {
+          "invalidArguments": "Page type must be an available type and linked application ID must be provided."
+        }
+      },
+      "edit": {
+        "context": {
+          "errors": {
+            "invalidArguments": "You cannot provide both a reference data and a resource as datasource."
+          }
+        },
+        "errors": {
+          "invalidArguments": "Either name, permissions, visibility or icon must be provided to update the page."
+        }
+      }
+    },
+    "record": {
+      "add": {
+        "recordAlreadyExists": "Record with specified ID already exists"
+      },
+      "convert": {
+        "errors": {
+          "invalidConversion": "Cannot convert this record to this target form type."
+        }
+      },
+      "edit": {
+        "errors": {
+          "invalidArguments": "Either data or version must be provided.",
+          "wrongTemplateProvided": "Template must sharing the same resource as the parent form of the edited record."
+        }
+      },
+      "errors": {
+        "missingParameters": "Missing query parameters: record id or uniqueField and uniqueValue"
+      }
+    },
+    "reference": {
+      "add": { "errors": { "invalidArguments": "Name must be provided." } },
+      "edit": {
+        "errors": {
+          "formResDuplicated": "A form or a resource with that name already exists.",
+          "invalidArguments": "Either name, type, pageInfo, apiConfiguration, query, fields, valueField, path, data or permissions must be provided."
+        }
+      }
+    },
+    "resource": {
+      "edit": {
+        "errors": {
+          "calculatedFieldTooLong": "The expression is too big.",
+          "field": {
+            "missingReadPermissionOnResource": "Please provide permission to read or create records before setting visible fields.",
+            "missingWritePermissionOnResource": "Please provide permission to update or create records before setting editable fields.",
+            "notFound": "Field does not exist.",
+            "notVisible": "Please set field as visible before setting it as editable."
+          },
+          "invalidArguments": "Either fields or permissions must be provided.",
+          "permission": {
+            "notVisible": "Please provide permission to read records before providing permission to edit them."
+          }
+        }
+      }
+    },
+    "step": {
+      "add": { "errors": { "invalidArguments": "Name must be provided." } },
+      "edit": {
+        "errors": {
+          "invalidArguments": "Either name, type, content, icon or permissions must be provided."
+        }
+      }
+    },
+    "user": {
+      "edit": {
+        "errors": {
+          "invalidArguments": "Either groups or roles must be provided."
+        }
+      }
+    },
+    "workflow": {
+      "add": {
+        "errors": {
+          "invalidArguments": "Page id must be provided.",
+          "pageTypeError": "The page passed in argument is not a workflow type"
+        }
+      },
+      "edit": {
+        "errors": {
+          "invalidArguments": "Either name or steps must be provided."
+        }
+      }
+    }
+  },
+  "query": {
+    "records": {
+      "aggregation": {
+        "errors": {
+          "invalidAggregation": "Error with the aggregation format passed, missing a core parameter such as dataSource, pipeline, etc."
+        }
+      }
+    }
+  },
+  "routes": {
+    "download": { "errors": { "missingParameters": "Missing parameters" } },
+    "email": { "errors": { "missingFile": "No file detected." } },
+    "gis": {
+      "feature": {
+        "errors": {
+          "invalidFields": "Please provide either geoField or latitudeField and longitudeField to the request parameters.",
+          "missingPolygonGeoField": "Please provide a geoField when querying polygons.",
+          "unexpected": "System failed to query data."
+        }
+      },
+      "shapefile": {
+        "errors": {
+          "format": {
+            "crs": "Please ensure the coordinate reference system (CRS) WGS 84 World Geodetic System (ESPG: 4326) is used for all layers and upload again.",
+            "gaps": "Geometry error: There are one or more gaps (empty spaces) between zonation polygons. Please correct these errors and upload the files again.",
+            "missingPolygons": "Formatting error: The shapefile must be comprised of three (3) polygons, one each for the core area(s), buffer zone(s), and transition area(s). Please correct these errors and upload the files again.",
+            "missingZonations": "Formatting error: The attribute table must describe the zonation polygons using the labels Core, Buffer, and Transition (in English). Please correct these errors and upload the files again.",
+            "overlapping": "Geometry error: There are one or more overlapping zonation polygons. Please correct these errors and upload the files again.",
+            "shapefile": "Formatting error: Please upload a single .zip file including all linked .shp, .shx, .dbf, and .prj."
+          },
+          "processing": "Processing error: The shapefile could not be processed. Please ensure that the file is correctly formatted and try again."
+        }
+      }
+    },
+    "permissions": {
+      "attributes": {
+        "errors": {
+          "cannotFetchChoices": "Cannot fetch choices for this attribute."
+        }
+      }
+    },
+    "style": {
+      "errors": { "notFound": "Unable to load application's style" },
+      "noStyle": "This application don't have a custom style file."
+    },
+    "upload": {
+      "errors": {
+        "invalidUserUpload": "Please provide email and role for each user.",
+        "missingFile": "No file detected.",
+        "requiredField": "Required question missing: {{field}}",
+        "resourceNotFound": "Could not find item on line {{line}} for question {{field}}."
+      }
+    }
+  },
+  "server": {
+    "middlewares": {
+      "cors": {
+        "errors": {
+          "invalidCORS": "The CORS policy for this site does not allow access from the specified Origin."
+        }
+      }
+    }
+  },
+  "utils": {
+    "aggregation": {
+      "buildPipeline": {
+        "errors": {
+          "invalidCustomStage": "Custom stage cannot be parsed correctly."
+        }
+      }
+    },
+    "files": {
+      "uploadFile": {
+        "errors": { "fileCannotBeUploaded": "File cannot be uploaded." }
+      }
+    },
+    "form": {
+      "extractFields": {
+        "errors": {
+          "missingDataField": "Please add a value name to all questions, inside Data tab.",
+          "missingRelatedField": "Please add a related name to {{name}} question."
+        }
+      },
+      "findDuplicateFields": {
+        "errors": {
+          "dataFieldDuplicated": "Data name duplicated : {{name}}. Please provide different value names for all questions."
+        }
+      },
+      "getNextId": {
+        "errors": {
+          "incrementalIdError": "Error with the incremental ID for records",
+          "invalidShape": "Error creating new record, ID shape for form is invalid"
+        }
+      }
+    },
+    "user": {
+      "updateUserAttributes": {
+        "errors": { "missingObjectParameters": "Missing {{object}} parameters" }
+      }
+    },
+    "validators": {
+      "validateName": {
+        "errors": {
+          "invalidFieldName": "The name of the field {{field}} is invalid: {{err}}",
+          "usageOfProtectedName": "This name is protected and cannot be used. Please choose a different name."
+        }
+      }
+    }
+  }
 }

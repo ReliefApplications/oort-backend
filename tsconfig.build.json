@@ -1,5 +1,4 @@
 {
-  "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./build"
   },
@@ -11,5 +10,6 @@
     // exclude test files
     "jest.config.ts",
     "__tests__/**/*"
-  ]
+  ],
+  "extends": "./tsconfig.json"
 }

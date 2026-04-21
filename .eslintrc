@@ -1,18 +1,4 @@
 {
-  "root": true,
-  "parser": "@typescript-eslint/parser",
-  "plugins": [
-    "import",
-    "@typescript-eslint",
-    "prettier",
-    "jsdoc",
-    "deprecation"
-  ],
-  "parserOptions": {
-    "ecmaVersion": 11,
-    "sourceType": "module",
-    "project": "./tsconfig.json"
-  },
   "extends": [
     "airbnb-typescript/base",
     "plugin:@typescript-eslint/eslint-recommended",
@@ -20,6 +6,20 @@
     "plugin:jsdoc/recommended",
     "prettier"
   ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 11,
+    "sourceType": "module",
+    "project": "./tsconfig.json"
+  },
+  "plugins": [
+    "import",
+    "@typescript-eslint",
+    "prettier",
+    "jsdoc",
+    "deprecation"
+  ],
+  "root": true,
   "rules": {
     "prettier/prettier": 2,
     "@typescript-eslint/no-explicit-any": "off",

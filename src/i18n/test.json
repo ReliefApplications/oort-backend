@@ -1,408 +1,255 @@
 {
-	"common": {
-		"errors": {
-			"authenticationTokenNotFound": "******",
-			"badRequest": "******",
-			"dataNotFound": "******",
-			"duplicatedGraphQLTypeName": "******",
-			"fileExtensionNotAllowed": "******",
-			"fileSizeLimitReached": "****** {{limit}} ******",
-			"internalServerError": "******",
-			"invalidAPI": "******",
-			"invalidEmailsInput": "******",
-			"invalidGraphQLName": "******",
-			"maximumPaginationLimit": "****** {{paginationLimit}} ******",
-			"permissionNotGranted": "******",
-			"userNotLogged": "******"
-		}
-	},
-	"history": {
-		"allFields": "******",
-		"filename": "****** {{id}}",
-		"headers": {
-			"date": "******",
-			"displayName": "******",
-			"exportDate": "******",
-			"fieldName": "******",
-			"fields": "******",
-			"form": "******",
-			"fromDate": "******",
-			"new": "******",
-			"old": "******",
-			"record": "******",
-			"time": "******",
-			"toDate": "******",
-			"type": "******",
-			"user": "******"
-		},
-		"value": {
-			"add": "******",
-			"change": "******",
-			"delete": "******",
-			"pull": "******",
-			"push": "******"
-		}
-	},
-	"mutations": {
-		"aggregation": {
-			"add": {
-				"errors": {
-					"invalidArguments": "******"
-				}
-			},
-			"delete": {
-				"errors": {
-					"invalidArguments": "******"
-				}
-			},
-			"edit": {
-				"errors": {
-					"invalidArguments": "******"
-				}
-			}
-		},
-		"apiConfiguration": {
-			"add": {
-				"errors": {
-					"invalidArguments": "******"
-				}
-			},
-			"edit": {
-				"errors": {
-					"invalidArguments": "******"
-				}
-			}
-		},
-		"application": {
-			"content": {
-				"duplicate": {
-					"errors": {
-						"incompatibleArguments": "******",
-						"missingArguments": "******"
-					}
-				}
-			},
-			"duplicate": {
-				"errors": {
-					"invalidArguments": "******",
-					"namedDuplicated": "****** {{name}} ******"
-				}
-			},
-			"edit": {
-				"errors": {
-					"invalidArguments": "******"
-				}
-			}
-		},
-		"customNotification": {
-			"add": {
-				"errors": {
-					"maximumFrequency": "******"
-				}
-			},
-			"edit": {
-				"errors": {
-					"maximumFrequency": "******"
-				}
-			}
-		},
-		"dashboard": {
-			"add": {
-				"errors": {
-					"invalidArguments": "******",
-					"invalidPageType": "******"
-				}
-			},
-			"addWithContext": {
-				"errors": {
-					"invalidArguments": "******",
-					"invalidContextEl": "******",
-					"invalidElement": "******"
-				}
-			},
-			"edit": {
-				"errors": {
-					"invalidArguments": "******"
-				}
-			}
-		},
-		"form": {
-			"add": {
-				"errors": {
-					"koboForm": "******",
-					"resourceDuplicated": "******"
-				}
-			},
-			"edit": {
-				"errors": {
-					"coreFieldMissing": "****** {{name}} ******",
-					"defaultFieldDuplicated": "****** {{name}} ******",
-					"relatedNameDuplicated": "****** {{name}} ******"
-				}
-			}
-		},
-		"group": {
-			"add": {
-				"errors": {
-					"manualCreationDisabled": "******"
-				}
-			},
-			"fetch": {
-				"errors": {
-					"fetchRequestFailed": "******",
-					"groupsFromServiceDisabled": "******"
-				}
-			}
-		},
-		"layout": {
-			"add": {
-				"errors": {
-					"invalidAddPageArguments": "******"
-				}
-			},
-			"delete": {
-				"errors": {
-					"invalidArguments": "******"
-				}
-			},
-			"edit": {
-				"errors": {
-					"invalidAddPageArguments": "******"
-				}
-			}
-		},
-		"notification": {
-			"publish": {
-				"errors": {
-					"invalidArguments": "******"
-				}
-			},
-			"see": {
-				"errors": {
-					"invalidArguments": "******"
-				}
-			}
-		},
-		"page": {
-			"add": {
-				"errors": {
-					"invalidArguments": "******"
-				}
-			},
-			"edit": {
-				"context": {
-					"errors": {
-						"invalidArguments": "******"
-					}
-				},
-				"errors": {
-					"invalidArguments": "******"
-				}
-			}
-		},
-		"record": {
-			"add": {
-				"recordAlreadyExists": "******"
-			},
-			"convert": {
-				"errors": {
-					"invalidConversion": "******"
-				}
-			},
-			"edit": {
-				"errors": {
-					"invalidArguments": "******",
-					"wrongTemplateProvided": "******"
-				}
-			},
-			"errors": {
-				"missingParameters": "******"
-			}
-		},
-		"reference": {
-			"add": {
-				"errors": {
-					"invalidArguments": "******"
-				}
-			},
-			"edit": {
-				"errors": {
-					"formResDuplicated": "******",
-					"invalidArguments": "******"
-				}
-			}
-		},
-		"resource": {
-			"edit": {
-				"errors": {
-					"calculatedFieldTooLong": "******",
-					"field": {
-						"missingReadPermissionOnResource": "******",
-						"missingWritePermissionOnResource": "******",
-						"notFound": "******",
-						"notVisible": "******"
-					},
-					"invalidArguments": "******",
-					"permission": {
-						"notVisible": "******"
-					}
-				}
-			}
-		},
-		"step": {
-			"add": {
-				"errors": {
-					"invalidArguments": "******"
-				}
-			},
-			"edit": {
-				"errors": {
-					"invalidArguments": "******"
-				}
-			}
-		},
-		"user": {
-			"edit": {
-				"errors": {
-					"invalidArguments": "******"
-				}
-			}
-		},
-		"workflow": {
-			"add": {
-				"errors": {
-					"invalidArguments": "******",
-					"pageTypeError": "******"
-				}
-			},
-			"edit": {
-				"errors": {
-					"invalidArguments": "******"
-				}
-			}
-		}
-	},
-	"query": {
-		"records": {
-			"aggregation": {
-				"errors": {
-					"invalidAggregation": "******"
-				}
-			}
-		}
-	},
-	"routes": {
-		"download": {
-			"errors": {
-				"missingParameters": "******"
-			}
-		},
-		"email": {
-			"errors": {
-				"missingFile": "******"
-			}
-		},
-		"gis": {
-			"feature": {
-				"errors": {
-					"invalidFields": "******",
-					"missingPolygonGeoField": "******",
-					"unexpected": "******"
-				}
-			},
-			"shapefile": {
-				"errors": {
-					"format": {
-						"crs": "******",
-						"gaps": "******",
-						"missingPolygons": "******",
-						"missingZonations": "******",
-						"overlapping": "******",
-						"shapefile": "******"
-					},
-					"processing": "******"
-				}
-			}
-		},
-		"permissions": {
-			"attributes": {
-				"errors": {
-					"cannotFetchChoices": "******"
-				}
-			}
-		},
-		"style": {
-			"errors": {
-				"notFound": "******"
-			},
-			"noStyle": "******"
-		},
-		"upload": {
-			"errors": {
-				"invalidUserUpload": "******",
-				"missingFile": "******",
-				"requiredField": "****** {{field}}",
-				"resourceNotFound": "****** {{line}} ****** {{field}} ******"
-			}
-		}
-	},
-	"server": {
-		"middlewares": {
-			"cors": {
-				"errors": {
-					"invalidCORS": "******"
-				}
-			}
-		}
-	},
-	"utils": {
-		"aggregation": {
-			"buildPipeline": {
-				"errors": {
-					"invalidCustomStage": "******"
-				}
-			}
-		},
-		"files": {
-			"uploadFile": {
-				"errors": {
-					"fileCannotBeUploaded": "******"
-				}
-			}
-		},
-		"form": {
-			"extractFields": {
-				"errors": {
-					"missingDataField": "******",
-					"missingRelatedField": "****** {{name}} ******"
-				}
-			},
-			"findDuplicateFields": {
-				"errors": {
-					"dataFieldDuplicated": "****** {{name}} ******"
-				}
-			},
-			"getNextId": {
-				"errors": {
-					"incrementalIdError": "******",
-					"invalidShape": "******"
-				}
-			}
-		},
-		"user": {
-			"updateUserAttributes": {
-				"errors": {
-					"missingObjectParameters": "****** {{object}} ******"
-				}
-			}
-		},
-		"validators": {
-			"validateName": {
-				"errors": {
-					"invalidFieldName": "****** {{field}} ****** {{err}}",
-					"usageOfProtectedName": "******"
-				}
-			}
-		}
-	}
+  "common": {
+    "errors": {
+      "authenticationTokenNotFound": "******",
+      "badRequest": "******",
+      "dataNotFound": "******",
+      "duplicatedGraphQLTypeName": "******",
+      "fileExtensionNotAllowed": "******",
+      "fileSizeLimitReached": "****** {{limit}} ******",
+      "internalServerError": "******",
+      "invalidAPI": "******",
+      "invalidEmailsInput": "******",
+      "invalidGraphQLName": "******",
+      "maximumPaginationLimit": "****** {{paginationLimit}} ******",
+      "permissionNotGranted": "******",
+      "userNotLogged": "******"
+    }
+  },
+  "history": {
+    "allFields": "******",
+    "filename": "****** {{id}}",
+    "headers": {
+      "date": "******",
+      "displayName": "******",
+      "exportDate": "******",
+      "fieldName": "******",
+      "fields": "******",
+      "form": "******",
+      "fromDate": "******",
+      "new": "******",
+      "old": "******",
+      "record": "******",
+      "time": "******",
+      "toDate": "******",
+      "type": "******",
+      "user": "******"
+    },
+    "value": {
+      "add": "******",
+      "change": "******",
+      "delete": "******",
+      "pull": "******",
+      "push": "******"
+    }
+  },
+  "mutations": {
+    "aggregation": {
+      "add": { "errors": { "invalidArguments": "******" } },
+      "delete": { "errors": { "invalidArguments": "******" } },
+      "edit": { "errors": { "invalidArguments": "******" } }
+    },
+    "apiConfiguration": {
+      "add": { "errors": { "invalidArguments": "******" } },
+      "edit": { "errors": { "invalidArguments": "******" } }
+    },
+    "application": {
+      "content": {
+        "duplicate": {
+          "errors": {
+            "incompatibleArguments": "******",
+            "missingArguments": "******"
+          }
+        }
+      },
+      "duplicate": {
+        "errors": {
+          "invalidArguments": "******",
+          "namedDuplicated": "****** {{name}} ******"
+        }
+      },
+      "edit": { "errors": { "invalidArguments": "******" } }
+    },
+    "customNotification": {
+      "add": { "errors": { "maximumFrequency": "******" } },
+      "edit": { "errors": { "maximumFrequency": "******" } }
+    },
+    "dashboard": {
+      "add": {
+        "errors": { "invalidArguments": "******", "invalidPageType": "******" }
+      },
+      "addWithContext": {
+        "errors": {
+          "invalidArguments": "******",
+          "invalidContextEl": "******",
+          "invalidElement": "******"
+        }
+      },
+      "edit": { "errors": { "invalidArguments": "******" } }
+    },
+    "form": {
+      "add": {
+        "errors": { "koboForm": "******", "resourceDuplicated": "******" }
+      },
+      "edit": {
+        "errors": {
+          "coreFieldMissing": "****** {{name}} ******",
+          "defaultFieldDuplicated": "****** {{name}} ******",
+          "relatedNameDuplicated": "****** {{name}} ******"
+        }
+      }
+    },
+    "group": {
+      "add": { "errors": { "manualCreationDisabled": "******" } },
+      "fetch": {
+        "errors": {
+          "fetchRequestFailed": "******",
+          "groupsFromServiceDisabled": "******"
+        }
+      }
+    },
+    "layout": {
+      "add": { "errors": { "invalidAddPageArguments": "******" } },
+      "delete": { "errors": { "invalidArguments": "******" } },
+      "edit": { "errors": { "invalidAddPageArguments": "******" } }
+    },
+    "notification": {
+      "publish": { "errors": { "invalidArguments": "******" } },
+      "see": { "errors": { "invalidArguments": "******" } }
+    },
+    "page": {
+      "add": { "errors": { "invalidArguments": "******" } },
+      "edit": {
+        "context": { "errors": { "invalidArguments": "******" } },
+        "errors": { "invalidArguments": "******" }
+      }
+    },
+    "record": {
+      "add": { "recordAlreadyExists": "******" },
+      "convert": { "errors": { "invalidConversion": "******" } },
+      "edit": {
+        "errors": {
+          "invalidArguments": "******",
+          "wrongTemplateProvided": "******"
+        }
+      },
+      "errors": { "missingParameters": "******" }
+    },
+    "reference": {
+      "add": { "errors": { "invalidArguments": "******" } },
+      "edit": {
+        "errors": {
+          "formResDuplicated": "******",
+          "invalidArguments": "******"
+        }
+      }
+    },
+    "resource": {
+      "edit": {
+        "errors": {
+          "calculatedFieldTooLong": "******",
+          "field": {
+            "missingReadPermissionOnResource": "******",
+            "missingWritePermissionOnResource": "******",
+            "notFound": "******",
+            "notVisible": "******"
+          },
+          "invalidArguments": "******",
+          "permission": { "notVisible": "******" }
+        }
+      }
+    },
+    "step": {
+      "add": { "errors": { "invalidArguments": "******" } },
+      "edit": { "errors": { "invalidArguments": "******" } }
+    },
+    "user": { "edit": { "errors": { "invalidArguments": "******" } } },
+    "workflow": {
+      "add": {
+        "errors": { "invalidArguments": "******", "pageTypeError": "******" }
+      },
+      "edit": { "errors": { "invalidArguments": "******" } }
+    }
+  },
+  "query": {
+    "records": {
+      "aggregation": { "errors": { "invalidAggregation": "******" } }
+    }
+  },
+  "routes": {
+    "download": { "errors": { "missingParameters": "******" } },
+    "email": { "errors": { "missingFile": "******" } },
+    "gis": {
+      "feature": {
+        "errors": {
+          "invalidFields": "******",
+          "missingPolygonGeoField": "******",
+          "unexpected": "******"
+        }
+      },
+      "shapefile": {
+        "errors": {
+          "format": {
+            "crs": "******",
+            "gaps": "******",
+            "missingPolygons": "******",
+            "missingZonations": "******",
+            "overlapping": "******",
+            "shapefile": "******"
+          },
+          "processing": "******"
+        }
+      }
+    },
+    "permissions": {
+      "attributes": { "errors": { "cannotFetchChoices": "******" } }
+    },
+    "style": { "errors": { "notFound": "******" }, "noStyle": "******" },
+    "upload": {
+      "errors": {
+        "invalidUserUpload": "******",
+        "missingFile": "******",
+        "requiredField": "****** {{field}}",
+        "resourceNotFound": "****** {{line}} ****** {{field}} ******"
+      }
+    }
+  },
+  "server": {
+    "middlewares": { "cors": { "errors": { "invalidCORS": "******" } } }
+  },
+  "utils": {
+    "aggregation": {
+      "buildPipeline": { "errors": { "invalidCustomStage": "******" } }
+    },
+    "files": {
+      "uploadFile": { "errors": { "fileCannotBeUploaded": "******" } }
+    },
+    "form": {
+      "extractFields": {
+        "errors": {
+          "missingDataField": "******",
+          "missingRelatedField": "****** {{name}} ******"
+        }
+      },
+      "findDuplicateFields": {
+        "errors": { "dataFieldDuplicated": "****** {{name}} ******" }
+      },
+      "getNextId": {
+        "errors": { "incrementalIdError": "******", "invalidShape": "******" }
+      }
+    },
+    "user": {
+      "updateUserAttributes": {
+        "errors": { "missingObjectParameters": "****** {{object}} ******" }
+      }
+    },
+    "validators": {
+      "validateName": {
+        "errors": {
+          "invalidFieldName": "****** {{field}} ****** {{err}}",
+          "usageOfProtectedName": "******"
+        }
+      }
+    }
+  }
 }

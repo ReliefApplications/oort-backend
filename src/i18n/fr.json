@@ -1,0 +1,390 @@
+{
+  "common": {
+    "errors": {
+      "authenticationTokenNotFound": "Jeton d'authentification manquant.",
+      "badRequest": "Requête incorrecte.",
+      "dataNotFound": "Données introuvables",
+      "duplicatedGraphQLTypeName": "Un formulaire ou une donnée de référence avec un nom similaire existe déjà. Veuillez fournir un nom différent.",
+      "fileExtensionNotAllowed": "Extension de fichier non autorisée",
+      "fileSizeLimitReached": "La taille du fichier dépasse {{limit}} Mo",
+      "internalServerError": "Erreur interne du serveur",
+      "invalidAPI": "L'API est inaccessible.",
+      "invalidEmailsInput": "Format incorrect détecté. Veuillez fournir des adresses e-mail valides.",
+      "invalidGraphQLName": "Le nom ne peut contenir que des caractères alphanumériques et des tirets bas, et doit commencer par une lettre. Veuillez choisir un nom différent.",
+      "maximumPaginationLimit": "La taille maximale de page est {{paginationLimit}}. Veuillez utiliser une taille de page différente.",
+      "permissionNotGranted": "Autorisation non accordée.",
+      "userNotLogged": "Vous devez être connecté."
+    }
+  },
+  "history": {
+    "allFields": "Tous les champs",
+    "filename": "Historique de l'enregistrement {{id}}",
+    "headers": {
+      "date": "Date",
+      "displayName": "Titre du champ",
+      "exportDate": "Date d'export",
+      "fieldName": "Nom du champ",
+      "fields": "Champs filtrés",
+      "form": "Formulaire",
+      "fromDate": "Filtrer à partir du",
+      "new": "Nouvelle valeur",
+      "old": "Ancienne valeur",
+      "record": "Enregistrement",
+      "time": "Heure",
+      "toDate": "Filtrer jusqu'au",
+      "type": "Type d'action",
+      "user": "Utilisateur"
+    },
+    "value": {
+      "add": "Ajouter une valeur",
+      "change": "Modifier la valeur",
+      "delete": "Supprimer la valeur",
+      "pull": "Retirer un élément",
+      "push": "Ajouter un élément"
+    }
+  },
+  "mutations": {
+    "aggregation": {
+      "add": {
+        "errors": {
+          "invalidArguments": "La ressource ou la donnée de référence ainsi que l'agrégation doivent être fournies lors de l'ajout d'une nouvelle agrégation"
+        }
+      },
+      "delete": {
+        "errors": {
+          "invalidArguments": "La ressource ou la donnée de référence ainsi que l'identifiant de l'agrégation doivent être fournis lors de la suppression d'une agrégation"
+        }
+      },
+      "edit": {
+        "errors": {
+          "invalidArguments": "La ressource ou la donnée de référence, l'agrégation et son identifiant doivent être fournis lors de la modification d'une agrégation"
+        }
+      }
+    },
+    "apiConfiguration": {
+      "add": {
+        "errors": { "invalidArguments": "Le nom de l'API doit être fourni." }
+      },
+      "edit": {
+        "errors": {
+          "invalidArguments": "Le nom, le statut, le type d'authentification, l'endpoint, l'endpoint GraphQL, l'URL de ping, les paramètres ou les permissions doivent être fournis."
+        }
+      }
+    },
+    "application": {
+      "content": {
+        "duplicate": {
+          "errors": {
+            "incompatibleArguments": "L'identifiant de l'étape et celui de la page ne peuvent pas être fournis ensemble.",
+            "missingArguments": "L'identifiant de l'étape ou celui de la page doit être fourni."
+          }
+        }
+      },
+      "duplicate": {
+        "errors": {
+          "invalidArguments": "Le nom de l'application doit être fourni.",
+          "namedDuplicated": "Une application portant le nom {{name}} existe déjà. Ce nom ne peut pas être utilisé. Veuillez fournir un nom différent."
+        }
+      },
+      "edit": {
+        "errors": {
+          "invalidArguments": "Le nom, le statut, les pages, les paramètres ou les permissions doivent être fournis."
+        }
+      }
+    },
+    "customNotification": {
+      "add": {
+        "errors": {
+          "maximumFrequency": "Veuillez définir une fréquence inférieure ou égale à une fois par heure."
+        }
+      },
+      "edit": {
+        "errors": {
+          "maximumFrequency": "Veuillez définir une fréquence inférieure ou égale à une fois par heure."
+        }
+      }
+    },
+    "dashboard": {
+      "add": {
+        "errors": {
+          "invalidArguments": "Le nom du tableau de bord doit être fourni.",
+          "invalidPageType": "La page fournie n'est pas un tableau de bord."
+        }
+      },
+      "addWithContext": {
+        "errors": {
+          "invalidArguments": "Vous devez fournir un, et un seul, argument parmi un élément de donnée de référence et un enregistrement.",
+          "invalidContextEl": "L'élément de contexte n'existe pas",
+          "invalidElement": "L'élément fourni doit être une chaîne de caractères ou un nombre"
+        }
+      },
+      "edit": {
+        "errors": {
+          "invalidArguments": "Le nom ou la structure doivent être fournis."
+        }
+      }
+    },
+    "form": {
+      "add": {
+        "errors": {
+          "koboForm": "Une erreur est survenue lors de la création d'un nouveau formulaire à partir d'un formulaire Kobo",
+          "resourceDuplicated": "Une ressource existante portant ce nom existe déjà."
+        }
+      },
+      "edit": {
+        "errors": {
+          "coreFieldMissing": "Champ principal manquant : {{name}}. Veuillez implémenter ce champ.",
+          "defaultFieldDuplicated": "Nom de champ par défaut en double : {{name}}. Ce nom ne peut pas être utilisé. Veuillez fournir un nom différent.",
+          "relatedNameDuplicated": "Nom lié en double : {{name}}. La ressource cible contient déjà un champ portant ce nom. Veuillez fournir un nom différent."
+        }
+      }
+    },
+    "group": {
+      "add": {
+        "errors": {
+          "manualCreationDisabled": "La création manuelle de groupes est désactivée."
+        }
+      },
+      "fetch": {
+        "errors": {
+          "fetchRequestFailed": "Échec de la récupération des groupes.",
+          "groupsFromServiceDisabled": "La récupération des groupes depuis le service n'est pas disponible."
+        }
+      }
+    },
+    "layout": {
+      "add": {
+        "errors": {
+          "invalidAddPageArguments": "Le type de page doit être un type disponible et l'identifiant de l'application liée doit être fourni."
+        }
+      },
+      "delete": {
+        "errors": {
+          "invalidArguments": "La ressource et l'identifiant de l'agrégation doivent être fournis lors de la suppression d'une agrégation"
+        }
+      },
+      "edit": {
+        "errors": {
+          "invalidAddPageArguments": "Le type de page doit être un type disponible et l'identifiant de l'application liée doit être fourni."
+        }
+      }
+    },
+    "notification": {
+      "publish": {
+        "errors": {
+          "invalidArguments": "L'action, le contenu et le canal doivent tous être fournis."
+        }
+      },
+      "see": {
+        "errors": {
+          "invalidArguments": "Les identifiants des notifications doivent être fournis."
+        }
+      }
+    },
+    "page": {
+      "add": {
+        "errors": {
+          "invalidArguments": "Le type de page doit être un type disponible et l'identifiant de l'application liée doit être fourni."
+        }
+      },
+      "edit": {
+        "context": {
+          "errors": {
+            "invalidArguments": "Vous ne pouvez pas fournir à la fois une donnée de référence et une ressource comme source de données."
+          }
+        },
+        "errors": {
+          "invalidArguments": "Le nom, les permissions, la visibilité ou l'icône doivent être fournis pour mettre à jour la page."
+        }
+      }
+    },
+    "record": {
+      "add": {
+        "recordAlreadyExists": "Un enregistrement avec l'identifiant spécifié existe déjà"
+      },
+      "convert": {
+        "errors": {
+          "invalidConversion": "Impossible de convertir cet enregistrement vers ce type de formulaire cible."
+        }
+      },
+      "edit": {
+        "errors": {
+          "invalidArguments": "Les données ou la version doivent être fournies.",
+          "wrongTemplateProvided": "Le modèle doit partager la même ressource que le formulaire parent de l'enregistrement modifié."
+        }
+      },
+      "errors": {
+        "missingParameters": "Paramètres de requête manquants : identifiant de l'enregistrement ou uniqueField et uniqueValue"
+      }
+    },
+    "reference": {
+      "add": { "errors": { "invalidArguments": "Le nom doit être fourni." } },
+      "edit": {
+        "errors": {
+          "formResDuplicated": "Un formulaire ou une ressource portant ce nom existe déjà.",
+          "invalidArguments": "Le nom, le type, pageInfo, la configuration de l'API, la requête, les champs, valueField, path, data ou les permissions doivent être fournis."
+        }
+      }
+    },
+    "resource": {
+      "edit": {
+        "errors": {
+          "calculatedFieldTooLong": "L'expression est trop longue.",
+          "field": {
+            "missingReadPermissionOnResource": "Veuillez fournir l'autorisation de lire ou créer des enregistrements avant de définir les champs visibles.",
+            "missingWritePermissionOnResource": "Veuillez fournir l'autorisation de mettre à jour ou créer des enregistrements avant de définir les champs modifiables.",
+            "notFound": "Le champ n'existe pas.",
+            "notVisible": "Veuillez définir le champ comme visible avant de le définir comme modifiable."
+          },
+          "invalidArguments": "Les champs ou les permissions doivent être fournis.",
+          "permission": {
+            "notVisible": "Veuillez fournir l'autorisation de lire les enregistrements avant d'accorder l'autorisation de les modifier."
+          }
+        }
+      }
+    },
+    "step": {
+      "add": { "errors": { "invalidArguments": "Le nom doit être fourni." } },
+      "edit": {
+        "errors": {
+          "invalidArguments": "Le nom, le type, le contenu, l'icône ou les permissions doivent être fournis."
+        }
+      }
+    },
+    "user": {
+      "edit": {
+        "errors": {
+          "invalidArguments": "Les groupes ou les rôles doivent être fournis."
+        }
+      }
+    },
+    "workflow": {
+      "add": {
+        "errors": {
+          "invalidArguments": "L'identifiant de la page doit être fourni.",
+          "pageTypeError": "La page passée en argument n'est pas de type workflow"
+        }
+      },
+      "edit": {
+        "errors": {
+          "invalidArguments": "Le nom ou les étapes doivent être fournis."
+        }
+      }
+    }
+  },
+  "query": {
+    "records": {
+      "aggregation": {
+        "errors": {
+          "invalidAggregation": "Erreur avec le format de l'agrégation fourni, un paramètre principal tel que dataSource, pipeline, etc. est manquant."
+        }
+      }
+    }
+  },
+  "routes": {
+    "download": { "errors": { "missingParameters": "Paramètres manquants" } },
+    "email": { "errors": { "missingFile": "Aucun fichier détecté." } },
+    "gis": {
+      "feature": {
+        "errors": {
+          "invalidFields": "Veuillez fournir soit geoField, soit latitudeField et longitudeField dans les paramètres de la requête.",
+          "missingPolygonGeoField": "Veuillez fournir un geoField lors de l'interrogation des polygones.",
+          "unexpected": "Le système n'a pas pu interroger les données."
+        }
+      },
+      "shapefile": {
+        "errors": {
+          "format": {
+            "crs": "Veuillez vous assurer que le système de référence de coordonnées (CRS) WGS 84 World Geodetic System (ESPG : 4326) est utilisé pour toutes les couches et téléversez à nouveau.",
+            "gaps": "Erreur de géométrie : il y a un ou plusieurs espaces vides entre les polygones de zonage. Veuillez corriger ces erreurs et téléverser à nouveau les fichiers.",
+            "missingPolygons": "Erreur de format : le shapefile doit être composé de trois (3) polygones, un pour chacune des zones centrale(s), tampon(s) et de transition. Veuillez corriger ces erreurs et téléverser à nouveau les fichiers.",
+            "missingZonations": "Erreur de format : la table d'attributs doit décrire les polygones de zonage en utilisant les libellés Core, Buffer et Transition (en anglais). Veuillez corriger ces erreurs et téléverser à nouveau les fichiers.",
+            "overlapping": "Erreur de géométrie : il y a un ou plusieurs polygones de zonage qui se chevauchent. Veuillez corriger ces erreurs et téléverser à nouveau les fichiers.",
+            "shapefile": "Erreur de format : veuillez téléverser un seul fichier .zip incluant tous les fichiers liés .shp, .shx, .dbf et .prj."
+          },
+          "processing": "Erreur de traitement : le shapefile n'a pas pu être traité. Veuillez vous assurer que le fichier est correctement formaté et réessayer."
+        }
+      }
+    },
+    "permissions": {
+      "attributes": {
+        "errors": {
+          "cannotFetchChoices": "Impossible de récupérer les choix pour cet attribut."
+        }
+      }
+    },
+    "style": {
+      "errors": {
+        "notFound": "Impossible de charger le style de l'application"
+      },
+      "noStyle": "Cette application n'a pas de fichier de style personnalisé."
+    },
+    "upload": {
+      "errors": {
+        "invalidUserUpload": "Veuillez fournir l'e-mail et le rôle de chaque utilisateur.",
+        "missingFile": "Aucun fichier détecté.",
+        "requiredField": "Question obligatoire manquante : {{field}}",
+        "resourceNotFound": "Impossible de trouver l'élément à la ligne {{line}} pour la question {{field}}."
+      }
+    }
+  },
+  "server": {
+    "middlewares": {
+      "cors": {
+        "errors": {
+          "invalidCORS": "La politique CORS de ce site n'autorise pas l'accès depuis l'origine spécifiée."
+        }
+      }
+    }
+  },
+  "utils": {
+    "aggregation": {
+      "buildPipeline": {
+        "errors": {
+          "invalidCustomStage": "L'étape personnalisée ne peut pas être analysée correctement."
+        }
+      }
+    },
+    "files": {
+      "uploadFile": {
+        "errors": {
+          "fileCannotBeUploaded": "Le fichier ne peut pas être téléversé."
+        }
+      }
+    },
+    "form": {
+      "extractFields": {
+        "errors": {
+          "missingDataField": "Veuillez ajouter un nom de valeur à toutes les questions, dans l'onglet Données.",
+          "missingRelatedField": "Veuillez ajouter un nom lié à la question {{name}}."
+        }
+      },
+      "findDuplicateFields": {
+        "errors": {
+          "dataFieldDuplicated": "Nom de donnée en double : {{name}}. Veuillez fournir des noms de valeur différents pour toutes les questions."
+        }
+      },
+      "getNextId": {
+        "errors": {
+          "incrementalIdError": "Erreur avec l'identifiant incrémental pour les enregistrements",
+          "invalidShape": "Erreur lors de la création d'un nouvel enregistrement, la forme de l'identifiant du formulaire est invalide"
+        }
+      }
+    },
+    "user": {
+      "updateUserAttributes": {
+        "errors": {
+          "missingObjectParameters": "Paramètres {{object}} manquants"
+        }
+      }
+    },
+    "validators": {
+      "validateName": {
+        "errors": {
+          "invalidFieldName": "Le nom du champ {{field}} est invalide : {{err}}",
+          "usageOfProtectedName": "Ce nom est protégé et ne peut pas être utilisé. Veuillez choisir un nom différent."
+        }
+      }
+    }
+  }
+}

@@ -63,9 +63,7 @@
     },
     "apiConfiguration": {
       "add": {
-        "errors": {
-          "invalidArguments": "Debe indicarse el nombre de la API."
-        }
+        "errors": { "invalidArguments": "Debe indicarse el nombre de la API." }
       },
       "edit": {
         "errors": {
@@ -220,11 +218,7 @@
       }
     },
     "reference": {
-      "add": {
-        "errors": {
-          "invalidArguments": "Debe indicarse el nombre."
-        }
-      },
+      "add": { "errors": { "invalidArguments": "Debe indicarse el nombre." } },
       "edit": {
         "errors": {
           "formResDuplicated": "Ya existe un formulario o un recurso con ese nombre.",
@@ -250,11 +244,7 @@
       }
     },
     "step": {
-      "add": {
-        "errors": {
-          "invalidArguments": "Debe indicarse el nombre."
-        }
-      },
+      "add": { "errors": { "invalidArguments": "Debe indicarse el nombre." } },
       "edit": {
         "errors": {
           "invalidArguments": "Debe indicarse al menos uno de los siguientes elementos: nombre, tipo, contenido, icono o permisos."
@@ -292,15 +282,9 @@
     }
   },
   "routes": {
-    "download": {
-      "errors": {
-        "missingParameters": "Faltan parámetros"
-      }
-    },
+    "download": { "errors": { "missingParameters": "Faltan parámetros" } },
     "email": {
-      "errors": {
-        "missingFile": "No se ha detectado ningún archivo."
-      }
+      "errors": { "missingFile": "No se ha detectado ningún archivo." }
     },
     "gis": {
       "feature": {
@@ -365,9 +349,7 @@
     },
     "files": {
       "uploadFile": {
-        "errors": {
-          "fileCannotBeUploaded": "No se puede cargar el archivo."
-        }
+        "errors": { "fileCannotBeUploaded": "No se puede cargar el archivo." }
       }
     },
     "form": {

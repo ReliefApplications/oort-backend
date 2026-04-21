@@ -1,4 +1,5 @@
 const fs = require('fs');
+const prettier = require('prettier');
 /** Translation files are stored there */
 const I18N_FOLDER_PATH = 'src/i18n/';
 
@@ -67,16 +68,18 @@ const setDefaultValue = (json, defaultValue) => {
  * @param {*} json json value
  */
 const updateFile = (lang, json) => {
-  fs.writeFileSync(
-    I18N_FOLDER_PATH + lang + '.json',
-    JSON.stringify(json, null, '\t'),
-    (err) => {
-      if (err) {
-        throw err;
-      }
-      // else success
+  const filepath = I18N_FOLDER_PATH + lang + '.json';
+  const options = prettier.resolveConfig.sync(filepath) || {};
+  const formatted = prettier.format(JSON.stringify(json), {
+    ...options,
+    filepath,
+  });
+  fs.writeFileSync(filepath, formatted, (err) => {
+    if (err) {
+      throw err;
     }
-  );
+    // else success
+  });
 };
 
 /**
