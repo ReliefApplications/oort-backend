@@ -45,6 +45,7 @@ import {
 import { uniqBy, get, isNil } from 'lodash';
 import { accessibleBy } from '@casl/mongoose';
 import getFilter from '@utils/filter/getFilter';
+import config from 'config';
 
 /** GraphQL application type definition */
 export const ApplicationType = new GraphQLObjectType({
@@ -212,8 +213,18 @@ export const ApplicationType = new GraphQLObjectType({
           { name: 'username', type: 'text' },
         ];
 
+        const availableAttributes: { value: string; text: string }[] =
+          config.get('user.attributes.list') || [];
+
         // Get filters for the searched value
-        const queryFilters = getFilter(args.filter, FILTER_FIELDS);
+        const queryFilters = getFilter(
+          args.filter,
+          FILTER_FIELDS.concat(
+            availableAttributes.map((attribute) => {
+              return { name: `attributes.${attribute.value}`, type: 'text' };
+            })
+          )
+        );
 
         const first = get(args, 'first', 10);
         const sortField = SORT_FIELDS.find((x) => x.name === '_id');
