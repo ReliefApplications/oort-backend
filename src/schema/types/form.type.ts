@@ -23,12 +23,14 @@ import { StatusEnumType } from '@const/enumTypes';
 import { Connection, decodeCursor, encodeCursor } from './pagination.type';
 import getFilter from '@utils/schema/resolvers/Query/getFilter';
 import { pluralize } from 'inflection';
-import extendAbilityForRecords from '@security/extendAbilityForRecords';
-import extendAbilityForContent from '@security/extendAbilityForContent';
 import { getMetaData } from '@utils/form/metadata.helper';
 import { getAccessibleFields } from '@utils/form';
 import { accessibleBy } from '@casl/mongoose';
 import { KoboFormType } from './koboForm.type';
+import {
+  getCachedFormContentAbility,
+  getCachedRecordsAbility,
+} from '@utils/schema/abilityCache';
 
 /** Default page size */
 const DEFAULT_FIRST = 10;
@@ -54,7 +56,7 @@ export const FormType = new GraphQLObjectType({
     permissions: {
       type: AccessType,
       async resolve(parent, args, context) {
-        const ability = await extendAbilityForContent(context.user, parent);
+        const ability = await getCachedFormContentAbility(context, parent);
         return ability.can('update', parent) ? parent.permissions : null;
       },
     },
@@ -113,7 +115,7 @@ export const FormType = new GraphQLObjectType({
             }
           : {};
         // Check abilities
-        const ability = await extendAbilityForRecords(context.user, parent);
+        const ability = await getCachedRecordsAbility(context, parent);
         // Filter from the user permissions
         const permissionFilters = Record.find(
           accessibleBy(ability, 'read').Record
@@ -153,7 +155,7 @@ export const FormType = new GraphQLObjectType({
     recordsCount: {
       type: GraphQLInt,
       async resolve(parent, args, context) {
-        const ability = await extendAbilityForRecords(context.user, parent);
+        const ability = await getCachedRecordsAbility(context, parent);
         const count = await Record.find({
           form: parent.id,
           archived: { $ne: true },
@@ -165,11 +167,7 @@ export const FormType = new GraphQLObjectType({
     versionsCount: {
       type: GraphQLInt,
       async resolve(parent) {
-        const versions = Version.find()
-          .where('_id')
-          .in(parent.versions)
-          .count();
-        return versions;
+        return Array.isArray(parent.versions) ? parent.versions.length : 0;
       },
     },
     versions: {
@@ -183,28 +181,28 @@ export const FormType = new GraphQLObjectType({
     canSee: {
       type: GraphQLBoolean,
       async resolve(parent: Form, args, context) {
-        const ability = await extendAbilityForContent(context.user, parent);
+        const ability = await getCachedFormContentAbility(context, parent);
         return ability.can('read', parent);
       },
     },
     canUpdate: {
       type: GraphQLBoolean,
       async resolve(parent, args, context) {
-        const ability = await extendAbilityForContent(context.user, parent);
+        const ability = await getCachedFormContentAbility(context, parent);
         return ability.can('update', parent);
       },
     },
     canDelete: {
       type: GraphQLBoolean,
       async resolve(parent, args, context) {
-        const ability = await extendAbilityForContent(context.user, parent);
+        const ability = await getCachedFormContentAbility(context, parent);
         return ability.can('delete', parent);
       },
     },
     canCreateRecords: {
       type: GraphQLBoolean,
       async resolve(parent, args, context) {
-        const ability = await extendAbilityForRecords(context.user, parent);
+        const ability = await getCachedRecordsAbility(context, parent);
         return ability.can('create', 'Record');
       },
     },
