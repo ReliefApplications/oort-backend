@@ -40,6 +40,7 @@ import draftRecords from './draftRecords.query';
 import referenceDataAggregation from './referenceDataAggregation.query';
 import types from './types.query';
 import comments from './comments.query';
+import assignableRoles from './assignableRoles.query';
 
 /** GraphQL query type definition */
 const Query = new GraphQLObjectType({
@@ -47,6 +48,7 @@ const Query = new GraphQLObjectType({
   fields: {
     apiConfiguration,
     apiConfigurations,
+    assignableRoles,
     application,
     applications,
     channels,
