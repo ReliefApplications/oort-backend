@@ -50,7 +50,7 @@ const mongoDBUrl = (): string => {
         'database.host'
       )}:${config.get('database.port')}/${config.get(
         'database.name'
-      )}?authSource=admin&retrywrites=false&maxIdleTimeMS=120000`;
+      )}?authSource=admin&replicaSet=rs0&directConnection=true&retrywrites=false&maxIdleTimeMS=120000`;
     }
   }
 };
